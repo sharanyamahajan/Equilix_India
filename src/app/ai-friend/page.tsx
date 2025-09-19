@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Mic, MicOff, Video, VideoOff, PhoneOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AuraAvatar } from '@/components/icons/aura-avatar';
 
 // --- SVG Icons ---
 const UserPlaceholderIcon = () => (
@@ -17,6 +16,71 @@ const UserPlaceholderIcon = () => (
 );
 
 const DotFlashing = () => <div className="dot-flashing"></div>;
+
+const AuraAvatar = ({ aiStatus }: { aiStatus: string }) => {
+    const isSpeaking = aiStatus === 'speaking';
+    return (
+        <motion.div
+            className="w-full h-full"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+        >
+            <svg
+                viewBox="0 0 400 400"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className="drop-shadow-lg"
+            >
+                <motion.circle
+                    cx="200"
+                    cy="200"
+                    r="180"
+                    fill="url(#gradient)"
+                    initial={{ scale: 1 }}
+                    animate={{ scale: isSpeaking ? 1.03 : 1 }}
+                    transition={{ duration: 1, repeat: Infinity, repeatType: 'reverse', ease: 'easeInOut' }}
+                />
+                <defs>
+                    <radialGradient id="gradient" cx="50%" cy="50%" r="50%" fx="50%" fy="30%">
+                        <stop stopColor="hsl(var(--primary))" stopOpacity="0.7" />
+                        <stop offset="1" stopColor="hsl(var(--primary) / 0.3)" />
+                    </radialGradient>
+                </defs>
+                <motion.circle
+                    cx="200"
+                    cy="200"
+                    r="150"
+                    fill="hsl(var(--background))"
+                />
+                <motion.path
+                    d="M150 220 Q200 250, 250 220"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth="8"
+                    fill="none"
+                    strokeLinecap="round"
+                    initial={{ d: "M170 230 Q200 230, 230 230" }}
+                    animate={{
+                        d: isSpeaking
+                            ? [
+                                "M170 230 Q200 250, 230 230",
+                                "M170 230 Q200 220, 230 230",
+                                "M170 230 Q200 240, 230 230",
+                                "M170 230 Q200 230, 230 230"
+                            ]
+                            : "M160 235 Q200 250, 240 235"
+                    }}
+                    transition={{ duration: 0.4, repeat: isSpeaking ? Infinity : 0, ease: 'easeInOut' }}
+                />
+                <g id="eyes">
+                    <motion.circle cx="160" cy="180" r="10" fill="hsl(var(--primary))" animate={{ scaleY: [1, 0.1, 1] }} transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 3 }} />
+                    <motion.circle cx="240" cy="180" r="10" fill="hsl(var(--primary))" animate={{ scaleY: [1, 0.1, 1] }} transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 4 }} />
+                </g>
+            </svg>
+        </motion.div>
+    );
+};
+
 
 // --- Main Component ---
 export default function AiFriendPage() {
