@@ -2,6 +2,7 @@
 
 import { AppHeader } from '@/components/app/app-header';
 import { DailyAffirmation } from '@/components/app/daily-affirmation';
+import { EmotionDetector } from '@/components/app/emotion-detector';
 import { GratitudeJournal } from '@/components/app/gratitude-journal';
 import { WellnessSurvey } from '@/components/app/wellness-survey';
 
@@ -14,6 +15,7 @@ export default function Home() {
           <div className="grid gap-8 md:grid-cols-2 md:gap-12">
             <div className="space-y-8">
               <DailyAffirmation />
+              <EmotionDetector />
               <GratitudeJournal />
             </div>
             <div className="space-y-8">

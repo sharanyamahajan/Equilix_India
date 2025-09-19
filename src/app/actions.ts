@@ -3,6 +3,7 @@
 import { suggestHtmlImprovements } from '@/ai/flows/suggest-html-improvements';
 import { analyzeWellness } from '@/ai/flows/analyze-wellness';
 import type { WellnessSurveyInput } from '@/ai/schemas/wellness';
+import { detectEmotion } from '@/ai/flows/detect-emotion';
 
 export async function getHtmlImprovements(htmlContent: string) {
   if (!htmlContent) {
@@ -25,5 +26,19 @@ export async function getWellnessAnalysis(surveyData: WellnessSurveyInput) {
   } catch (error) {
     console.error('AI Error:', error);
     return { success: false, error: 'Failed to get analysis from the AI model.' };
+  }
+}
+
+export async function getEmotionDetection(imageDataUri: string) {
+  if (!imageDataUri) {
+    return { success: false, error: 'Image data cannot be empty.' };
+  }
+
+  try {
+    const result = await detectEmotion({ imageDataUri });
+    return { success: true, data: result };
+  } catch (error) {
+    console.error('AI Error:', error);
+    return { success: false, error: 'Failed to detect emotion from the AI model.' };
   }
 }
