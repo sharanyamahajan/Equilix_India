@@ -44,8 +44,9 @@ const AuraAvatar = ({ aiStatus }: { aiStatus: string }) => {
                 }}
             />
             <motion.img
-                src="https://picsum.photos/seed/ai-friend/400/400"
+                src="https://picsum.photos/seed/ai-friend-2/400/400"
                 alt="Aura, your AI Friend"
+                data-ai-hint="woman portrait"
                 className="w-full h-full object-cover rounded-full"
                 animate={{ scale: isSpeaking ? 1.05 : 1 }}
                 transition={{ duration: 0.4, ease: 'easeOut' }}
@@ -109,10 +110,12 @@ export default function AiFriendPage() {
             }
         };
         utterance.onerror = (e) => {
-            console.error('Speech synthesis error', e);
-            setAiStatus('listening');
-            setAiStatusText("I'm having trouble speaking. Please try again.");
-            isAIThinkingRef.current = false;
+            if ((e as SpeechSynthesisErrorEvent).error !== 'canceled') {
+              console.error('Speech synthesis error', e);
+              setAiStatus('listening');
+              setAiStatusText("I'm having trouble speaking. Please try again.");
+              isAIThinkingRef.current = false;
+            }
         };
         window.speechSynthesis.speak(utterance);
     }, [isMicOn, startSpeechRecognition, stopSpeechRecognition]);
