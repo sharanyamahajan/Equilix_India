@@ -1,4 +1,3 @@
-
 // src/app/ai-friend/page.tsx
 'use client';
 
@@ -19,92 +18,69 @@ const UserPlaceholderIcon = () => (
 const DotFlashing = () => <div className="dot-flashing"></div>;
 
 const AuraAvatar = ({ aiStatus }: { aiStatus: 'listening' | 'thinking' | 'speaking' }) => {
-    const isSpeaking = aiStatus === 'speaking';
-    const isListening = aiStatus === 'listening';
-  
-    const mouthVariants = {
-      listening: { d: "M 40 75 Q 50 80 60 75" },
-      speaking: { d: "M 40 75 Q 50 85 60 75" },
-      thinking: { d: "M 40 75 Q 50 75 60 75" },
+    const mouthRef = useRef<SVGPathElement | null>(null);
+
+    const mouthShapes = {
+        neutral: "M 80 130 Q 100 130 120 130",
+        a: "M 80 130 Q 100 145 120 130",
+        b: "M 80 135 Q 100 135 120 135",
+        c: "M 80 125 Q 100 140 120 125"
     };
-  
+
+    useEffect(() => {
+        let lipSyncInterval: NodeJS.Timeout | null = null;
+        if (aiStatus === 'speaking') {
+            const shapes = Object.values(mouthShapes);
+            lipSyncInterval = setInterval(() => {
+                if (mouthRef.current) {
+                    mouthRef.current.setAttribute('d', shapes[Math.floor(Math.random() * shapes.length)]);
+                }
+            }, 120);
+        } else {
+            if (mouthRef.current) {
+                mouthRef.current.setAttribute('d', mouthShapes.neutral);
+            }
+        }
+        return () => {
+            if (lipSyncInterval) {
+                clearInterval(lipSyncInterval);
+            }
+        };
+    }, [aiStatus]);
+    
+     useEffect(() => {
+        const eyes = document.getElementById('eyes');
+        if (!eyes) return;
+
+        const blink = () => {
+            if (document.hidden) return;
+            eyes.style.transform = 'scaleY(0.1)';
+            setTimeout(() => {
+                eyes.style.transform = 'scaleY(1)';
+            }, 200);
+        };
+
+        const intervalId = setInterval(blink, 4000);
+        return () => clearInterval(intervalId);
+    }, []);
+
+
     return (
-      <motion.div
-        className="w-full h-full"
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-      >
-        <svg viewBox="0 0 100 100" id="aura-svg" className="w-full h-full drop-shadow-lg">
-          <defs>
-            <radialGradient id="faceGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-              <stop offset="0%" stopColor="#E9E4F0" />
-              <stop offset="100%" stopColor="#D3CCE3" />
-            </radialGradient>
-            <linearGradient id="hairGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#C9A7EB" />
-              <stop offset="100%" stopColor="#A57ECE" />
-            </linearGradient>
-            <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-                <feGaussianBlur stdDeviation="3.5" result="coloredBlur"/>
-                <feMerge>
-                    <feMergeNode in="coloredBlur"/>
-                    <feMergeNode in="SourceGraphic"/>
-                </feMerge>
-            </filter>
-          </defs>
-  
-          {/* Main Body/Shoulders */}
-          <motion.path
-            d="M 20 100 C 20 80, 80 80, 80 100 Z"
-            fill="#BCCAEF"
-            animate={{ y: isListening ? [0, -1, 0] : 0 }}
-            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-          />
-
-          {/* Head */}
-          <circle cx="50" cy="50" r="40" fill="url(#faceGradient)" />
-          
-          {/* Hair */}
-          <path d="M 20 50 A 30 30 0 0 1 80 50 A 40 40 0 0 1 20 50" fill="url(#hairGradient)" />
-
-          {/* Eyes */}
-          <g id="eyes">
-              {/* Left Eye */}
-              <motion.ellipse cx="35" cy="55" rx="4" ry="6" fill="white" 
-                animate={{ scaleY: [1, 0.1, 1] }}
-                transition={{ duration: 0.3, repeat: Infinity, repeatDelay: 4, ease: "easeOut" }}
-              />
-              <circle cx="35" cy="55" r="2" fill="black" />
-               <circle cx="36" cy="54" r="0.5" fill="white" />
-              
-              {/* Right Eye */}
-              <motion.ellipse cx="65" cy="55" rx="4" ry="6" fill="white"
-                 animate={{ scaleY: [1, 0.1, 1] }}
-                 transition={{ duration: 0.3, repeat: Infinity, repeatDelay: 4.1, ease: "easeOut" }}
-               />
-              <circle cx="65" cy="55" r="2" fill="black" />
-              <circle cx="66" cy="54" r="0.5" fill="white" />
-          </g>
-
-          {/* Cheeks */}
-          <circle cx="28" cy="65" r="5" fill="#F4C2C2" opacity="0.5" filter="url(#glow)" />
-          <circle cx="72" cy="65" r="5" fill="#F4C2C2" opacity="0.5" filter="url(#glow)" />
-  
-          {/* Mouth */}
-          <motion.path
-            id="mouth"
-            stroke="black"
-            strokeWidth="0.8"
-            fill="none"
-            strokeLinecap="round"
-            initial="thinking"
-            animate={aiStatus}
-            variants={mouthVariants}
-            transition={{ duration: 0.3, ease: 'easeOut' }}
-          />
+        <svg viewBox="0 0 200 200" id="aura-svg" className="w-full h-full">
+            <defs>
+                <radialGradient id="auraGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                    <stop offset="0%" style={{stopColor: '#AEC6CF', stopOpacity: 0.8}} />
+                    <stop offset="100%" style={{stopColor: '#AEC6CF', stopOpacity: 0.9}} />
+                </radialGradient>
+            </defs>
+            <circle cx="100" cy="100" r="90" fill="url(#auraGradient)" />
+            <circle cx="100" cy="100" r="70" fill="none" stroke="#ffffff" strokeWidth="2" strokeOpacity="0.5" />
+            <g id="eyes" style={{transition: 'transform 0.2s ease-out'}}>
+                <path className="eye-line" d="M 70 90 L 90 90" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" />
+                <path className="eye-line" d="M 110 90 L 130 90" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" />
+            </g>
+            <path ref={mouthRef} id="mouth" d="M 80 130 Q 100 130 120 130" stroke="#ffffff" strokeWidth="3" fill="none" strokeLinecap="round"/>
         </svg>
-      </motion.div>
     );
 };
 
