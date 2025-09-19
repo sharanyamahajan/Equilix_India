@@ -1,15 +1,338 @@
+// src/app/ai-friend/page.tsx
 'use client';
 
-import { AIFriend } from '@/components/app/ai-friend';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { getAIFriendResponse } from '@/app/actions';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { Mic, MicOff, Video, VideoOff, PhoneOff } from 'lucide-react';
 
-export default function AIFriendPage() {
-  return (
-    <div className="flex flex-col min-h-screen bg-background font-body">
-      <main className="flex-grow container mx-auto px-4 py-8 md:py-12">
-        <div className="max-w-4xl mx-auto">
-          <AIFriend />
+// --- SVG Icons ---
+const UserPlaceholderIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-full h-full">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+  </svg>
+);
+
+const AuraAvatar = ({ avatarRef, eyesRef, mouthRef }: { avatarRef: React.RefObject<SVGSVGElement>, eyesRef: React.RefObject<SVGGElement>, mouthRef: React.RefObject<SVGPathElement> }) => (
+    <svg viewBox="0 0 200 200" ref={avatarRef} className="w-full h-full">
+        <defs>
+            <radialGradient id="auraGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                <stop offset="0%" style={{ stopColor: '#93c5fd', stopOpacity: 0.8 }} />
+                <stop offset="100%" style={{ stopColor: '#3b82f6', stopOpacity: 0.9 }} />
+            </radialGradient>
+        </defs>
+        <circle cx="100" cy="100" r="90" fill="url(#auraGradient)" />
+        <circle cx="100" cy="100" r="70" fill="none" stroke="#ffffff" strokeWidth="2" strokeOpacity="0.5" />
+        <g id="eyes" ref={eyesRef} style={{ transition: 'transform 0.2s ease-out' }}>
+            <path className="eye-line" d="M 70 90 L 90 90" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" />
+            <path className="eye-line" d="M 110 90 L 130 90" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" />
+        </g>
+        <path id="mouth" ref={mouthRef} d="M 80 130 Q 100 130 120 130" stroke="#ffffff" strokeWidth="3" fill="none" strokeLinecap="round" />
+    </svg>
+);
+
+const DotFlashing = () => <div className="dot-flashing"></div>;
+
+// --- Main Component ---
+export default function AiFriendPage() {
+    const [screen, setScreen] = useState('welcome'); // 'welcome' | 'call'
+    const [loadingText, setLoadingText] = useState('');
+    const [isMicOn, setIsMicOn] = useState(true);
+    const [isCameraOn, setIsCameraOn] = useState(true);
+    const [aiStatus, setAiStatus] = useState<'listening' | 'thinking' | 'speaking'>('speaking');
+    const [aiStatusText, setAiStatusText] = useState("Hi there! What's on your mind today?");
+    
+    const localStreamRef = useRef<MediaStream | null>(null);
+    const userVideoRef = useRef<HTMLVideoElement>(null);
+    const recognitionRef = useRef<SpeechRecognition | null>(null);
+    const isAIThinkingRef = useRef(false);
+
+    const avatarRef = useRef<SVGSVGElement>(null);
+    const eyesRef = useRef<SVGGElement>(null);
+    const mouthRef = useRef<SVGPathElement>(null);
+    const lipSyncIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+    const mouthShapes = {
+        neutral: "M 80 130 Q 100 130 120 130",
+        a: "M 80 130 Q 100 145 120 130",
+        b: "M 80 135 Q 100 135 120 135",
+        c: "M 80 125 Q 100 140 120 125"
+    };
+
+    const startLipSync = useCallback(() => {
+        if (lipSyncIntervalRef.current || !mouthRef.current) return;
+        const shapes = Object.values(mouthShapes);
+        lipSyncIntervalRef.current = setInterval(() => {
+            if (mouthRef.current) {
+                mouthRef.current.setAttribute('d', shapes[Math.floor(Math.random() * shapes.length)]);
+            }
+        }, 120);
+    }, [mouthShapes]);
+
+    const stopLipSync = useCallback(() => {
+        if (lipSyncIntervalRef.current) {
+            clearInterval(lipSyncIntervalRef.current);
+            lipSyncIntervalRef.current = null;
+        }
+        if (mouthRef.current) {
+            mouthRef.current.setAttribute('d', mouthShapes.neutral);
+        }
+    }, [mouthShapes.neutral]);
+
+    const startSpeechRecognition = useCallback(() => {
+        if (recognitionRef.current && !isAIThinkingRef.current) {
+            try {
+                recognitionRef.current.start();
+            } catch (e) {
+                // Already started
+            }
+        }
+    }, []);
+
+    const stopSpeechRecognition = useCallback(() => {
+        if (recognitionRef.current) {
+            recognitionRef.current.stop();
+        }
+    }, []);
+
+    const speak = useCallback((text: string) => {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.onstart = () => {
+            isAIThinkingRef.current = true;
+            stopSpeechRecognition();
+            setAiStatus('speaking');
+            setAiStatusText(text);
+            startLipSync();
+        };
+        utterance.onend = () => {
+            stopLipSync();
+            setAiStatus('listening');
+            setAiStatusText("I'm listening...");
+            isAIThinkingRef.current = false;
+            if (isMicOn) {
+                startSpeechRecognition();
+            }
+        };
+        utterance.onerror = (e) => {
+            console.error('Speech synthesis error', e);
+            setAiStatus('listening');
+             setAiStatusText("I'm listening...");
+            isAIThinkingRef.current = false;
+        };
+        window.speechSynthesis.speak(utterance);
+    }, [isMicOn, startLipSync, stopLipSync, startSpeechRecognition, stopSpeechRecognition]);
+
+    useEffect(() => {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRecognition) {
+            const recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+
+            recognition.onresult = (event) => {
+                let finalTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript;
+                    }
+                }
+                if (finalTranscript.trim()) {
+                    stopSpeechRecognition();
+                    
+                    isAIThinkingRef.current = true;
+                    setAiStatus('thinking');
+                    
+                    startTransition(async () => {
+                        const response = await getAIFriendResponse(finalTranscript.trim());
+                        if (response.success && response.data) {
+                            speak(response.data.reply);
+                        } else {
+                            speak("I'm having a little trouble connecting right now. Please try again in a moment.");
+                        }
+                    });
+                }
+            };
+            
+            recognition.onerror = (event) => {
+                if (event.error !== 'no-speech') console.error('Speech recognition error:', event.error);
+            };
+
+            recognition.onend = () => {
+                if (isMicOn && !isAIThinkingRef.current) {
+                    startSpeechRecognition();
+                }
+            };
+
+            recognitionRef.current = recognition;
+        }
+
+        // Blinking effect
+        const blinkInterval = setInterval(() => {
+            if (document.hidden || !eyesRef.current) return;
+            eyesRef.current.style.transform = 'scaleY(0.1)';
+            setTimeout(() => {
+                if(eyesRef.current) eyesRef.current.style.transform = 'scaleY(1)';
+            }, 200);
+        }, 4000);
+
+        return () => {
+            stopSpeechRecognition();
+            if (localStreamRef.current) {
+                localStreamRef.current.getTracks().forEach(track => track.stop());
+            }
+            clearInterval(blinkInterval);
+            if(lipSyncIntervalRef.current) clearInterval(lipSyncIntervalRef.current);
+            window.speechSynthesis.cancel();
+        };
+    }, [isMicOn, speak, startSpeechRecognition, stopSpeechRecognition]);
+
+    const startMedia = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            localStreamRef.current = stream;
+            if (userVideoRef.current) {
+                userVideoRef.current.srcObject = stream;
+            }
+            setIsCameraOn(true);
+            setIsMicOn(true);
+        } catch (err) {
+            console.error("Error accessing media devices.", err);
+            alert("Could not access camera or microphone. Please check permissions.");
+            setIsCameraOn(false);
+            setIsMicOn(false);
+        }
+    };
+
+    const handleStartCall = async () => {
+        setLoadingText('Initializing...');
+        await startMedia();
+        setScreen('call');
+        setLoadingText('');
+        if (isMicOn) startSpeechRecognition();
+    };
+
+    const handleEndCall = () => {
+        if (localStreamRef.current) {
+            localStreamRef.current.getTracks().forEach(track => track.stop());
+            localStreamRef.current = null;
+        }
+        stopSpeechRecognition();
+        window.speechSynthesis.cancel();
+        setScreen('welcome');
+    };
+
+    const toggleMic = () => {
+        const newMicState = !isMicOn;
+        setIsMicOn(newMicState);
+        if (localStreamRef.current) {
+            localStreamRef.current.getAudioTracks().forEach(track => track.enabled = newMicState);
+        }
+        if (newMicState) startSpeechRecognition();
+        else stopSpeechRecognition();
+    };
+
+    const toggleCamera = () => {
+        const newCameraState = !isCameraOn;
+        setIsCameraOn(newCameraState);
+        if (localStreamRef.current) {
+            localStreamRef.current.getVideoTracks().forEach(track => track.enabled = newCameraState);
+        }
+    };
+
+    // A dummy transition function as we are not using useTransition from react
+    const startTransition = (cb: () => void) => cb();
+
+    return (
+        <div className="font-sans bg-[#ccd8f1] bg-no-repeat bg-cover min-h-screen m-0" style={{ backgroundImage: 'radial-gradient(circle 50px at 20% 20%, rgba(255, 255, 255, 0.3), transparent 70%), radial-gradient(circle 40px at 80% 30%, rgba(255, 255, 255, 0.25), transparent 70%), radial-gradient(circle 60px at 50% 80%, rgba(255, 255, 255, 0.2), transparent 70%)' }}>
+            <div id="app-wrapper" className="h-screen w-screen flex flex-col items-center justify-center transition-opacity duration-500">
+                {screen === 'welcome' && (
+                    <div id="welcome-screen" className="text-center p-8">
+                        <h1 className="text-5xl font-bold mb-2 text-gray-800">Welcome to AI Video Call</h1>
+                        <p className="text-xl text-gray-600 mb-8">Your professional AI companion for mental wellness.</p>
+                        <p className="max-w-2xl mx-auto text-gray-600 mb-8">
+                            This is a safe space to talk about whatever's on your mind. <b>Aura</b> is here to listen without judgment. Ready to chat?
+                        </p>
+                        <Button
+                            id="start-call-btn"
+                            onClick={handleStartCall}
+                            disabled={!!loadingText}
+                            className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 h-auto rounded-full text-lg transition-transform transform hover:scale-105"
+                        >
+                            Start Conversation
+                        </Button>
+                        {loadingText && <p className="mt-4 text-gray-500">{loadingText}</p>}
+                    </div>
+                )}
+
+                {screen === 'call' && (
+                    <div id="call-screen" className="h-full w-full flex flex-col items-center justify-center relative">
+                        <div className="w-full flex-grow flex items-center justify-center flex-col overflow-hidden relative">
+                            <div id="ai-character-container" className="relative w-[300px] h-[300px]">
+                                <AuraAvatar avatarRef={avatarRef} eyesRef={eyesRef} mouthRef={mouthRef} />
+                            </div>
+                            <div id="ai-status" className="absolute bottom-40 min-h-[5rem] max-w-[80%] mx-auto px-6 py-4 rounded-xl text-center text-gray-800 transition-all duration-300 glass-card">
+                                {aiStatus === 'thinking' ? <DotFlashing /> : <p id="ai-status-text">{aiStatusText}</p>}
+                            </div>
+                        </div>
+
+                        <div id="user-video-container" className="glass-card absolute bottom-28 right-8 w-[200px] h-[150px] rounded-xl overflow-hidden cursor-move flex items-center justify-center">
+                            <video id="user-video" ref={userVideoRef} autoPlay muted playsInline className={cn("w-full h-full object-cover -scale-x-100", { 'hidden': !isCameraOn })}></video>
+                            {!isCameraOn && <div className="w-1/2 h-1/2 text-gray-600"><UserPlaceholderIcon /></div>}
+                        </div>
+                        
+                        <div className="w-full p-4 absolute bottom-0">
+                            <div className="max-w-sm mx-auto flex justify-center items-center space-x-4 glass-card rounded-full p-2">
+                                <button onClick={toggleMic} className={cn("control-btn", { 'active': isMicOn })} title="Mute/Unmute Mic">
+                                    {isMicOn ? <Mic className="h-6 w-6" /> : <MicOff className="h-6 w-6" />}
+                                </button>
+                                <button onClick={toggleCamera} className={cn("control-btn", { 'active': isCameraOn })} title="Camera On/Off">
+                                    {isCameraOn ? <Video className="h-6 w-6" /> : <VideoOff className="h-6 w-6" />}
+                                </button>
+                                <button onClick={handleEndCall} className="control-btn hang-up" title="End Conversation">
+                                    <PhoneOff className="h-6 w-6" />
+                               </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+            <style jsx global>{`
+                body { font-family: 'Inter', sans-serif; }
+                .glass-card {
+                    background: rgba(255, 255, 255, 0.25) !important;
+                    backdrop-filter: blur(14px) saturate(150%);
+                    -webkit-backdrop-filter: blur(14px) saturate(150%);
+                    border: 1px solid rgba(255, 255, 255, 0.4);
+                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+                }
+                .control-btn {
+                    background-color: rgba(255, 255, 255, 0.3);
+                    border-radius: 9999px;
+                    width: 52px; height: 52px;
+                    display: flex; align-items: center; justify-content: center;
+                    transition: all 0.2s ease-in-out; color: #374151; /* text-gray-700 */
+                }
+                .control-btn:hover { background-color: rgba(255, 255, 255, 0.5); transform: translateY(-2px); }
+                .control-btn.active { background-color: #3B82F6; color: white; }
+                .control-btn.hang-up { background-color: #ef4444; color: white; }
+                .control-btn.hang-up:hover { background-color: #dc2626; }
+                
+                .dot-flashing {
+                    position: relative; width: 10px; height: 10px; border-radius: 5px; background-color: #3B82F6; color: #3B82F6;
+                    animation: dotFlashing 1s infinite linear alternate; animation-delay: .5s; display: inline-block; margin: 0 5px;
+                }
+                .dot-flashing::before, .dot-flashing::after { content: ''; display: inline-block; position: absolute; top: 0; }
+                .dot-flashing::before {
+                    left: -15px; width: 10px; height: 10px; border-radius: 5px; background-color: #3B82F6; color: #3B82F6;
+                    animation: dotFlashing 1s infinite alternate; animation-delay: 0s;
+                }
+                .dot-flashing::after {
+                    left: 15px; width: 10px; height: 10px; border-radius: 5px; background-color: #3B82F6; color: #3B82F6;
+                    animation: dotFlashing 1s infinite alternate; animation-delay: 1s;
+                }
+                @keyframes dotFlashing { 0% { background-color: #3B82F6; } 50%, 100% { background-color: #93c5fd; } }
+            `}</style>
         </div>
-      </main>
-    </div>
-  );
+    );
 }
