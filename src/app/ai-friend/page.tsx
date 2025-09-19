@@ -19,6 +19,35 @@ const DotFlashing = () => <div className="dot-flashing"></div>;
 
 const AuraAvatar = ({ aiStatus }: { aiStatus: string }) => {
     const isSpeaking = aiStatus === 'speaking';
+    const mouthRef = useRef<SVGPathElement | null>(null);
+
+    useEffect(() => {
+        let lipSyncInterval: NodeJS.Timeout | null = null;
+        const mouthShapes = {
+            neutral: "M 80 130 Q 100 130 120 130",
+            a: "M 80 130 Q 100 145 120 130",
+            b: "M 80 135 Q 100 135 120 135",
+            c: "M 80 125 Q 100 140 120 125"
+        };
+        const shapes = Object.values(mouthShapes);
+
+        if (isSpeaking) {
+            lipSyncInterval = setInterval(() => {
+                if (mouthRef.current) {
+                    mouthRef.current.setAttribute('d', shapes[Math.floor(Math.random() * shapes.length)]);
+                }
+            }, 120);
+        } else {
+            if (mouthRef.current) {
+                 mouthRef.current.setAttribute('d', mouthShapes.neutral);
+            }
+        }
+
+        return () => {
+            if (lipSyncInterval) clearInterval(lipSyncInterval);
+        }
+    }, [isSpeaking])
+
     return (
         <motion.div
             className="w-full h-full"
@@ -26,91 +55,31 @@ const AuraAvatar = ({ aiStatus }: { aiStatus: string }) => {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
         >
-            <svg
-                viewBox="0 0 400 400"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="drop-shadow-lg"
-            >
-                <title>Aura, the AI Friend</title>
-                <desc>An animated, friendly avatar for a mental wellness AI companion.</desc>
+            <svg viewBox="0 0 200 200" id="aura-svg" className="w-full h-full drop-shadow-lg">
                 <defs>
-                    <radialGradient id="ring-gradient" cx="50%" cy="50%" r="50%" fx="50%" fy="30%">
-                        <stop stopColor="#AEC6CF" />
-                        <stop offset="1" stopColor="#C2B2E2" />
-                    </radialGradient>
-                    <radialGradient id="face-gradient" cx="50%" cy="40%" r="60%">
-                        <stop stopColor="#FDEFEF" />
-                        <stop offset="1" stopColor="#EAD6E5" />
+                    <radialGradient id="auraGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                        <stop offset="0%" style={{stopColor: 'hsl(var(--primary) / 0.8)'}} />
+                        <stop offset="100%" style={{stopColor: 'hsl(var(--primary))'}} />
                     </radialGradient>
                 </defs>
-                
                 <motion.circle
-                    cx="200"
-                    cy="200"
-                    r="190"
-                    fill="url(#ring-gradient)"
+                    cx="100" cy="100" r="90" fill="url(#auraGradient)"
                     initial={{ scale: 1 }}
                     animate={{ scale: isSpeaking ? 1.02 : 1 }}
                     transition={{ duration: 1, repeat: Infinity, repeatType: 'reverse', ease: 'easeInOut' }}
-                />
-                
-                <circle cx="200" cy="200" r="180" fill="url(#face-gradient)" />
-                
-                <g id="body">
-                    <path d="M120 370 C 150 340, 250 340, 280 370 L 280 400 L 120 400 Z" fill="#D6E2EA" />
-                    <circle cx="200" cy="220" r="150" fill="#AEC6CF" fillOpacity="0.1" />
-                </g>
-
-                <g id="face-details">
-                    <g id="cheeks">
-                         <circle cx="145" cy="235" r="20" fill="#E4C1C1" opacity="0.3" />
-                         <circle cx="255" cy="235" r="20" fill="#E4C1C1" opacity="0.3" />
-                    </g>
-                    <g id="eyes">
-                        <motion.g id="left-eye" initial={false} animate={isSpeaking ? "speaking" : "idle"}>
-                           <motion.path d="M 150 190 C 160 175, 180 175, 190 190" stroke="#AEC6CF" strokeWidth="3" fill="none" />
-                           <motion.ellipse
-                                cx="170" cy="195" rx="18" ry="22" fill="#FFFFFF"
-                                animate={{ scaleY: [1, 0.1, 1] }}
-                                transition={{ duration: 0.3, repeat: Infinity, repeatDelay: 3.5, ease: "easeOut" }}
-                            />
-                            <motion.circle cx="170" cy="195" r="8" fill="#6B5B7B" variants={{ idle: { x: 0, y: 0 }, speaking: { x: 2, y: -1 } }} />
-                            <motion.circle cx="173" cy="192" r="3" fill="#FFFFFF" opacity="0.8" variants={{ idle: { x: 0, y: 0 }, speaking: { x: 2, y: -1 } }} />
-                        </motion.g>
-                        <motion.g id="right-eye" initial={false} animate={isSpeaking ? "speaking" : "idle"}>
-                           <motion.path d="M 210 190 C 220 175, 240 175, 250 190" stroke="#AEC6CF" strokeWidth="3" fill="none" />
-                           <motion.ellipse
-                                cx="230" cy="195" rx="18" ry="22" fill="#FFFFFF"
-                                animate={{ scaleY: [1, 0.1, 1] }}
-                                transition={{ duration: 0.3, repeat: Infinity, repeatDelay: 3.5, ease: "easeOut" }}
-                            />
-                            <motion.circle cx="230" cy="195" r="8" fill="#6B5B7B" variants={{ idle: { x: 0, y: 0 }, speaking: { x: 1, y: 0 } }} />
-                            <motion.circle cx="233" cy="192" r="3" fill="#FFFFFF" opacity="0.8" variants={{ idle: { x: 0, y: 0 }, speaking: { x: 1, y: 0 } }} />
-                        </motion.g>
-                    </g>
-
-                    <motion.path
-                        id="mouth"
-                        stroke="#A56E73"
-                        strokeWidth="4"
-                        fill="none"
-                        strokeLinecap="round"
-                        initial={{ d: "M 180 250 Q 200 255, 220 250" }}
-                        animate={{
-                            d: isSpeaking
-                                ? [
-                                    "M 180 250 Q 200 265, 220 250", // o sound
-                                    "M 185 255 Q 200 250, 215 255", // e sound
-                                    "M 180 250 Q 200 260, 220 250", // u sound
-                                    "M 180 250 Q 200 255, 220 250"  // neutral
-                                ]
-                                : "M 180 250 Q 200 260, 220 250" // slight smile
-                        }}
-                        transition={{ duration: 0.4, repeat: isSpeaking ? Infinity : 0, ease: 'easeInOut' }}
-                    />
-                </g>
-                <path d="M 120 180 C 150 80, 250 80, 280 180 Q 200 140, 120 180" fill="#AEC6CF" opacity="0.3" />
+                 />
+                <circle cx="100" cy="100" r="70" fill="none" stroke="hsl(var(--primary-foreground) / 0.3)" strokeWidth="2" />
+                <motion.g 
+                    id="eyes"
+                    animate={{
+                       scaleY: [1, 0.1, 1],
+                    }}
+                    transition={{ duration: 0.3, repeat: Infinity, repeatDelay: 4, ease: "easeOut" }}
+                >
+                    <path className="eye-line" d="M 70 90 L 90 90" stroke="hsl(var(--primary-foreground))" strokeWidth="3" strokeLinecap="round" />
+                    <path className="eye-line" d="M 110 90 L 130 90" stroke="hsl(var(--primary-foreground))" strokeWidth="3" strokeLinecap="round" />
+                </motion.g>
+                <path ref={mouthRef} id="mouth" d="M 80 130 Q 100 130 120 130" stroke="hsl(var(--primary-foreground))" strokeWidth="3" fill="none" strokeLinecap="round"/>
             </svg>
         </motion.div>
     );
@@ -296,13 +265,13 @@ export default function AiFriendPage() {
     };
 
     return (
-        <div className="font-sans bg-background min-h-screen m-0">
-            <div id="app-wrapper" className="h-screen w-screen flex flex-col items-center justify-center transition-opacity duration-500 bg-background">
+        <div className="font-sans min-h-screen m-0">
+            <div id="app-wrapper" className="h-screen w-screen flex flex-col items-center justify-center transition-opacity duration-500 bg-[#ccd8f1]">
                 {screen === 'welcome' && (
                     <div id="welcome-screen" className="text-center p-8">
-                        <h1 className="text-5xl font-bold mb-2 text-foreground font-headline">AI Friend</h1>
-                        <p className="text-xl text-muted-foreground mb-8">Your professional AI companion for mental wellness.</p>
-                        <p className="max-w-2xl mx-auto text-muted-foreground mb-8">
+                        <h1 className="text-5xl font-bold mb-2 text-gray-800">Welcome to AI Video Call</h1>
+                        <p className="text-xl text-gray-600 mb-8">Your professional AI companion for mental wellness.</p>
+                        <p className="max-w-2xl mx-auto text-gray-600 mb-8">
                             This is a safe space to talk about whatever's on your mind. <b>Aura</b> is here to listen without judgment. Ready to chat?
                         </p>
                         <Button
@@ -310,11 +279,11 @@ export default function AiFriendPage() {
                             onClick={handleStartCall}
                             disabled={!!loadingText}
                             size="lg"
-                            className="font-bold text-lg transition-transform transform hover:scale-105"
+                            className="bg-blue-500 hover:bg-blue-600 text-white font-bold text-lg transition-transform transform hover:scale-105"
                         >
                             Start Conversation
                         </Button>
-                        {loadingText && <p className="mt-4 text-muted-foreground">{loadingText}</p>}
+                        {loadingText && <p className="mt-4 text-gray-500">{loadingText}</p>}
                     </div>
                 )}
 
@@ -324,7 +293,7 @@ export default function AiFriendPage() {
                              <div id="ai-character-container" className="relative w-[300px] h-[300px] md:w-[400px] md:h-[400px]">
                                 <AuraAvatar aiStatus={aiStatus} />
                             </div>
-                            <div id="ai-status" className="absolute bottom-40 bg-background/50 backdrop-blur-sm min-h-[5rem] max-w-[80%] mx-auto px-6 py-4 rounded-xl text-center text-card-foreground transition-all duration-300">
+                            <div id="ai-status" className="absolute bottom-40 glass-card min-h-[5rem] max-w-[80%] mx-auto px-6 py-4 rounded-xl text-center text-gray-800 transition-all duration-300">
                                  <AnimatePresence mode="wait">
                                     <motion.div
                                         key={aiStatusText} // Use aiStatusText to trigger animation on text change
@@ -340,8 +309,8 @@ export default function AiFriendPage() {
                         </div>
 
                         <div id="user-video-container" className="glass-card absolute bottom-28 right-8 w-[200px] h-[150px] rounded-xl overflow-hidden cursor-move flex items-center justify-center">
-                            <video id="user-video" ref={userVideoRef} autoPlay muted playsInline className={cn("w-full h-full object-cover -scale-x-100", { 'hidden': !isCameraOn })}></video>
-                            {!isCameraOn && <div className="w-1/2 h-1/2 text-muted-foreground"><UserPlaceholderIcon /></div>}
+                            <video id="user-video" ref={userVideoRef} autoPlay muted playsInline className={cn("w-full h-full object-cover", { 'hidden': !isCameraOn })}></video>
+                            {!isCameraOn && <div className="w-1/2 h-1/2 text-gray-600"><UserPlaceholderIcon /></div>}
                         </div>
                         
                         <div className="w-full p-4 absolute bottom-0">
@@ -361,46 +330,53 @@ export default function AiFriendPage() {
                 )}
             </div>
             <style jsx global>{`
-                body { font-family: 'Inter', sans-serif; }
+                body {
+                  font-family: 'Inter', sans-serif;
+                }
                 #app-wrapper {
                     background-image:
-                        radial-gradient(circle 50px at 20% 20%, hsl(var(--primary) / 0.1), transparent 70%),
-                        radial-gradient(circle 40px at 80% 30%, hsl(var(--primary) / 0.08), transparent 70%),
-                        radial-gradient(circle 60px at 50% 80%, hsl(var(--primary) / 0.05), transparent 70%);
+                        radial-gradient(circle 50px at 20% 20%, rgba(255, 255, 255, 0.3), transparent 70%),
+                        radial-gradient(circle 40px at 80% 30%, rgba(255, 255, 255, 0.25), transparent 70%),
+                        radial-gradient(circle 60px at 50% 80%, rgba(255, 255, 255, 0.2), transparent 70%);
+                    background-repeat: no-repeat;
+                    background-size: cover;
                 }
                 .glass-card {
-                    background: hsl(var(--card) / 0.5) !important;
+                    background: rgba(255, 255, 255, 0.25) !important;
                     backdrop-filter: blur(14px) saturate(150%);
                     -webkit-backdrop-filter: blur(14px) saturate(150%);
-                    border: 1px solid hsl(var(--border) / 0.2);
+                    border: 1px solid rgba(255, 255, 255, 0.4);
                     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
                 }
                 .control-btn {
-                    background-color: hsl(var(--secondary));
+                    background-color: rgba(255, 255, 255, 0.3);
                     border-radius: 9999px;
                     width: 52px; height: 52px;
                     display: flex; align-items: center; justify-content: center;
-                    transition: all 0.2s ease-in-out; color: hsl(var(--secondary-foreground));
+                    transition: all 0.2s ease-in-out; color: #374151; /* text-gray-700 */
                 }
-                .control-btn:hover { background-color: hsl(var(--accent)); transform: translateY(-2px); }
-                .control-btn.active { background-color: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
-                .control-btn.hang-up { background-color: hsl(var(--destructive)); color: hsl(var(--destructive-foreground)); }
-                .control-btn.hang-up:hover { background-color: hsl(var(--destructive) / 0.9); }
+                .control-btn:hover { background-color: rgba(255, 255, 255, 0.5); transform: translateY(-2px); }
+                .control-btn.active { background-color: #3B82F6; /* bg-blue-500 */ color: white; }
+                .control-btn.hang-up { background-color: #ef4444; /* bg-red-500 */ color: white; }
+                .control-btn.hang-up:hover { background-color: #dc2626; /* bg-red-600 */ }
                 
                 .dot-flashing {
-                    position: relative; width: 10px; height: 10px; border-radius: 5px; background-color: #AEC6CF; color: #AEC6CF;
+                    position: relative; width: 10px; height: 10px; border-radius: 5px; background-color: #3B82F6; color: #3B82F6;
                     animation: dotFlashing 1s infinite linear alternate; animation-delay: .5s; display: inline-block; margin: 0 5px;
                 }
                 .dot-flashing::before, .dot-flashing::after { content: ''; display: inline-block; position: absolute; top: 0; }
                 .dot-flashing::before {
-                    left: -15px; width: 10px; height: 10px; border-radius: 5px; background-color: #AEC6CF; color: #AEC6CF;
+                    left: -15px; width: 10px; height: 10px; border-radius: 5px; background-color: #3B82F6; color: #3B82F6;
                     animation: dotFlashing 1s infinite alternate; animation-delay: 0s;
                 }
                 .dot-flashing::after {
-                    left: 15px; width: 10px; height: 10px; border-radius: 5px; background-color: #AEC6CF; color: #AEC6CF;
+                    left: 15px; width: 10px; height: 10px; border-radius: 5px; background-color: #3B82F6; color: #3B82F6;
                     animation: dotFlashing 1s infinite alternate; animation-delay: 1s;
                 }
-                @keyframes dotFlashing { 0% { background-color: #AEC6CF; } 50%, 100% { background-color: rgba(174, 198, 207, 0.5); } }
+                @keyframes dotFlashing { 
+                    0% { background-color: #3B82F6; } 
+                    50%, 100% { background-color: #93c5fd; } 
+                }
             `}</style>
         </div>
     );
