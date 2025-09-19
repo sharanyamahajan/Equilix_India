@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Camera, Bot, Brain } from 'lucide-react';
+import { Home, Camera, Bot } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { EquilixLogo } from '@/components/icons/equilix-logo';
 
@@ -10,7 +10,6 @@ const navLinks = [
   { href: '/', label: 'Home', icon: Home },
   { href: '/emotion-detector', label: 'Emotion Detector', icon: Camera },
   { href: '/ai-friend', label: 'AI Friend', icon: Bot },
-  { href: '/mindful-maze', label: 'Mindful Maze', icon: Brain },
 ];
 
 export function NavBar() {
