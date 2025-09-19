@@ -71,35 +71,14 @@ const AuraAvatar = ({ aiStatus }: { aiStatus: 'listening' | 'thinking' | 'speaki
     return (
          <svg viewBox="0 0 200 200" id="aura-svg" className="w-full h-full">
             <defs>
-                <radialGradient id="faceGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-                    <stop offset="0%" style={{stopColor: '#f7d9d9', stopOpacity: 1}} />
-                    <stop offset="100%" style={{stopColor: '#e8b4b4', stopOpacity: 1}} />
+                <radialGradient id="auraGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                    <stop offset="0%" style={{stopColor: '#AEC6CF', stopOpacity: 0.8}} />
+                    <stop offset="100%" style={{stopColor: '#7C939A', stopOpacity: 0.9}} />
                 </radialGradient>
-                 <radialGradient id="blushGradient" cx="50%" cy="50%" r="50%">
-                    <stop offset="0%" style={{stopColor: '#f28b82', stopOpacity: 0.7}} />
-                    <stop offset="100%" style={{stopColor: '#f28b82', stopOpacity: 0}} />
-                </radialGradient>
-                 <linearGradient id="borderGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" style={{stopColor: '#a7c7e7', stopOpacity: 1}} />
-                    <stop offset="100%" style={{stopColor: '#c1a7e7', stopOpacity: 1}} />
-                </linearGradient>
             </defs>
-
-            {/* Border */}
-            <circle cx="100" cy="100" r="98" fill="url(#borderGradient)" />
-            <circle cx="100" cy="100" r="92" fill="url(#faceGradient)" />
-
-            {/* Hair */}
-            <path d="M 40 80 Q 100 -20, 160 80 Q 180 120, 100 130 Q 20 120, 40 80 Z" fill="#6d4c41" opacity="0.8" />
-            
-            {/* Shoulders */}
-            <path d="M 30 180 C 40 150, 160 150, 170 180 L 190 200 L 10 200 Z" fill="#a7c7e7" />
-
-             {/* Blush */}
-            <circle cx="65" cy="115" r="20" fill="url(#blushGradient)" />
-            <circle cx="135" cy="115" r="20" fill="url(#blushGradient)" />
-
-             <g ref={eyesRef} id="eyes" style={{transition: 'transform 0.2s ease-out', transformOrigin: 'center'}}>
+            <circle cx="100" cy="100" r="90" fill="url(#auraGradient)" />
+            <circle cx="100" cy="100" r="70" fill="none" stroke="#ffffff" stroke-width="2" stroke-opacity="0.5" />
+            <g ref={eyesRef} id="eyes" style={{transition: 'transform 0.2s ease-out', transformOrigin: 'center'}}>
                 {/* Left Eye */}
                 <ellipse cx="80" cy="95" rx="14" ry="16" fill="white" />
                 <circle cx="80" cy="95" r="7" fill="#333" />
@@ -122,8 +101,6 @@ const AuraAvatar = ({ aiStatus }: { aiStatus: 'listening' | 'thinking' | 'speaki
                     style={{ transition: 'd 0.1s ease-in-out' }}
                 />
             </g>
-             <title>Aura, your AI Friend</title>
-            <desc>An animated, human-like avatar for the AI companion.</desc>
         </svg>
     );
 };
@@ -332,12 +309,12 @@ export default function AiFriendPage() {
 
                 {screen === 'call' && (
                     <div id="call-screen" className="h-full w-full flex flex-col items-center justify-center relative p-4">
-                        <div className="w-full flex-grow flex flex-col lg:flex-row items-center justify-center gap-8 overflow-hidden relative">
+                        <div className="w-full flex-grow flex flex-col items-center justify-center gap-4 overflow-hidden relative">
                              <div id="ai-character-container" className="relative w-[250px] h-[250px] md:w-[350px] md:h-[350px] shrink-0">
                                 <AuraAvatar aiStatus={aiStatus} />
                             </div>
 
-                            <div id="ai-status" className="glass-card min-h-[5rem] w-full max-w-md mx-auto px-6 py-4 rounded-xl text-center text-gray-800 transition-all duration-300">
+                            <div id="ai-status" className="min-h-[5rem] w-full max-w-md mx-auto px-6 py-4 rounded-xl text-center text-gray-800 transition-all duration-300">
                                 <AnimatePresence mode="wait">
                                     <motion.div
                                         key={aiStatusText} // Use aiStatusText to trigger animation on text change
@@ -427,3 +404,6 @@ export default function AiFriendPage() {
         </div>
     );
 }
+
+
+    
