@@ -6,13 +6,21 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { getEmotionDetection } from '@/app/actions';
-import { Loader2, Smile, Camera } from 'lucide-react';
+import { Loader2, Smile, Camera, Lightbulb } from 'lucide-react';
 import { Progress } from '../ui/progress';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
+
 
 type EmotionResult = {
   emotion: string;
   confidence: number;
   feedback: string;
+  suggestions: string[];
 };
 
 export function EmotionDetector() {
@@ -136,19 +144,41 @@ export function EmotionDetector() {
         </Button>
 
         {result && (
-          <Card className="bg-secondary/50 p-4 animate-in fade-in-50">
-            <div className="flex items-center gap-4">
-              <div className="text-5xl">{getEmotionEmoji(result.emotion)}</div>
-              <div className="flex-grow space-y-1">
-                <div className="flex justify-between items-baseline">
-                    <p className="font-bold text-lg">{result.emotion}</p>
-                    <p className="text-sm text-muted-foreground">Confidence</p>
+          <div className="animate-in fade-in-50 space-y-4">
+            <Card className="bg-secondary/50 p-4">
+              <div className="flex items-center gap-4">
+                <div className="text-5xl">{getEmotionEmoji(result.emotion)}</div>
+                <div className="flex-grow space-y-1">
+                  <div className="flex justify-between items-baseline">
+                      <p className="font-bold text-lg">{result.emotion}</p>
+                      <p className="text-sm text-muted-foreground">Confidence</p>
+                  </div>
+                  <Progress value={result.confidence * 100} className="h-2" />
+                  <p className="text-sm pt-2">{result.feedback}</p>
                 </div>
-                <Progress value={result.confidence * 100} className="h-2" />
-                <p className="text-sm pt-2">{result.feedback}</p>
               </div>
-            </div>
-          </Card>
+            </Card>
+            
+            {result.suggestions && result.suggestions.length > 0 && (
+              <Accordion type="single" collapsible className="w-full" defaultValue="item-1">
+                <AccordionItem value="item-1">
+                  <AccordionTrigger>
+                    <div className="flex items-center gap-2 font-semibold">
+                      <Lightbulb className="text-accent" />
+                      Suggestions & Exercises
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <ul className="space-y-3 pl-6 pr-2 pt-2 list-disc">
+                      {result.suggestions.map((suggestion, index) => (
+                        <li key={index} className="text-sm">{suggestion}</li>
+                      ))}
+                    </ul>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            )}
+          </div>
         )}
       </CardContent>
     </Card>
