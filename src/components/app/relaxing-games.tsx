@@ -17,15 +17,6 @@ export function RelaxingGames() {
       <CardContent className="grid sm:grid-cols-2 gap-4">
         <Card className="bg-secondary/50 p-6 flex flex-col justify-between">
           <div>
-            <h3 className="font-semibold text-lg mb-2">Breathing Exercise</h3>
-            <p className="text-sm text-muted-foreground mb-4">Follow a simple visual guide to regulate your breathing and find calm.</p>
-          </div>
-          <Button asChild variant="outline">
-            <Link href="/breathing-exercise" target="_blank" rel="noopener noreferrer">Start Exercise</Link>
-          </Button>
-        </Card>
-        <Card className="bg-secondary/50 p-6 flex flex-col justify-between">
-          <div>
             <h3 className="font-semibold text-lg mb-2">Mindful Maze</h3>
             <p className="text-sm text-muted-foreground mb-4">Find your way through a calming maze to focus your mind.</p>
           </div>
@@ -33,7 +24,7 @@ export function RelaxingGames() {
             <Link href="/mindful-maze" target="_blank" rel="noopener noreferrer">Play Maze</Link>
           </Button>
         </Card>
-        <Card className="bg-secondary/50 p-6 flex flex-col justify-between sm:col-span-2">
+        <Card className="bg-secondary/50 p-6 flex flex-col justify-between">
           <div className="flex justify-between items-start">
             <div>
               <h3 className="font-semibold text-lg mb-2">Fluid Simulation</h3>
