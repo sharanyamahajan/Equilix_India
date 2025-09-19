@@ -9,6 +9,8 @@ import { getAIFriendResponse } from '@/app/actions';
 import { Loader2, Mic, Bot, User } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 import { Avatar, AvatarFallback } from '../ui/avatar';
+import { AIAvatar, type AvatarState } from './ai-avatar';
+
 
 type Message = {
   sender: 'user' | 'ai';
@@ -16,55 +18,45 @@ type Message = {
 };
 
 export function AIFriend() {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const [hasMicPermission, setHasMicPermission] = useState<boolean | null>(null);
   const [isTalking, setIsTalking] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isPending, startTransition] = useTransition();
+  const [avatarState, setAvatarState] = useState<AvatarState>('idle');
   const { toast } = useToast();
 
   useEffect(() => {
-    const getCameraPermission = async () => {
+    const getMicPermission = async () => {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        setHasCameraPermission(false);
+        setHasMicPermission(false);
         toast({
           variant: 'destructive',
           title: 'Media Not Supported',
-          description: 'Your browser does not support camera/microphone access.',
+          description: 'Your browser does not support microphone access.',
         });
         return;
       }
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        setHasCameraPermission(true);
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
+        // We only need audio now
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+        setHasMicPermission(true);
       } catch (error) {
         console.error('Error accessing media devices:', error);
-        setHasCameraPermission(false);
+        setHasMicPermission(false);
         toast({
           variant: 'destructive',
           title: 'Media Access Denied',
-          description: 'Please enable camera and microphone permissions to use this feature.',
+          description: 'Please enable microphone permissions to use this feature.',
         });
       }
     };
-    getCameraPermission();
-
-    return () => {
-      if (videoRef.current && videoRef.current.srcObject) {
-        const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach(track => track.stop());
-      }
-    };
+    getMicPermission();
   }, [toast]);
   
-  // Mock conversation logic
   const handleTalk = () => {
       if (isTalking) {
           setIsTalking(false);
-          // In a real app, you would stop recording here.
+          setAvatarState('thinking');
           
           const userMessage: Message = { sender: 'user', text: "I've been feeling a bit stressed lately." };
           setMessages(prev => [...prev, userMessage]);
@@ -74,18 +66,20 @@ export function AIFriend() {
               if (response.success && response.data) {
                   const aiMessage: Message = { sender: 'ai', text: response.data.reply };
                   setMessages(prev => [...prev, aiMessage]);
+                  setAvatarState('talking');
               } else {
                   toast({
                       variant: 'destructive',
                       title: 'AI Error',
                       description: 'Could not get a response from the AI friend.'
                   });
+                   setAvatarState('idle');
               }
           });
 
       } else {
           setIsTalking(true);
-          // In a real app, you would start recording audio here.
+          setAvatarState('listening');
           toast({
               title: "Let's talk!",
               description: "I'm listening. Click the button again when you're done."
@@ -101,23 +95,18 @@ export function AIFriend() {
       </CardHeader>
       <CardContent className="grid md:grid-cols-2 gap-6">
         <div className="space-y-4">
-          <div className="relative w-full aspect-video bg-secondary rounded-md overflow-hidden flex items-center justify-center">
-            <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
-            {hasCameraPermission === false && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-secondary/80 text-center p-4">
-                <p className="font-semibold">Camera and Mic access required</p>
-              </div>
-            )}
+          <div className="relative w-full aspect-video bg-primary/10 rounded-md overflow-hidden flex items-center justify-center p-4">
+            <AIAvatar state={avatarState} />
           </div>
-          {hasCameraPermission === false && (
+          {hasMicPermission === false && (
             <Alert variant="destructive">
-              <AlertTitle>Media Required</AlertTitle>
+              <AlertTitle>Microphone Required</AlertTitle>
               <AlertDescription>
-                This feature needs camera and microphone access to work. Please update your browser settings.
+                This feature needs microphone access to work. Please update your browser settings.
               </AlertDescription>
             </Alert>
           )}
-           <Button onClick={handleTalk} disabled={isPending || !hasCameraPermission} className="w-full">
+           <Button onClick={handleTalk} disabled={isPending || !hasMicPermission} className="w-full">
             {isPending ? (
                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Thinking...</>
             ) : isTalking ? (
@@ -158,6 +147,16 @@ export function AIFriend() {
                                     )}
                                 </div>
                             ))}
+                             {isPending && (
+                                <div className="flex items-start gap-3">
+                                    <Avatar>
+                                        <AvatarFallback><Bot /></AvatarFallback>
+                                    </Avatar>
+                                    <div className="rounded-lg p-3 max-w-xs bg-background flex items-center">
+                                        <Loader2 className="h-4 w-4 animate-spin"/>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </ScrollArea>
                 </CardContent>
