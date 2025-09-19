@@ -6,6 +6,7 @@ import { getAIFriendResponse } from '@/app/actions';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Mic, MicOff, Video, VideoOff, PhoneOff } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // --- SVG Icons ---
 const UserPlaceholderIcon = () => (
@@ -14,23 +15,45 @@ const UserPlaceholderIcon = () => (
   </svg>
 );
 
-const AuraAvatar = ({ avatarRef, eyesRef, mouthRef }: { avatarRef: React.RefObject<SVGSVGElement>, eyesRef: React.RefObject<SVGGElement>, mouthRef: React.RefObject<SVGPathElement> }) => (
-    <svg viewBox="0 0 200 200" ref={avatarRef} className="w-full h-full">
-        <defs>
-            <radialGradient id="auraGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-                <stop offset="0%" style={{ stopColor: 'hsl(var(--primary))', stopOpacity: 0.8 }} />
-                <stop offset="100%" style={{ stopColor: 'hsl(var(--primary))', stopOpacity: 0.9 }} />
-            </radialGradient>
-        </defs>
-        <circle cx="100" cy="100" r="90" fill="url(#auraGradient)" />
-        <circle cx="100" cy="100" r="70" fill="none" stroke="#ffffff" strokeWidth="2" strokeOpacity="0.5" />
-        <g id="eyes" ref={eyesRef} style={{ transition: 'transform 0.2s ease-out' }}>
-            <path className="eye-line" d="M 70 90 L 90 90" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" />
-            <path className="eye-line" d="M 110 90 L 130 90" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" />
-        </g>
-        <path id="mouth" ref={mouthRef} d="M 80 130 Q 100 130 120 130" stroke="#ffffff" strokeWidth="3" fill="none" strokeLinecap="round" />
-    </svg>
-);
+const AuraAvatar = ({ aiStatus }: { aiStatus: string }) => {
+    const isSpeaking = aiStatus === 'speaking';
+    const isListening = aiStatus === 'listening';
+
+    return (
+        <motion.div 
+            className="relative w-full h-full"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+        >
+            <motion.div
+                className="absolute inset-0 rounded-full"
+                animate={{
+                    scale: isListening ? [1, 1.02, 1] : 1,
+                    boxShadow: isListening 
+                        ? [
+                            "0 0 0 0px hsl(var(--primary) / 0.2)", 
+                            "0 0 0 10px hsl(var(--primary) / 0.2)", 
+                            "0 0 0 0px hsl(var(--primary) / 0.2)"
+                          ]
+                        : "0 0 0 0px hsl(var(--primary) / 0.2)",
+                }}
+                transition={{
+                    scale: { duration: 2, repeat: Infinity, ease: "easeInOut" },
+                    boxShadow: { duration: 2, repeat: Infinity, ease: "easeInOut" },
+                }}
+            />
+            <motion.img
+                src="https://picsum.photos/seed/ai-friend/400/400"
+                alt="Aura, your AI Friend"
+                className="w-full h-full object-cover rounded-full"
+                animate={{ scale: isSpeaking ? 1.05 : 1 }}
+                transition={{ duration: 0.4, ease: 'easeOut' }}
+            />
+        </motion.div>
+    );
+};
+
 
 const DotFlashing = () => <div className="dot-flashing"></div>;
 
@@ -48,44 +71,14 @@ export default function AiFriendPage() {
     const recognitionRef = useRef<SpeechRecognition | null>(null);
     const isAIThinkingRef = useRef(false);
 
-    const avatarRef = useRef<SVGSVGElement>(null);
-    const eyesRef = useRef<SVGGElement>(null);
-    const mouthRef = useRef<SVGPathElement>(null);
-    const lipSyncIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
     const [isPending, startTransition] = useTransition();
-
-    const mouthShapes = {
-        neutral: "M 80 130 Q 100 130 120 130",
-        a: "M 80 130 Q 100 145 120 130",
-        b: "M 80 135 Q 100 135 120 135",
-        c: "M 80 125 Q 100 140 120 125"
-    };
-
-    const startLipSync = useCallback(() => {
-        if (lipSyncIntervalRef.current || !mouthRef.current) return;
-        const shapes = Object.values(mouthShapes);
-        lipSyncIntervalRef.current = setInterval(() => {
-            if (mouthRef.current) {
-                mouthRef.current.setAttribute('d', shapes[Math.floor(Math.random() * shapes.length)]);
-            }
-        }, 120);
-    }, [mouthShapes]);
-
-    const stopLipSync = useCallback(() => {
-        if (lipSyncIntervalRef.current) {
-            clearInterval(lipSyncIntervalRef.current);
-            lipSyncIntervalRef.current = null;
-        }
-        if (mouthRef.current) {
-            mouthRef.current.setAttribute('d', mouthShapes.neutral);
-        }
-    }, [mouthShapes.neutral]);
 
     const startSpeechRecognition = useCallback(() => {
         if (recognitionRef.current && !isAIThinkingRef.current) {
             try {
                 recognitionRef.current.start();
+                setAiStatus('listening');
+                setAiStatusText("I'm listening...");
             } catch (e) {
                 // Already started
             }
@@ -105,25 +98,24 @@ export default function AiFriendPage() {
             stopSpeechRecognition();
             setAiStatus('speaking');
             setAiStatusText(text);
-            startLipSync();
         };
         utterance.onend = () => {
-            stopLipSync();
-            setAiStatus('listening');
-            setAiStatusText("I'm listening...");
             isAIThinkingRef.current = false;
             if (isMicOn) {
                 startSpeechRecognition();
+            } else {
+                 setAiStatus('listening');
+                 setAiStatusText("Microphone is muted.");
             }
         };
         utterance.onerror = (e) => {
             console.error('Speech synthesis error', e);
             setAiStatus('listening');
-             setAiStatusText("I'm listening...");
+            setAiStatusText("I'm having trouble speaking. Please try again.");
             isAIThinkingRef.current = false;
         };
         window.speechSynthesis.speak(utterance);
-    }, [isMicOn, startLipSync, stopLipSync, startSpeechRecognition, stopSpeechRecognition]);
+    }, [isMicOn, startSpeechRecognition, stopSpeechRecognition]);
 
     useEffect(() => {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -159,6 +151,10 @@ export default function AiFriendPage() {
             
             recognition.onerror = (event) => {
                 if (event.error !== 'no-speech') console.error('Speech recognition error:', event.error);
+                 if (event.error === 'not-allowed') {
+                    alert("Microphone access was denied. Please allow microphone access to talk to the AI friend.")
+                    setIsMicOn(false);
+                }
             };
 
             recognition.onend = () => {
@@ -170,22 +166,11 @@ export default function AiFriendPage() {
             recognitionRef.current = recognition;
         }
 
-        // Blinking effect
-        const blinkInterval = setInterval(() => {
-            if (document.hidden || !eyesRef.current) return;
-            eyesRef.current.style.transform = 'scaleY(0.1)';
-            setTimeout(() => {
-                if(eyesRef.current) eyesRef.current.style.transform = 'scaleY(1)';
-            }, 200);
-        }, 4000);
-
         return () => {
             stopSpeechRecognition();
             if (localStreamRef.current) {
                 localStreamRef.current.getTracks().forEach(track => track.stop());
             }
-            clearInterval(blinkInterval);
-            if(lipSyncIntervalRef.current) clearInterval(lipSyncIntervalRef.current);
             window.speechSynthesis.cancel();
         };
     }, [isMicOn, speak, startSpeechRecognition, stopSpeechRecognition]);
@@ -231,8 +216,13 @@ export default function AiFriendPage() {
         if (localStreamRef.current) {
             localStreamRef.current.getAudioTracks().forEach(track => track.enabled = newMicState);
         }
-        if (newMicState) startSpeechRecognition();
-        else stopSpeechRecognition();
+        if (newMicState) {
+            startSpeechRecognition();
+        } else {
+            stopSpeechRecognition();
+            setAiStatus('listening');
+            setAiStatusText("Microphone is muted.");
+        }
     };
 
     const toggleCamera = () => {
@@ -269,11 +259,21 @@ export default function AiFriendPage() {
                 {screen === 'call' && (
                     <div id="call-screen" className="h-full w-full flex flex-col items-center justify-center relative">
                         <div className="w-full flex-grow flex items-center justify-center flex-col overflow-hidden relative">
-                            <div id="ai-character-container" className="relative w-[300px] h-[300px]">
-                                <AuraAvatar avatarRef={avatarRef} eyesRef={eyesRef} mouthRef={mouthRef} />
+                             <div id="ai-character-container" className="relative w-[300px] h-[300px] md:w-[400px] md:h-[400px]">
+                                <AuraAvatar aiStatus={aiStatus} />
                             </div>
                             <div id="ai-status" className="absolute bottom-40 min-h-[5rem] max-w-[80%] mx-auto px-6 py-4 rounded-xl text-center text-card-foreground transition-all duration-300 glass-card">
-                                {aiStatus === 'thinking' ? <DotFlashing /> : <p id="ai-status-text">{aiStatusText}</p>}
+                                 <AnimatePresence mode="wait">
+                                    <motion.div
+                                        key={aiStatus}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -10 }}
+                                        transition={{ duration: 0.3 }}
+                                    >
+                                        {aiStatus === 'thinking' ? <DotFlashing /> : <p id="ai-status-text">{aiStatusText}</p>}
+                                    </motion.div>
+                                </AnimatePresence>
                             </div>
                         </div>
 
