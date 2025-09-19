@@ -43,8 +43,8 @@ const AuraAvatar = ({ aiStatus }: { aiStatus: string }) => {
                 />
                 <defs>
                     <radialGradient id="gradient" cx="50%" cy="50%" r="50%" fx="50%" fy="30%">
-                        <stop stopColor="hsl(var(--primary))" stopOpacity="0.7" />
-                        <stop offset="1" stopColor="hsl(var(--primary) / 0.3)" />
+                        <stop stopColor="#AEC6CF" stopOpacity="0.7" />
+                        <stop offset="1" stopColor="#AEC6CF" stopOpacity="0.3" />
                     </radialGradient>
                 </defs>
                 <motion.circle
@@ -55,7 +55,7 @@ const AuraAvatar = ({ aiStatus }: { aiStatus: string }) => {
                 />
                 <motion.path
                     d="M150 220 Q200 250, 250 220"
-                    stroke="hsl(var(--primary))"
+                    stroke="#AEC6CF"
                     strokeWidth="8"
                     fill="none"
                     strokeLinecap="round"
@@ -73,8 +73,8 @@ const AuraAvatar = ({ aiStatus }: { aiStatus: string }) => {
                     transition={{ duration: 0.4, repeat: isSpeaking ? Infinity : 0, ease: 'easeInOut' }}
                 />
                 <g id="eyes">
-                    <motion.circle cx="160" cy="180" r="10" fill="hsl(var(--primary))" animate={{ scaleY: [1, 0.1, 1] }} transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 3 }} />
-                    <motion.circle cx="240" cy="180" r="10" fill="hsl(var(--primary))" animate={{ scaleY: [1, 0.1, 1] }} transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 3 }} />
+                    <motion.circle cx="160" cy="180" r="10" fill="#AEC6CF" animate={{ scaleY: [1, 0.1, 1] }} transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 3 }} />
+                    <motion.circle cx="240" cy="180" r="10" fill="#AEC6CF" animate={{ scaleY: [1, 0.1, 1] }} transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 3 }} />
                 </g>
             </svg>
         </motion.div>
@@ -353,19 +353,19 @@ export default function AiFriendPage() {
                 .control-btn.hang-up:hover { background-color: hsl(var(--destructive) / 0.9); }
                 
                 .dot-flashing {
-                    position: relative; width: 10px; height: 10px; border-radius: 5px; background-color: hsl(var(--primary)); color: hsl(var(--primary));
+                    position: relative; width: 10px; height: 10px; border-radius: 5px; background-color: #AEC6CF; color: #AEC6CF;
                     animation: dotFlashing 1s infinite linear alternate; animation-delay: .5s; display: inline-block; margin: 0 5px;
                 }
                 .dot-flashing::before, .dot-flashing::after { content: ''; display: inline-block; position: absolute; top: 0; }
                 .dot-flashing::before {
-                    left: -15px; width: 10px; height: 10px; border-radius: 5px; background-color: hsl(var(--primary)); color: hsl(var(--primary));
+                    left: -15px; width: 10px; height: 10px; border-radius: 5px; background-color: #AEC6CF; color: #AEC6CF;
                     animation: dotFlashing 1s infinite alternate; animation-delay: 0s;
                 }
                 .dot-flashing::after {
-                    left: 15px; width: 10px; height: 10px; border-radius: 5px; background-color: hsl(var(--primary)); color: hsl(var(--primary));
+                    left: 15px; width: 10px; height: 10px; border-radius: 5px; background-color: #AEC6CF; color: #AEC6CF;
                     animation: dotFlashing 1s infinite alternate; animation-delay: 1s;
                 }
-                @keyframes dotFlashing { 0% { background-color: hsl(var(--primary)); } 50%, 100% { background-color: hsla(var(--primary), 0.5); } }
+                @keyframes dotFlashing { 0% { background-color: #AEC6CF; } 50%, 100% { background-color: rgba(174, 198, 207, 0.5); } }
             `}</style>
         </div>
     );
