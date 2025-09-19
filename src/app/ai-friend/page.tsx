@@ -244,11 +244,11 @@ export default function AiFriendPage() {
     const startTransition = (cb: () => void) => cb();
 
     return (
-        <div className="font-sans bg-[#ccd8f1] bg-no-repeat bg-cover min-h-screen m-0" style={{ backgroundImage: 'radial-gradient(circle 50px at 20% 20%, rgba(255, 255, 255, 0.3), transparent 70%), radial-gradient(circle 40px at 80% 30%, rgba(255, 255, 255, 0.25), transparent 70%), radial-gradient(circle 60px at 50% 80%, rgba(255, 255, 255, 0.2), transparent 70%)' }}>
+        <div className="font-sans bg-primary/10 bg-no-repeat bg-cover min-h-screen m-0" style={{ backgroundImage: 'radial-gradient(circle 50px at 20% 20%, rgba(255, 255, 255, 0.3), transparent 70%), radial-gradient(circle 40px at 80% 30%, rgba(255, 255, 255, 0.25), transparent 70%), radial-gradient(circle 60px at 50% 80%, rgba(255, 255, 255, 0.2), transparent 70%)' }}>
             <div id="app-wrapper" className="h-screen w-screen flex flex-col items-center justify-center transition-opacity duration-500">
                 {screen === 'welcome' && (
                     <div id="welcome-screen" className="text-center p-8">
-                        <h1 className="text-5xl font-bold mb-2 text-gray-800">Welcome to AI Video Call</h1>
+                        <h1 className="text-5xl font-bold mb-2 text-gray-800">Welcome to Equilix AI</h1>
                         <p className="text-xl text-gray-600 mb-8">Your professional AI companion for mental wellness.</p>
                         <p className="max-w-2xl mx-auto text-gray-600 mb-8">
                             This is a safe space to talk about whatever's on your mind. <b>Aura</b> is here to listen without judgment. Ready to chat?
@@ -257,7 +257,7 @@ export default function AiFriendPage() {
                             id="start-call-btn"
                             onClick={handleStartCall}
                             disabled={!!loadingText}
-                            className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 h-auto rounded-full text-lg transition-transform transform hover:scale-105"
+                            className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-3 px-8 h-auto rounded-full text-lg transition-transform transform hover:scale-105"
                         >
                             Start Conversation
                         </Button>
@@ -314,24 +314,24 @@ export default function AiFriendPage() {
                     transition: all 0.2s ease-in-out; color: #374151; /* text-gray-700 */
                 }
                 .control-btn:hover { background-color: rgba(255, 255, 255, 0.5); transform: translateY(-2px); }
-                .control-btn.active { background-color: #3B82F6; color: white; }
+                .control-btn.active { background-color: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
                 .control-btn.hang-up { background-color: #ef4444; color: white; }
                 .control-btn.hang-up:hover { background-color: #dc2626; }
                 
                 .dot-flashing {
-                    position: relative; width: 10px; height: 10px; border-radius: 5px; background-color: #3B82F6; color: #3B82F6;
+                    position: relative; width: 10px; height: 10px; border-radius: 5px; background-color: hsl(var(--primary)); color: hsl(var(--primary));
                     animation: dotFlashing 1s infinite linear alternate; animation-delay: .5s; display: inline-block; margin: 0 5px;
                 }
                 .dot-flashing::before, .dot-flashing::after { content: ''; display: inline-block; position: absolute; top: 0; }
                 .dot-flashing::before {
-                    left: -15px; width: 10px; height: 10px; border-radius: 5px; background-color: #3B82F6; color: #3B82F6;
+                    left: -15px; width: 10px; height: 10px; border-radius: 5px; background-color: hsl(var(--primary)); color: hsl(var(--primary));
                     animation: dotFlashing 1s infinite alternate; animation-delay: 0s;
                 }
                 .dot-flashing::after {
-                    left: 15px; width: 10px; height: 10px; border-radius: 5px; background-color: #3B82F6; color: #3B82F6;
+                    left: 15px; width: 10px; height: 10px; border-radius: 5px; background-color: hsl(var(--primary)); color: hsl(var(--primary));
                     animation: dotFlashing 1s infinite alternate; animation-delay: 1s;
                 }
-                @keyframes dotFlashing { 0% { background-color: #3B82F6; } 50%, 100% { background-color: #93c5fd; } }
+                @keyframes dotFlashing { 0% { background-color: hsl(var(--primary)); } 50%, 100% { background-color: hsla(var(--primary), 0.5); } }
             `}</style>
         </div>
     );

@@ -5,7 +5,7 @@ import { Toaster } from '@/components/ui/toaster';
 
 
 export const metadata: Metadata = {
-  title: 'Mindful Moments',
+  title: 'Equilix',
   description: 'Your personal space for reflection and growth.',
 };
 

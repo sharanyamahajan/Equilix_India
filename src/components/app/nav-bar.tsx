@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, HeartPulse, Camera, Bot, Brain } from 'lucide-react';
+import { Home, Camera, Bot, Brain } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { EquilixLogo } from '@/components/icons/equilix-logo';
 
 const navLinks = [
   { href: '/', label: 'Home', icon: Home },
@@ -19,8 +20,8 @@ export function NavBar() {
     <header className="py-4 bg-background/80 border-b backdrop-blur-sm sticky top-0 z-10">
       <nav className="container mx-auto px-4 flex justify-between items-center">
         <Link href="/" className="flex items-center gap-2 font-bold text-lg font-headline text-primary">
-          <HeartPulse />
-          <span>Mindful Moments</span>
+          <EquilixLogo className="w-6 h-6" />
+          <span>Equilix</span>
         </Link>
         <div className="flex items-center gap-1 sm:gap-2">
           {navLinks.map((link) => {
