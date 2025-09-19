@@ -29,7 +29,7 @@ export default function Home() {
                 </CardContent>
                 <CardFooter>
                     <Button asChild>
-                        <Link href="/emotion-dector">
+                        <Link href="/emotion-detector">
                             Go to Emotion Detector <ArrowRight className="ml-2" />
                         </Link>
                     </Button>
