@@ -6,14 +6,18 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { getEmotionDetection } from '@/app/actions';
-import { Loader2, Smile, Camera } from 'lucide-react';
+import { Loader2, Activity, Lightbulb, Camera } from 'lucide-react';
 import { Progress } from '../ui/progress';
-import { RelaxingGames } from './relaxing-games';
 
 type EmotionResult = {
   emotion: string;
   confidence: number;
   feedback: string;
+  suggestions: string[];
+  recommendedExercise: {
+    name: string;
+    description: string;
+  };
 };
 
 export function EmotionDetector() {
@@ -136,11 +140,11 @@ export function EmotionDetector() {
           )}
         </Button>
 
-        {result && (
+        {result && result.emotion !== 'Unknown' && (
           <div className="animate-in fade-in-50 space-y-4">
             <Card className="bg-secondary/50 p-4">
-              <div className="flex items-center gap-4">
-                <div className="text-5xl">{getEmotionEmoji(result.emotion)}</div>
+              <div className="flex items-start gap-4">
+                <div className="text-5xl pt-1">{getEmotionEmoji(result.emotion)}</div>
                 <div className="flex-grow space-y-1">
                   <div className="flex justify-between items-baseline">
                       <p className="font-bold text-lg">{result.emotion}</p>
@@ -151,7 +155,45 @@ export function EmotionDetector() {
                 </div>
               </div>
             </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                        <Lightbulb className="text-accent" />
+                        Suggestions for you
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <ul className="space-y-2 list-disc pl-5">
+                        {result.suggestions.map((item, index) => (
+                            <li key={index} className="text-sm">{item}</li>
+                        ))}
+                    </ul>
+                </CardContent>
+            </Card>
+            
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                        <Activity />
+                        Recommended Exercise
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-1">
+                    <p className="font-semibold">{result.recommendedExercise.name}</p>
+                    <p className="text-sm">{result.recommendedExercise.description}</p>
+                </CardContent>
+            </Card>
           </div>
+        )}
+        
+        {result && result.emotion === 'Unknown' && (
+            <Alert>
+                <AlertTitle>No Face Detected</AlertTitle>
+                <AlertDescription>
+                    {result.feedback}
+                </AlertDescription>
+            </Alert>
         )}
       </CardContent>
     </Card>
