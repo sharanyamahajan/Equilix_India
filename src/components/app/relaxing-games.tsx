@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Gamepad2, Droplets } from 'lucide-react';
-import Link from 'next/link';
+import { BreathingExercise } from './breathing-exercise';
 
 export function RelaxingGames() {
   return (
@@ -15,15 +15,7 @@ export function RelaxingGames() {
         </CardDescription>
       </CardHeader>
       <CardContent className="grid sm:grid-cols-2 gap-4">
-        <Card className="bg-secondary/50 p-6 flex flex-col justify-between">
-          <div>
-            <h3 className="font-semibold text-lg mb-2">Mindful Maze</h3>
-            <p className="text-sm text-muted-foreground mb-4">Find your way through a calming maze to focus your mind.</p>
-          </div>
-          <Button asChild variant="outline">
-            <Link href="/mindful-maze" target="_blank" rel="noopener noreferrer">Play Maze</Link>
-          </Button>
-        </Card>
+        <BreathingExercise />
         <Card className="bg-secondary/50 p-6 flex flex-col justify-between">
           <div className="flex justify-between items-start">
             <div>
