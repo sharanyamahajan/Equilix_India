@@ -23,17 +23,17 @@ const AuraAvatar = ({ aiStatus }: { aiStatus: 'listening' | 'thinking' | 'speaki
     const eyesRef = useRef<SVGGElement | null>(null);
 
     const mouthShapes = {
-        neutral: "M 80 130 C 85 135, 115 135, 120 130", // Gentle smile
+        neutral: "M 80 132 C 85 134, 115 134, 120 132", // Neutral flat
         a: "M 85 130 C 90 140, 110 140, 115 130", // Slightly open 'aah'
         b: "M 80 132 C 85 134, 115 134, 120 132", // Closed 'm'
         c: "M 88 128 C 90 138, 110 138, 112 128", // 'ooh' shape
-        d: "M 82 130 C 87 136, 113 136, 118 130", // slightly wider smile
+        d: "M 82 130 C 87 136, 113 136, 118 130", // gentle smile
     };
 
     useEffect(() => {
         let lipSyncInterval: NodeJS.Timeout | null = null;
         if (aiStatus === 'speaking') {
-            const shapes = Object.values(mouthShapes);
+            const shapes = [mouthShapes.a, mouthShapes.c, mouthShapes.d];
             lipSyncInterval = setInterval(() => {
                 if (mouthRef.current) {
                     mouthRef.current.setAttribute('d', shapes[Math.floor(Math.random() * shapes.length)]);
@@ -41,7 +41,7 @@ const AuraAvatar = ({ aiStatus }: { aiStatus: 'listening' | 'thinking' | 'speaki
             }, 150);
         } else {
             if (mouthRef.current) {
-                mouthRef.current.setAttribute('d', mouthShapes.neutral);
+                 mouthRef.current.setAttribute('d', mouthShapes.neutral);
             }
         }
         return () => {
@@ -78,7 +78,7 @@ const AuraAvatar = ({ aiStatus }: { aiStatus: 'listening' | 'thinking' | 'speaki
             </defs>
             <circle cx="100" cy="100" r="90" fill="url(#auraGradient)" />
             <circle cx="100" cy="100" r="70" fill="none" stroke="#ffffff" strokeWidth="2" strokeOpacity="0.5" />
-            <g ref={eyesRef} id="eyes" style={{transition: 'transform 0.2s ease-out', transformOrigin: 'center'}}>
+             <g ref={eyesRef} id="eyes" style={{transition: 'transform 0.2s ease-out', transformOrigin: 'center'}}>
                 {/* Left Eye */}
                 <circle cx="80" cy="95" r="12" fill="white" />
                 <circle cx="80" cy="95" r="6" fill="#333" />
@@ -90,7 +90,7 @@ const AuraAvatar = ({ aiStatus }: { aiStatus: 'listening' | 'thinking' | 'speaki
                 <circle cx="122" cy="93" r="2" fill="white" />
             </g>
             <g id="mouth-group" fill="#FFF" stroke="none">
-                <path
+                 <path
                     ref={mouthRef}
                     id="mouth"
                     d={mouthShapes.neutral}
@@ -98,6 +98,7 @@ const AuraAvatar = ({ aiStatus }: { aiStatus: 'listening' | 'thinking' | 'speaki
                     strokeWidth="3.5"
                     strokeLinecap="round"
                     fill="none"
+                    style={{ transition: 'd 0.1s ease-in-out' }}
                 />
             </g>
         </svg>
@@ -308,11 +309,13 @@ export default function AiFriendPage() {
 
                 {screen === 'call' && (
                     <div id="call-screen" className="h-full w-full flex flex-col items-center justify-center relative">
-                        <div className="w-full flex-grow flex items-center justify-center flex-col overflow-hidden relative">
+                        <div className="w-full flex-grow flex items-center justify-center flex-col overflow-hidden relative pt-10">
                              <div id="ai-character-container" className="relative w-[300px] h-[300px] md:w-[400px] md:h-[400px]">
                                 <AuraAvatar aiStatus={aiStatus} />
                             </div>
-                            <div id="ai-status" className="absolute bottom-40 glass-card min-h-[5rem] max-w-[80%] mx-auto px-6 py-4 rounded-xl text-center text-gray-800 transition-all duration-300">
+                        </div>
+
+                         <div id="ai-status" className="absolute bottom-40 glass-card min-h-[5rem] max-w-[80%] mx-auto px-6 py-4 rounded-xl text-center text-gray-800 transition-all duration-300">
                                  <AnimatePresence mode="wait">
                                     <motion.div
                                         key={aiStatusText} // Use aiStatusText to trigger animation on text change
@@ -325,7 +328,7 @@ export default function AiFriendPage() {
                                     </motion.div>
                                 </AnimatePresence>
                             </div>
-                        </div>
+
 
                         <div id="user-video-container" className="glass-card absolute bottom-28 right-8 w-[200px] h-[150px] rounded-xl overflow-hidden cursor-move flex items-center justify-center">
                             <video id="user-video" ref={userVideoRef} autoPlay muted playsInline className={cn("w-full h-full object-cover", { 'hidden': !isCameraOn })}></video>
