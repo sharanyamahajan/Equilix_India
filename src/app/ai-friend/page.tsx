@@ -1,3 +1,4 @@
+
 // src/app/ai-friend/page.tsx
 'use client';
 
@@ -22,10 +23,11 @@ const AuraAvatar = ({ aiStatus }: { aiStatus: 'listening' | 'thinking' | 'speaki
     const eyesRef = useRef<SVGGElement | null>(null);
 
     const mouthShapes = {
-        neutral: "M 80 130 Q 100 130 120 130",
-        a: "M 80 130 Q 100 145 120 130",
-        b: "M 80 135 Q 100 135 120 135",
-        c: "M 80 125 Q 100 140 120 125"
+        neutral: "M 80 130 C 85 135, 115 135, 120 130", // Gentle smile
+        a: "M 85 130 C 90 140, 110 140, 115 130", // Slightly open 'aah'
+        b: "M 80 132 C 85 134, 115 134, 120 132", // Closed 'm'
+        c: "M 88 128 C 90 138, 110 138, 112 128", // 'ooh' shape
+        d: "M 82 130 C 87 136, 113 136, 118 130", // slightly wider smile
     };
 
     useEffect(() => {
@@ -36,7 +38,7 @@ const AuraAvatar = ({ aiStatus }: { aiStatus: 'listening' | 'thinking' | 'speaki
                 if (mouthRef.current) {
                     mouthRef.current.setAttribute('d', shapes[Math.floor(Math.random() * shapes.length)]);
                 }
-            }, 120);
+            }, 150);
         } else {
             if (mouthRef.current) {
                 mouthRef.current.setAttribute('d', mouthShapes.neutral);
@@ -87,7 +89,17 @@ const AuraAvatar = ({ aiStatus }: { aiStatus: 'listening' | 'thinking' | 'speaki
                 <circle cx="120" cy="95" r="6" fill="#333" />
                 <circle cx="122" cy="93" r="2" fill="white" />
             </g>
-            <path ref={mouthRef} id="mouth" d="M 80 130 Q 100 130 120 130" stroke="#ffffff" strokeWidth="3" fill="none" strokeLinecap="round"/>
+            <g id="mouth-group" fill="#FFF" stroke="none">
+                <path
+                    ref={mouthRef}
+                    id="mouth"
+                    d={mouthShapes.neutral}
+                    stroke="#FFF"
+                    strokeWidth="3.5"
+                    strokeLinecap="round"
+                    fill="none"
+                />
+            </g>
         </svg>
     );
 };
