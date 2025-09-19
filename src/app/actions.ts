@@ -1,6 +1,7 @@
 'use server';
 
 import { suggestHtmlImprovements } from '@/ai/flows/suggest-html-improvements';
+import { analyzeWellness, WellnessSurveyInput } from '@/ai/flows/analyze-wellness';
 
 export async function getHtmlImprovements(htmlContent: string) {
   if (!htmlContent) {
@@ -13,5 +14,15 @@ export async function getHtmlImprovements(htmlContent: string) {
   } catch (error) {
     console.error('AI Error:', error);
     return { success: false, error: 'Failed to get improvements from the AI model.' };
+  }
+}
+
+export async function getWellnessAnalysis(surveyData: WellnessSurveyInput) {
+  try {
+    const result = await analyzeWellness(surveyData);
+    return { success: true, data: result };
+  } catch (error) {
+    console.error('AI Error:', error);
+    return { success: false, error: 'Failed to get analysis from the AI model.' };
   }
 }

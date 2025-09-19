@@ -3,6 +3,7 @@
 import { AppHeader } from '@/components/app/app-header';
 import { DailyAffirmation } from '@/components/app/daily-affirmation';
 import { JournalEntry } from '@/components/app/journal-entry';
+import { WellnessSurvey } from '@/components/app/wellness-survey';
 
 export default function Home() {
   return (
@@ -15,10 +16,8 @@ export default function Home() {
               <DailyAffirmation />
               <JournalEntry />
             </div>
-            <div className="hidden md:block">
-              <div className="h-full bg-muted rounded-lg flex items-center justify-center p-8">
-                 <p className="text-muted-foreground text-center">More features coming soon!</p>
-              </div>
+            <div className="space-y-8">
+              <WellnessSurvey />
             </div>
           </div>
         </main>
