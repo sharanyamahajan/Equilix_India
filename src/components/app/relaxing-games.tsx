@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Gamepad2 } from 'lucide-react';
+import { Gamepad2, Droplets } from 'lucide-react';
 import Link from 'next/link';
 
 export function RelaxingGames() {
@@ -31,6 +31,18 @@ export function RelaxingGames() {
           </div>
           <Button asChild variant="outline">
             <Link href="/mindful-maze" target="_blank" rel="noopener noreferrer">Play Maze</Link>
+          </Button>
+        </Card>
+        <Card className="bg-secondary/50 p-6 flex flex-col justify-between sm:col-span-2">
+          <div className="flex justify-between items-start">
+            <div>
+              <h3 className="font-semibold text-lg mb-2">Fluid Simulation</h3>
+              <p className="text-sm text-muted-foreground mb-4">A relaxing, interactive fluid simulation to help you unwind.</p>
+            </div>
+            <Droplets className="w-8 h-8 text-accent hidden sm:block" />
+          </div>
+          <Button asChild variant="outline">
+            <a href="https://paveldogreat.github.io/WebGL-Fluid-Simulation/" target="_blank" rel="noopener noreferrer">Play Game</a>
           </Button>
         </Card>
       </CardContent>
