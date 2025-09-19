@@ -1,7 +1,7 @@
 // src/app/ai-friend/page.tsx
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useTransition } from 'react';
 import { getAIFriendResponse } from '@/app/actions';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -18,8 +18,8 @@ const AuraAvatar = ({ avatarRef, eyesRef, mouthRef }: { avatarRef: React.RefObje
     <svg viewBox="0 0 200 200" ref={avatarRef} className="w-full h-full">
         <defs>
             <radialGradient id="auraGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-                <stop offset="0%" style={{ stopColor: '#93c5fd', stopOpacity: 0.8 }} />
-                <stop offset="100%" style={{ stopColor: '#3b82f6', stopOpacity: 0.9 }} />
+                <stop offset="0%" style={{ stopColor: 'hsl(var(--primary))', stopOpacity: 0.8 }} />
+                <stop offset="100%" style={{ stopColor: 'hsl(var(--primary))', stopOpacity: 0.9 }} />
             </radialGradient>
         </defs>
         <circle cx="100" cy="100" r="90" fill="url(#auraGradient)" />
@@ -52,6 +52,8 @@ export default function AiFriendPage() {
     const eyesRef = useRef<SVGGElement>(null);
     const mouthRef = useRef<SVGPathElement>(null);
     const lipSyncIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+    const [isPending, startTransition] = useTransition();
 
     const mouthShapes = {
         neutral: "M 80 130 Q 100 130 120 130",
@@ -240,28 +242,26 @@ export default function AiFriendPage() {
         }
     };
 
-    // A dummy transition function as we are not using useTransition from react
-    const startTransition = (cb: () => void) => cb();
-
     return (
-        <div className="font-sans bg-primary/10 bg-no-repeat bg-cover min-h-screen m-0" style={{ backgroundImage: 'radial-gradient(circle 50px at 20% 20%, rgba(255, 255, 255, 0.3), transparent 70%), radial-gradient(circle 40px at 80% 30%, rgba(255, 255, 255, 0.25), transparent 70%), radial-gradient(circle 60px at 50% 80%, rgba(255, 255, 255, 0.2), transparent 70%)' }}>
-            <div id="app-wrapper" className="h-screen w-screen flex flex-col items-center justify-center transition-opacity duration-500">
+        <div className="font-sans bg-background min-h-screen m-0">
+            <div id="app-wrapper" className="h-screen w-screen flex flex-col items-center justify-center transition-opacity duration-500 bg-background">
                 {screen === 'welcome' && (
                     <div id="welcome-screen" className="text-center p-8">
-                        <h1 className="text-5xl font-bold mb-2 text-gray-800">Welcome to Equilix AI</h1>
-                        <p className="text-xl text-gray-600 mb-8">Your professional AI companion for mental wellness.</p>
-                        <p className="max-w-2xl mx-auto text-gray-600 mb-8">
+                        <h1 className="text-5xl font-bold mb-2 text-foreground font-headline">AI Friend</h1>
+                        <p className="text-xl text-muted-foreground mb-8">Your professional AI companion for mental wellness.</p>
+                        <p className="max-w-2xl mx-auto text-muted-foreground mb-8">
                             This is a safe space to talk about whatever's on your mind. <b>Aura</b> is here to listen without judgment. Ready to chat?
                         </p>
                         <Button
                             id="start-call-btn"
                             onClick={handleStartCall}
                             disabled={!!loadingText}
-                            className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-3 px-8 h-auto rounded-full text-lg transition-transform transform hover:scale-105"
+                            size="lg"
+                            className="font-bold text-lg transition-transform transform hover:scale-105"
                         >
                             Start Conversation
                         </Button>
-                        {loadingText && <p className="mt-4 text-gray-500">{loadingText}</p>}
+                        {loadingText && <p className="mt-4 text-muted-foreground">{loadingText}</p>}
                     </div>
                 )}
 
@@ -271,14 +271,14 @@ export default function AiFriendPage() {
                             <div id="ai-character-container" className="relative w-[300px] h-[300px]">
                                 <AuraAvatar avatarRef={avatarRef} eyesRef={eyesRef} mouthRef={mouthRef} />
                             </div>
-                            <div id="ai-status" className="absolute bottom-40 min-h-[5rem] max-w-[80%] mx-auto px-6 py-4 rounded-xl text-center text-gray-800 transition-all duration-300 glass-card">
+                            <div id="ai-status" className="absolute bottom-40 min-h-[5rem] max-w-[80%] mx-auto px-6 py-4 rounded-xl text-center text-card-foreground transition-all duration-300 glass-card">
                                 {aiStatus === 'thinking' ? <DotFlashing /> : <p id="ai-status-text">{aiStatusText}</p>}
                             </div>
                         </div>
 
                         <div id="user-video-container" className="glass-card absolute bottom-28 right-8 w-[200px] h-[150px] rounded-xl overflow-hidden cursor-move flex items-center justify-center">
                             <video id="user-video" ref={userVideoRef} autoPlay muted playsInline className={cn("w-full h-full object-cover -scale-x-100", { 'hidden': !isCameraOn })}></video>
-                            {!isCameraOn && <div className="w-1/2 h-1/2 text-gray-600"><UserPlaceholderIcon /></div>}
+                            {!isCameraOn && <div className="w-1/2 h-1/2 text-muted-foreground"><UserPlaceholderIcon /></div>}
                         </div>
                         
                         <div className="w-full p-4 absolute bottom-0">
@@ -299,24 +299,30 @@ export default function AiFriendPage() {
             </div>
             <style jsx global>{`
                 body { font-family: 'Inter', sans-serif; }
+                #app-wrapper {
+                    background-image:
+                        radial-gradient(circle 50px at 20% 20%, hsl(var(--primary) / 0.1), transparent 70%),
+                        radial-gradient(circle 40px at 80% 30%, hsl(var(--primary) / 0.08), transparent 70%),
+                        radial-gradient(circle 60px at 50% 80%, hsl(var(--primary) / 0.05), transparent 70%);
+                }
                 .glass-card {
-                    background: rgba(255, 255, 255, 0.25) !important;
+                    background: hsl(var(--card) / 0.5) !important;
                     backdrop-filter: blur(14px) saturate(150%);
                     -webkit-backdrop-filter: blur(14px) saturate(150%);
-                    border: 1px solid rgba(255, 255, 255, 0.4);
+                    border: 1px solid hsl(var(--border) / 0.2);
                     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
                 }
                 .control-btn {
-                    background-color: rgba(255, 255, 255, 0.3);
+                    background-color: hsl(var(--secondary));
                     border-radius: 9999px;
                     width: 52px; height: 52px;
                     display: flex; align-items: center; justify-content: center;
-                    transition: all 0.2s ease-in-out; color: #374151; /* text-gray-700 */
+                    transition: all 0.2s ease-in-out; color: hsl(var(--secondary-foreground));
                 }
-                .control-btn:hover { background-color: rgba(255, 255, 255, 0.5); transform: translateY(-2px); }
+                .control-btn:hover { background-color: hsl(var(--accent)); transform: translateY(-2px); }
                 .control-btn.active { background-color: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
-                .control-btn.hang-up { background-color: #ef4444; color: white; }
-                .control-btn.hang-up:hover { background-color: #dc2626; }
+                .control-btn.hang-up { background-color: hsl(var(--destructive)); color: hsl(var(--destructive-foreground)); }
+                .control-btn.hang-up:hover { background-color: hsl(var(--destructive) / 0.9); }
                 
                 .dot-flashing {
                     position: relative; width: 10px; height: 10px; border-radius: 5px; background-color: hsl(var(--primary)); color: hsl(var(--primary));
