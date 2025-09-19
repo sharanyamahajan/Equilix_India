@@ -13,9 +13,6 @@ export default function EmotionDetectorPage() {
              <RelaxingGames />
           </div>
         </main>
-        <footer className="text-center p-4 text-muted-foreground text-sm">
-          <p>Mindful Moments © {new Date().getFullYear()}. Your space to breathe and reflect.</p>
-        </footer>
       </div>
     </>
   );
