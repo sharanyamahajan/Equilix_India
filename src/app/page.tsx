@@ -19,22 +19,6 @@ export default function Home() {
           <div className="grid gap-8 md:grid-cols-2 md:gap-12">
             <div className="space-y-8">
               <DailyAffirmation />
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2"><Camera /> Emotion Check-in</CardTitle>
-                  <CardDescription>How are you feeling right now? Let's find out.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p>Use your camera to get real-time feedback on your emotional state. It's a great way to build self-awareness.</p>
-                </CardContent>
-                <CardFooter>
-                    <Button asChild>
-                        <Link href="/emotion-detector">
-                            Go to Emotion Detector <ArrowRight className="ml-2" />
-                        </Link>
-                    </Button>
-                </CardFooter>
-              </Card>
               <GratitudeJournal />
             </div>
             <div className="space-y-8">
