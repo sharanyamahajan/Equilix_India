@@ -16,8 +16,17 @@ const UserPlaceholderIcon = () => (
 );
 
 const AuraAvatar = ({ aiStatus }: { aiStatus: string }) => {
-    const isSpeaking = aiStatus === 'speaking';
     const isListening = aiStatus === 'listening';
+    const isSpeaking = aiStatus === 'speaking';
+    const [eyeLid, setEyeLid] = useState(false);
+
+    useEffect(() => {
+        const blinkInterval = setInterval(() => {
+            setEyeLid(true);
+            setTimeout(() => setEyeLid(false), 200);
+        }, 4000);
+        return () => clearInterval(blinkInterval);
+    }, []);
 
     return (
         <motion.div 
@@ -26,31 +35,50 @@ const AuraAvatar = ({ aiStatus }: { aiStatus: string }) => {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
         >
-            <motion.div
-                className="absolute inset-0 rounded-full"
-                animate={{
-                    scale: isListening ? [1, 1.02, 1] : 1,
-                    boxShadow: isListening 
-                        ? [
-                            "0 0 0 0px hsl(var(--primary) / 0.2)", 
-                            "0 0 0 10px hsl(var(--primary) / 0.2)", 
-                            "0 0 0 0px hsl(var(--primary) / 0.2)"
-                          ]
-                        : "0 0 0 0px hsl(var(--primary) / 0.2)",
-                }}
-                transition={{
-                    scale: { duration: 2, repeat: Infinity, ease: "easeInOut" },
-                    boxShadow: { duration: 2, repeat: Infinity, ease: "easeInOut" },
-                }}
-            />
-            <motion.img
-                src="https://picsum.photos/seed/ai-friend-2/400/400"
-                alt="Aura, your AI Friend"
-                data-ai-hint="woman portrait"
-                className="w-full h-full object-cover rounded-full"
-                animate={{ scale: isSpeaking ? 1.05 : 1 }}
-                transition={{ duration: 0.4, ease: 'easeOut' }}
-            />
+            <motion.svg viewBox="0 0 200 200" className="w-full h-full">
+                <defs>
+                    <radialGradient id="auraGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                        <motion.stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.5" 
+                            animate={{ stopOpacity: isListening ? [0.5, 0.7, 0.5] : 0.5 }}
+                            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                        />
+                        <motion.stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.8" />
+                    </radialGradient>
+                </defs>
+                <motion.circle 
+                    cx="100" cy="100" r="90" fill="url(#auraGradient)" 
+                    animate={{ scale: isSpeaking ? 1.02 : 1 }}
+                    transition={{ duration: 0.4, ease: 'easeOut' }}
+                />
+                 <motion.circle 
+                    cx="100" cy="100" r="70" fill="none" stroke="hsl(var(--primary-foreground))" strokeWidth="1" strokeOpacity="0.3"
+                     animate={{
+                        scale: isListening ? [1, 1.02, 1] : 1,
+                    }}
+                    transition={{
+                        scale: { duration: 2, repeat: Infinity, ease: "easeInOut" },
+                    }}
+                 />
+                <motion.g animate={{ scaleY: eyeLid ? 0.1 : 1, originY: '90px' }} transition={{ duration: 0.1 }}>
+                    <path d="M 70 90 L 90 90" stroke="hsl(var(--primary-foreground))" strokeWidth="2.5" strokeLinecap="round" />
+                    <path d="M 110 90 L 130 90" stroke="hsl(var(--primary-foreground))" strokeWidth="2.5" strokeLinecap="round" />
+                </motion.g>
+                <motion.path 
+                    d="M 80 130 Q 100 130 120 130" 
+                    stroke="hsl(var(--primary-foreground))" 
+                    strokeWidth="2.5" fill="none" strokeLinecap="round"
+                    animate={{
+                        d: isSpeaking 
+                            ? ["M 80 130 Q 100 130 120 130", "M 80 130 Q 100 140 120 130", "M 80 130 Q 100 130 120 130"] 
+                            : "M 80 130 Q 100 130 120 130"
+                    }}
+                    transition={{
+                        duration: 0.4,
+                        repeat: isSpeaking ? Infinity : 0,
+                        ease: "easeInOut"
+                    }}
+                />
+            </motion.svg>
         </motion.div>
     );
 };
