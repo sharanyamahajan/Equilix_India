@@ -74,7 +74,7 @@ const AuraAvatar = ({ aiStatus }: { aiStatus: string }) => {
                 />
                 <g id="eyes">
                     <motion.circle cx="160" cy="180" r="10" fill="hsl(var(--primary))" animate={{ scaleY: [1, 0.1, 1] }} transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 3 }} />
-                    <motion.circle cx="240" cy="180" r="10" fill="hsl(var(--primary))" animate={{ scaleY: [1, 0.1, 1] }} transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 4 }} />
+                    <motion.circle cx="240" cy="180" r="10" fill="hsl(var(--primary))" animate={{ scaleY: [1, 0.1, 1] }} transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 3 }} />
                 </g>
             </svg>
         </motion.div>
