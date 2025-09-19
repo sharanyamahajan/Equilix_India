@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useRef, useEffect, useTransition } from 'react';
+import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { getEmotionDetection } from '@/app/actions';
-import { Loader2, Activity, Lightbulb, Camera } from 'lucide-react';
+import { Loader2, Activity, Lightbulb, Camera, Music, Bot, BookOpen } from 'lucide-react';
 import { Progress } from '../ui/progress';
 
 type EmotionResult = {
@@ -57,7 +58,6 @@ export function EmotionDetector() {
     getCameraPermission();
 
     return () => {
-      // Cleanup: stop video stream when component unmounts
       if (videoRef.current && videoRef.current.srcObject) {
         const stream = videoRef.current.srcObject as MediaStream;
         stream.getTracks().forEach(track => track.stop());
@@ -97,9 +97,43 @@ export function EmotionDetector() {
     if (lowerEmotion.includes('happy') || lowerEmotion.includes('joy')) return '😊';
     if (lowerEmotion.includes('sad')) return '😢';
     if (lowerEmotion.includes('angry')) return '😠';
+    if (lowerEmotion.includes('stress')) return '😥';
     if (lowerEmotion.includes('surprised')) return '😮';
     if (lowerEmotion.includes('neutral')) return '😐';
     return '🤔';
+  }
+  
+  const EmotionAwareActions = ({emotion}: {emotion: string}) => {
+    const lowerEmotion = emotion.toLowerCase();
+    if (lowerEmotion.includes('sad')) {
+        return (
+            <Button asChild variant="outline" className="w-full justify-start gap-4">
+                <a href="https://open.spotify.com/playlist/37i9dQZF1DX3rxVfibe1L0" target="_blank" rel="noopener noreferrer">
+                    <Music className="text-primary" />
+                    Listen to a Positive Playlist
+                </a>
+            </Button>
+        )
+    }
+    if (lowerEmotion.includes('stress') || lowerEmotion.includes('angry')) {
+        return (
+            <div className="space-y-2">
+                <Link href="/#journal" passHref>
+                    <Button variant="outline" className="w-full justify-start gap-4">
+                        <BookOpen className="text-primary" />
+                        Write in your Journal
+                    </Button>
+                </Link>
+                <Link href="/ai-friend" passHref>
+                    <Button variant="outline" className="w-full justify-start gap-4">
+                        <Bot className="text-primary" />
+                        Talk to your AI Friend
+                    </Button>
+                </Link>
+            </div>
+        )
+    }
+    return null;
   }
 
   return (
@@ -155,6 +189,8 @@ export function EmotionDetector() {
                 </div>
               </div>
             </Card>
+            
+            <EmotionAwareActions emotion={result.emotion} />
 
             <Card>
                 <CardHeader>

@@ -20,7 +20,7 @@ const DetectEmotionInputSchema = z.object({
 export type DetectEmotionInput = z.infer<typeof DetectEmotionInputSchema>;
 
 const DetectEmotionOutputSchema = z.object({
-  emotion: z.string().describe("The detected primary emotion (e.g., Happy, Sad, Angry, Surprised, Neutral). If no face is detected, return 'Unknown'."),
+  emotion: z.string().describe("The detected primary emotion (e.g., Happy, Sad, Angry, Surprised, Neutral, Stress). If no face is detected, return 'Unknown'."),
   confidence: z.number().min(0).max(1).describe("The confidence score for the detected emotion, from 0 to 1. If no face, return 0."),
   feedback: z.string().describe("A short, encouraging, and empathetic feedback message for the user based on their emotion. If no face is detected, ask them to center their face in the camera."),
   suggestions: z.array(z.string()).describe("A list of 2-3 actionable suggestions to either maintain a positive mood or improve a negative one."),
@@ -43,7 +43,7 @@ const prompt = ai.definePrompt({
 
 Your analysis should be empathetic, supportive, and actionable.
 
-- If a face is clearly visible, identify the primary emotion (like Happy, Sad, Neutral, Surprised, Angry).
+- If a face is clearly visible, identify the primary emotion (like Happy, Sad, Neutral, Surprised, Angry, Stress).
 - Provide a confidence score for your detection.
 - Offer a brief, positive, and encouraging piece of feedback related to that emotion. For example, if they look happy, you could say "It's wonderful to see you shining so brightly!". If they look sad, you could say "It's okay to feel down sometimes. Remember to be kind to yourself."
 - Based on the detected emotion, provide a list of 2-3 simple, actionable suggestions. For positive emotions, suggest ways to savor the feeling. For negative emotions, suggest constructive ways to process or improve their mood.

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 
 export function GratitudeJournal() {
   return (
-    <Card>
+    <Card id="journal">
       <CardHeader>
         <CardTitle>Gratitude Journal</CardTitle>
         <CardDescription>
