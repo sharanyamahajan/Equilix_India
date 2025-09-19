@@ -19,6 +19,7 @@ const DotFlashing = () => <div className="dot-flashing"></div>;
 
 const AuraAvatar = ({ aiStatus }: { aiStatus: 'listening' | 'thinking' | 'speaking' }) => {
     const mouthRef = useRef<SVGPathElement | null>(null);
+    const eyesRef = useRef<SVGGElement | null>(null);
 
     const mouthShapes = {
         neutral: "M 80 130 Q 100 130 120 130",
@@ -49,7 +50,7 @@ const AuraAvatar = ({ aiStatus }: { aiStatus: 'listening' | 'thinking' | 'speaki
     }, [aiStatus]);
     
      useEffect(() => {
-        const eyes = document.getElementById('eyes');
+        const eyes = eyesRef.current;
         if (!eyes) return;
 
         const blink = () => {
@@ -75,9 +76,16 @@ const AuraAvatar = ({ aiStatus }: { aiStatus: 'listening' | 'thinking' | 'speaki
             </defs>
             <circle cx="100" cy="100" r="90" fill="url(#auraGradient)" />
             <circle cx="100" cy="100" r="70" fill="none" stroke="#ffffff" strokeWidth="2" strokeOpacity="0.5" />
-            <g id="eyes" style={{transition: 'transform 0.2s ease-out'}}>
-                <path className="eye-line" d="M 70 90 L 90 90" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" />
-                <path className="eye-line" d="M 110 90 L 130 90" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" />
+            <g ref={eyesRef} id="eyes" style={{transition: 'transform 0.2s ease-out', transformOrigin: 'center'}}>
+                {/* Left Eye */}
+                <circle cx="80" cy="95" r="12" fill="white" />
+                <circle cx="80" cy="95" r="6" fill="#333" />
+                <circle cx="82" cy="93" r="2" fill="white" />
+                
+                {/* Right Eye */}
+                <circle cx="120" cy="95" r="12" fill="white" />
+                <circle cx="120" cy="95" r="6" fill="#333" />
+                <circle cx="122" cy="93" r="2" fill="white" />
             </g>
             <path ref={mouthRef} id="mouth" d="M 80 130 Q 100 130 120 130" stroke="#ffffff" strokeWidth="3" fill="none" strokeLinecap="round"/>
         </svg>
