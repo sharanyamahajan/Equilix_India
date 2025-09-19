@@ -1,16 +1,14 @@
-
 'use client';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, HeartPulse, Camera, Puzzle, Waves } from 'lucide-react';
+import { Home, HeartPulse, Camera, Puzzle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navLinks = [
   { href: '/', label: 'Home', icon: Home },
   { href: '/emotion-detector', label: 'Emotion Detector', icon: Camera },
   { href: '/mindful-maze', label: 'Mindful Maze', icon: Puzzle },
-  { href: '/fluid-game', label: 'Fluid Flow', icon: Waves },
 ];
 
 export function NavBar() {

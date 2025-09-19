@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Gamepad2, Wind, Waves } from 'lucide-react';
+import { Gamepad2, Wind } from 'lucide-react';
 import Link from 'next/link';
 import { BreathingExercise } from './breathing-exercise';
 
@@ -36,20 +36,6 @@ export function RelaxingGames() {
                 <p className="text-sm text-muted-foreground mb-4">Find your way through a calming maze. A simple way to focus your mind.</p>
                 <Button asChild variant="outline">
                     <Link href="/mindful-maze">Play Maze</Link>
-                </Button>
-            </CardContent>
-        </Card>
-        <Card className="bg-secondary/50 sm:col-span-2">
-            <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                    <Waves />
-                    Fluid Flow
-                </CardTitle>
-            </CardHeader>
-            <CardContent>
-                <p className="text-sm text-muted-foreground mb-4">Watch the colors flow and let your mind drift. A moment of calm in a busy world.</p>
-                <Button asChild variant="outline">
-                    <Link href="/fluid-game">Experience Flow</Link>
                 </Button>
             </CardContent>
         </Card>
