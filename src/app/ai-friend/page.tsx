@@ -144,6 +144,7 @@ export default function AiFriendPage() {
                     
                     isAIThinkingRef.current = true;
                     setAiStatus('thinking');
+                    setAiStatusText(''); // Clear text while thinking
                     
                     startTransition(async () => {
                         const response = await getAIFriendResponse(finalTranscript.trim());
@@ -211,7 +212,7 @@ export default function AiFriendPage() {
         await startMedia();
         setScreen('call');
         setLoadingText('');
-        if (isMicOn) startSpeechRecognition();
+        speak("Hi there! What's on your mind today?");
     };
 
     const handleEndCall = () => {
