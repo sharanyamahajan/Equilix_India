@@ -3,10 +3,11 @@
 import { DailyAffirmation } from '@/components/app/daily-affirmation';
 import { GratitudeJournal } from '@/components/app/gratitude-journal';
 import { WellnessSurvey } from '@/components/app/wellness-survey';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Camera, Bot, Sparkles } from 'lucide-react';
+import { Camera, Bot, Sparkles } from 'lucide-react';
 import Link from 'next/link';
+import { JournalingStreak } from '@/components/app/journaling-streak';
 
 
 export default function Home() {
@@ -31,6 +32,7 @@ export default function Home() {
             </div>
             <div className="space-y-8">
               <DailyAffirmation />
+              <JournalingStreak />
               <Card className="bg-primary/10 border-primary/20">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">

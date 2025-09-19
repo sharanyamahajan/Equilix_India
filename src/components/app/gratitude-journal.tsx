@@ -2,7 +2,6 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
 
 export function GratitudeJournal() {
   return (
@@ -15,11 +14,11 @@ export function GratitudeJournal() {
       </CardHeader>
       <CardContent className="space-y-4">
         <Textarea 
-          placeholder="1. A warm cup of coffee..." 
+          placeholder="1. A warm cup of coffee...&#10;2. A surprising phone call from a friend...&#10;3. The quiet moment of sunrise..." 
           className="min-h-[150px] text-base resize-none"
         />
         <div className="flex justify-end">
-            <Button>Save Entry</Button>
+            <p className="text-xs text-muted-foreground">Your journal saves automatically.</p>
         </div>
       </CardContent>
     </Card>
