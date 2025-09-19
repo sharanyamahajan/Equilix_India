@@ -31,51 +31,91 @@ const AuraAvatar = ({ aiStatus }: { aiStatus: string }) => {
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
                 className="drop-shadow-lg"
+                aria-labelledby="aura-avatar-title"
+                role="img"
             >
-                <motion.circle
-                    cx="200"
-                    cy="200"
-                    r="180"
-                    fill="url(#gradient)"
-                    initial={{ scale: 1 }}
-                    animate={{ scale: isSpeaking ? 1.03 : 1 }}
-                    transition={{ duration: 1, repeat: Infinity, repeatType: 'reverse', ease: 'easeInOut' }}
-                />
+                <title id="aura-avatar-title">Aura AI Avatar</title>
+                <desc>An animated, friendly AI avatar with soft pastel colors.</desc>
                 <defs>
-                    <radialGradient id="gradient" cx="50%" cy="50%" r="50%" fx="50%" fy="30%">
-                        <stop stopColor="#AEC6CF" stopOpacity="0.7" />
-                        <stop offset="1" stopColor="#AEC6CF" stopOpacity="0.3" />
+                    <radialGradient id="ring-gradient" cx="50%" cy="50%" r="50%" fx="50%" fy="30%">
+                        <stop stopColor="#AEC6CF" />
+                        <stop offset="1" stopColor="#C2B2E2" />
+                    </radialGradient>
+                    <radialGradient id="face-gradient" cx="50%" cy="50%" r="50%" fx="50%" fy="40%">
+                        <stop stopColor="#FDE6E0" stopOpacity="0.9"/>
+                        <stop offset="1" stopColor="#E0D8F0" stopOpacity="0.9" />
+                    </radialGradient>
+                     <radialGradient id="blush-gradient" cx="50%" cy="50%" r="50%">
+                        <stop stopColor="#E9AFA3" stopOpacity="0.5" />
+                        <stop offset="1" stopColor="#E9AFA3" stopOpacity="0" />
                     </radialGradient>
                 </defs>
+                
                 <motion.circle
                     cx="200"
                     cy="200"
-                    r="150"
-                    fill="hsl(var(--background))"
+                    r="190"
+                    fill="url(#ring-gradient)"
+                    initial={{ scale: 1 }}
+                    animate={{ scale: isSpeaking ? 1.02 : 1 }}
+                    transition={{ duration: 1, repeat: Infinity, repeatType: 'reverse', ease: 'easeInOut' }}
                 />
-                <motion.path
-                    d="M150 220 Q200 250, 250 220"
-                    stroke="#AEC6CF"
-                    strokeWidth="8"
-                    fill="none"
-                    strokeLinecap="round"
-                    initial={{ d: "M170 230 Q200 230, 230 230" }}
-                    animate={{
-                        d: isSpeaking
-                            ? [
-                                "M170 230 Q200 250, 230 230",
-                                "M170 230 Q200 220, 230 230",
-                                "M170 230 Q200 240, 230 230",
-                                "M170 230 Q200 230, 230 230"
-                            ]
-                            : "M160 235 Q200 250, 240 235"
-                    }}
-                    transition={{ duration: 0.4, repeat: isSpeaking ? Infinity : 0, ease: 'easeInOut' }}
-                />
-                <g id="eyes">
-                    <motion.circle cx="160" cy="180" r="10" fill="#AEC6CF" animate={{ scaleY: [1, 0.1, 1] }} transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 3 }} />
-                    <motion.circle cx="240" cy="180" r="10" fill="#AEC6CF" animate={{ scaleY: [1, 0.1, 1] }} transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 3 }} />
+                
+                <circle cx="200" cy="200" r="180" fill="hsl(var(--background))" />
+                
+                <g id="body">
+                    <path d="M120 370 C 150 340, 250 340, 280 370 L 280 400 L 120 400 Z" fill="#D6E2EA" />
+                    <circle cx="200" cy="220" r="150" fill="url(#face-gradient)" />
                 </g>
+
+                <g id="face-details">
+                    <circle cx="165" cy="220" r="30" fill="url(#blush-gradient)" />
+                    <circle cx="235" cy="220" r="30" fill="url(#blush-gradient)" />
+
+                    <g id="eyes">
+                        <motion.g id="left-eye" initial={false} animate={isSpeaking ? "speaking" : "idle"}>
+                           <motion.path d="M 150 190 C 160 175, 180 175, 190 190" stroke="#6B5B7B" strokeWidth="3" fill="none" />
+                           <motion.ellipse
+                                cx="170" cy="195" rx="18" ry="22" fill="#FFFFFF"
+                                animate={{ scaleY: [1, 0.1, 1] }}
+                                transition={{ duration: 0.3, repeat: Infinity, repeatDelay: 3.5, ease: "easeOut" }}
+                            />
+                            <motion.circle cx="170" cy="195" r="8" fill="#6B5B7B" variants={{ idle: { x: 0, y: 0 }, speaking: { x: 2, y: -1 } }} />
+                            <motion.circle cx="173" cy="192" r="3" fill="#FFFFFF" opacity="0.8" variants={{ idle: { x: 0, y: 0 }, speaking: { x: 2, y: -1 } }} />
+                        </motion.g>
+                        <motion.g id="right-eye" initial={false} animate={isSpeaking ? "speaking" : "idle"}>
+                           <motion.path d="M 210 190 C 220 175, 240 175, 250 190" stroke="#6B5B7B" strokeWidth="3" fill="none" />
+                           <motion.ellipse
+                                cx="230" cy="195" rx="18" ry="22" fill="#FFFFFF"
+                                animate={{ scaleY: [1, 0.1, 1] }}
+                                transition={{ duration: 0.3, repeat: Infinity, repeatDelay: 3.5, ease: "easeOut" }}
+                            />
+                            <motion.circle cx="230" cy="195" r="8" fill="#6B5B7B" variants={{ idle: { x: 0, y: 0 }, speaking: { x: 1, y: 0 } }} />
+                            <motion.circle cx="233" cy="192" r="3" fill="#FFFFFF" opacity="0.8" variants={{ idle: { x: 0, y: 0 }, speaking: { x: 1, y: 0 } }} />
+                        </motion.g>
+                    </g>
+
+                    <motion.path
+                        id="mouth"
+                        stroke="#A56E73"
+                        strokeWidth="4"
+                        fill="none"
+                        strokeLinecap="round"
+                        initial={{ d: "M 180 250 Q 200 255, 220 250" }}
+                        animate={{
+                            d: isSpeaking
+                                ? [
+                                    "M 180 250 Q 200 265, 220 250", // o sound
+                                    "M 185 255 Q 200 250, 215 255", // e sound
+                                    "M 180 250 Q 200 260, 220 250", // u sound
+                                    "M 180 250 Q 200 255, 220 250"  // neutral
+                                ]
+                                : "M 180 250 Q 200 260, 220 250" // slight smile
+                        }}
+                        transition={{ duration: 0.4, repeat: isSpeaking ? Infinity : 0, ease: 'easeInOut' }}
+                    />
+                </g>
+                <path d="M 120 180 C 150 80, 250 80, 280 180 Q 200 140, 120 180" fill="#E2C2B2" opacity="0.6" />
             </svg>
         </motion.div>
     );
