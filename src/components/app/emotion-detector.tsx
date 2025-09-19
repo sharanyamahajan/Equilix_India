@@ -6,21 +6,13 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { getEmotionDetection } from '@/app/actions';
-import { Loader2, Smile, Camera, Lightbulb } from 'lucide-react';
+import { Loader2, Smile, Camera } from 'lucide-react';
 import { Progress } from '../ui/progress';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion"
-
 
 type EmotionResult = {
   emotion: string;
   confidence: number;
   feedback: string;
-  suggestions: string[];
 };
 
 export function EmotionDetector() {
@@ -128,7 +120,7 @@ export function EmotionDetector() {
                 <AlertTitle>Camera Required</AlertTitle>
                 <AlertDescription>
                 This feature needs camera access to work. Please update your browser settings.
-                </AlertDescription>
+                </-AlertDescription>
             </Alert>
         )}
 
@@ -158,26 +150,6 @@ export function EmotionDetector() {
                 </div>
               </div>
             </Card>
-            
-            {result.suggestions && result.suggestions.length > 0 && (
-              <Accordion type="single" collapsible className="w-full" defaultValue="item-1">
-                <AccordionItem value="item-1">
-                  <AccordionTrigger>
-                    <div className="flex items-center gap-2 font-semibold">
-                      <Lightbulb className="text-accent" />
-                      Suggestions & Exercises
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <ul className="space-y-3 pl-6 pr-2 pt-2 list-disc">
-                      {result.suggestions.map((suggestion, index) => (
-                        <li key={index} className="text-sm">{suggestion}</li>
-                      ))}
-                    </ul>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-            )}
           </div>
         )}
       </CardContent>
