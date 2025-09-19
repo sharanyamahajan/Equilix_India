@@ -18,15 +18,25 @@ const UserPlaceholderIcon = () => (
 const AuraAvatar = ({ aiStatus }: { aiStatus: string }) => {
     const isListening = aiStatus === 'listening';
     const isSpeaking = aiStatus === 'speaking';
-    const [eyeLid, setEyeLid] = useState(false);
+    const [isBlinking, setIsBlinking] = useState(false);
 
     useEffect(() => {
         const blinkInterval = setInterval(() => {
-            setEyeLid(true);
-            setTimeout(() => setEyeLid(false), 200);
-        }, 4000);
+            setIsBlinking(true);
+            setTimeout(() => setIsBlinking(false), 200);
+        }, Math.random() * 4000 + 2000); // Blink every 2-6 seconds
         return () => clearInterval(blinkInterval);
     }, []);
+
+    const idleAnimation = {
+      scale: [1, 1.02, 1],
+      transition: { duration: 5, repeat: Infinity, ease: 'easeInOut' },
+    };
+
+    const listeningAnimation = {
+      scale: [1, 1.03, 1],
+      transition: { duration: 2, repeat: Infinity, ease: 'easeInOut' },
+    };
 
     return (
         <motion.div 
@@ -35,42 +45,68 @@ const AuraAvatar = ({ aiStatus }: { aiStatus: string }) => {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
         >
-            <motion.svg viewBox="0 0 200 200" className="w-full h-full">
+            <motion.svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-lg">
                 <defs>
                     <radialGradient id="auraGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-                        <motion.stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.5" 
-                            animate={{ stopOpacity: isListening ? [0.5, 0.7, 0.5] : 0.5 }}
-                            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                        <motion.stop 
+                            offset="0%" 
+                            stopColor="hsl(var(--primary))" 
+                            stopOpacity={0.7}
+                            animate={isListening ? { stopOpacity: [0.7, 1, 0.7] } : {}}
+                            transition={isListening ? { duration: 2, repeat: Infinity, ease: 'easeInOut' } : {}}
                         />
-                        <motion.stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.8" />
+                        <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.9} />
                     </radialGradient>
                 </defs>
+                
+                {/* Main face shape with subtle breathing animation */}
                 <motion.circle 
-                    cx="100" cy="100" r="90" fill="url(#auraGradient)" 
-                    animate={{ scale: isSpeaking ? 1.02 : 1 }}
-                    transition={{ duration: 0.4, ease: 'easeOut' }}
+                    cx="100" 
+                    cy="100" 
+                    r="90" 
+                    fill="url(#auraGradient)" 
+                    animate={isListening ? listeningAnimation : idleAnimation}
                 />
-                 <motion.circle 
-                    cx="100" cy="100" r="70" fill="none" stroke="hsl(var(--primary-foreground))" strokeWidth="1" strokeOpacity="0.3"
-                     animate={{
-                        scale: isListening ? [1, 1.02, 1] : 1,
-                    }}
-                    transition={{
-                        scale: { duration: 2, repeat: Infinity, ease: "easeInOut" },
-                    }}
-                 />
-                <motion.g animate={{ scaleY: eyeLid ? 0.1 : 1, originY: '90px' }} transition={{ duration: 0.1 }}>
-                    <path d="M 70 90 L 90 90" stroke="hsl(var(--primary-foreground))" strokeWidth="2.5" strokeLinecap="round" />
-                    <path d="M 110 90 L 130 90" stroke="hsl(var(--primary-foreground))" strokeWidth="2.5" strokeLinecap="round" />
+
+                {/* Eyes */}
+                <motion.g animate={{ y: isBlinking ? 5 : 0 }} transition={{ duration: 0.1 }}>
+                    <motion.ellipse
+                        cx="75"
+                        cy="90"
+                        rx="8"
+                        ry={isBlinking ? 1 : 10}
+                        fill="hsl(var(--primary-foreground))"
+                        opacity="0.8"
+                        transition={{ duration: 0.2 }}
+                    />
+                    <motion.ellipse
+                        cx="125"
+                        cy="90"
+                        rx="8"
+                        ry={isBlinking ? 1 : 10}
+                        fill="hsl(var(--primary-foreground))"
+                        opacity="0.8"
+                        transition={{ duration: 0.2 }}
+                    />
                 </motion.g>
+
+                {/* Mouth */}
                 <motion.path 
-                    d="M 80 130 Q 100 130 120 130" 
+                    d="M 90 135 C 95 140, 105 140, 110 135" 
                     stroke="hsl(var(--primary-foreground))" 
-                    strokeWidth="2.5" fill="none" strokeLinecap="round"
+                    strokeWidth="2.5" 
+                    fill="none" 
+                    strokeLinecap="round"
+                    initial={{ d: "M 90 135 C 95 135, 105 135, 110 135" }}
                     animate={{
                         d: isSpeaking 
-                            ? ["M 80 130 Q 100 130 120 130", "M 80 130 Q 100 140 120 130", "M 80 130 Q 100 130 120 130"] 
-                            : "M 80 130 Q 100 130 120 130"
+                            ? [
+                                "M 90 135 C 95 140, 105 140, 110 135", // Open shape
+                                "M 90 135 C 95 132, 105 132, 110 135", // "m" shape
+                                "M 90 135 C 95 145, 105 145, 110 135", // "o" shape
+                                "M 90 135 C 95 140, 105 140, 110 135"
+                              ]
+                            : "M 90 135 C 95 135, 105 135, 110 135" // Neutral line
                     }}
                     transition={{
                         duration: 0.4,
