@@ -77,7 +77,7 @@ const AuraAvatar = ({ aiStatus }: { aiStatus: 'listening' | 'thinking' | 'speaki
                 </radialGradient>
             </defs>
             <circle cx="100" cy="100" r="90" fill="url(#auraGradient)" />
-            <circle cx="100" cy="100" r="70" fill="none" stroke="#ffffff" stroke-width="2" stroke-opacity="0.5" />
+            <circle cx="100" cy="100" r="70" fill="none" stroke="#ffffff" strokeWidth="2" strokeOpacity="0.5" />
             <g ref={eyesRef} id="eyes" style={{transition: 'transform 0.2s ease-out', transformOrigin: 'center'}}>
                 {/* Left Eye */}
                 <ellipse cx="80" cy="95" rx="14" ry="16" fill="white" />
@@ -407,3 +407,4 @@ export default function AiFriendPage() {
 
 
     
+
