@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Mic, MicOff, Video, VideoOff, PhoneOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { AuraAvatar } from '@/components/icons/aura-avatar';
 
 // --- SVG Icons ---
 const UserPlaceholderIcon = () => (
@@ -14,111 +15,6 @@ const UserPlaceholderIcon = () => (
     <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
   </svg>
 );
-
-const AuraAvatar = ({ aiStatus }: { aiStatus: string }) => {
-    const isListening = aiStatus === 'listening';
-    const isSpeaking = aiStatus === 'speaking';
-    const [isBlinking, setIsBlinking] = useState(false);
-
-    useEffect(() => {
-        const blinkInterval = setInterval(() => {
-            setIsBlinking(true);
-            setTimeout(() => setIsBlinking(false), 200);
-        }, Math.random() * 4000 + 2000); // Blink every 2-6 seconds
-        return () => clearInterval(blinkInterval);
-    }, []);
-
-    const idleAnimation = {
-      scale: [1, 1.02, 1],
-      transition: { duration: 5, repeat: Infinity, ease: 'easeInOut' },
-    };
-
-    const listeningAnimation = {
-      scale: [1, 1.03, 1],
-      transition: { duration: 2, repeat: Infinity, ease: 'easeInOut' },
-    };
-
-    return (
-        <motion.div 
-            className="relative w-full h-full"
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-        >
-            <motion.svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-lg">
-                <defs>
-                    <radialGradient id="auraGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-                        <motion.stop 
-                            offset="0%" 
-                            stopColor="hsl(var(--primary))" 
-                            stopOpacity={0.7}
-                            animate={isListening ? { stopOpacity: [0.7, 1, 0.7] } : {}}
-                            transition={isListening ? { duration: 2, repeat: Infinity, ease: 'easeInOut' } : {}}
-                        />
-                        <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.9} />
-                    </radialGradient>
-                </defs>
-                
-                {/* Main face shape with subtle breathing animation */}
-                <motion.circle 
-                    cx="100" 
-                    cy="100" 
-                    r="90" 
-                    fill="url(#auraGradient)" 
-                    animate={isListening ? listeningAnimation : idleAnimation}
-                />
-
-                {/* Eyes */}
-                <motion.g animate={{ y: isBlinking ? 5 : 0 }} transition={{ duration: 0.1 }}>
-                    <motion.ellipse
-                        cx="75"
-                        cy="90"
-                        rx="8"
-                        ry={isBlinking ? 1 : 10}
-                        fill="hsl(var(--primary-foreground))"
-                        opacity="0.8"
-                        transition={{ duration: 0.2 }}
-                    />
-                    <motion.ellipse
-                        cx="125"
-                        cy="90"
-                        rx="8"
-                        ry={isBlinking ? 1 : 10}
-                        fill="hsl(var(--primary-foreground))"
-                        opacity="0.8"
-                        transition={{ duration: 0.2 }}
-                    />
-                </motion.g>
-
-                {/* Mouth */}
-                <motion.path 
-                    d="M 90 135 C 95 140, 105 140, 110 135" 
-                    stroke="hsl(var(--primary-foreground))" 
-                    strokeWidth="2.5" 
-                    fill="none" 
-                    strokeLinecap="round"
-                    initial={{ d: "M 90 135 C 95 135, 105 135, 110 135" }}
-                    animate={{
-                        d: isSpeaking 
-                            ? [
-                                "M 90 135 C 95 140, 105 140, 110 135", // Open shape
-                                "M 90 135 C 95 132, 105 132, 110 135", // "m" shape
-                                "M 90 135 C 95 145, 105 145, 110 135", // "o" shape
-                                "M 90 135 C 95 140, 105 140, 110 135"
-                              ]
-                            : "M 90 135 C 95 135, 105 135, 110 135" // Neutral line
-                    }}
-                    transition={{
-                        duration: 0.4,
-                        repeat: isSpeaking ? Infinity : 0,
-                        ease: "easeInOut"
-                    }}
-                />
-            </motion.svg>
-        </motion.div>
-    );
-};
-
 
 const DotFlashing = () => <div className="dot-flashing"></div>;
 
@@ -332,7 +228,7 @@ export default function AiFriendPage() {
                             <div id="ai-status" className="absolute bottom-40 min-h-[5rem] max-w-[80%] mx-auto px-6 py-4 rounded-xl text-center text-card-foreground transition-all duration-300 glass-card">
                                  <AnimatePresence mode="wait">
                                     <motion.div
-                                        key={aiStatus}
+                                        key={aiStatusText} // Use aiStatusText to trigger animation on text change
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         exit={{ opacity: 0, y: -10 }}
