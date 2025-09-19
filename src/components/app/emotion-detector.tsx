@@ -8,6 +8,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { getEmotionDetection } from '@/app/actions';
 import { Loader2, Smile, Camera } from 'lucide-react';
 import { Progress } from '../ui/progress';
+import { RelaxingGames } from './relaxing-games';
 
 type EmotionResult = {
   emotion: string;
@@ -120,7 +121,7 @@ export function EmotionDetector() {
                 <AlertTitle>Camera Required</AlertTitle>
                 <AlertDescription>
                 This feature needs camera access to work. Please update your browser settings.
-                </-AlertDescription>
+                </AlertDescription>
             </Alert>
         )}
 
