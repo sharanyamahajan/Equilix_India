@@ -16,10 +16,10 @@ export default function Home() {
         <main className="flex-grow container mx-auto px-4 py-8 md:py-12">
           
           <section className="text-center py-16 md:py-24">
-              <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-foreground">
+              <h1 className="text-4xl md:text-6xl font-headline font-medium tracking-tight text-foreground animate-in fade-in slide-in-from-top-4 duration-1000">
                 Welcome to Equilix
               </h1>
-              <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mt-4 font-light">
+              <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mt-4 font-light tracking-wide">
                 Your personal space for daily reflection, gratitude, and mental clarity.
               </p>
           </section>
