@@ -3,13 +3,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, HeartPulse, Camera, Puzzle } from 'lucide-react';
+import { Home, HeartPulse, Camera, Puzzle, Waves } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navLinks = [
   { href: '/', label: 'Home', icon: Home },
   { href: '/emotion-detector', label: 'Emotion Detector', icon: Camera },
   { href: '/mindful-maze', label: 'Mindful Maze', icon: Puzzle },
+  { href: '/fluid-game', label: 'Fluid Flow', icon: Waves },
 ];
 
 export function NavBar() {
@@ -22,7 +23,7 @@ export function NavBar() {
           <HeartPulse />
           <span>Mindful Moments</span>
         </Link>
-        <div className="flex items-center gap-2 sm:gap-4">
+        <div className="flex items-center gap-1 sm:gap-2">
           {navLinks.map((link) => {
             const isActive = pathname === link.href;
             return (
@@ -30,14 +31,14 @@ export function NavBar() {
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                  'flex items-center gap-2 px-2 sm:px-3 py-2 rounded-md text-sm font-medium transition-colors',
                   isActive
                     ? 'bg-primary text-primary-foreground'
                     : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
                 )}
               >
                 <link.icon className="h-4 w-4" />
-                <span className="hidden sm:inline">{link.label}</span>
+                <span className="hidden md:inline">{link.label}</span>
               </Link>
             );
           })}
