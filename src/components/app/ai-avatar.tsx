@@ -70,7 +70,7 @@ export function AIAvatar({ state = 'idle' }: AIAvatarProps) {
             height="8"
             className="fill-background"
             variants={eyeLidVariants}
-            transform-origin="center"
+            transformOrigin="center"
           />
            <motion.rect
             x="55"
@@ -79,7 +79,7 @@ export function AIAvatar({ state = 'idle' }: AIAvatarProps) {
             height="8"
             className="fill-background"
             variants={eyeLidVariants}
-            transform-origin="center"
+            transformOrigin="center"
           />
         </g>
 
