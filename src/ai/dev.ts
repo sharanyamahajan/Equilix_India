@@ -4,3 +4,4 @@ config();
 import '@/ai/flows/suggest-html-improvements.ts';
 import '@/ai/flows/analyze-wellness.ts';
 import '@/ai/flows/detect-emotion.ts';
+import '@/ai/flows/ai-friend.ts';
