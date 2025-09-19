@@ -1,7 +1,8 @@
 'use server';
 
 import { suggestHtmlImprovements } from '@/ai/flows/suggest-html-improvements';
-import { analyzeWellness, WellnessSurveyInput } from '@/ai/flows/analyze-wellness';
+import { analyzeWellness } from '@/ai/flows/analyze-wellness';
+import type { WellnessSurveyInput } from '@/ai/schemas/wellness';
 
 export async function getHtmlImprovements(htmlContent: string) {
   if (!htmlContent) {

@@ -3,29 +3,19 @@
  * @fileOverview A wellness analysis AI agent.
  *
  * - analyzeWellness - A function that handles the wellness analysis process.
- * - WellnessSurveyInput - The input type for the analyzeWellness function.
- * - WellnessAnalysisOutput - The return type for the analyzeWellness function.
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import {
+  WellnessSurveyInputSchema,
+  WellnessAnalysisOutputSchema,
+  type WellnessSurveyInput,
+  type WellnessAnalysisOutput,
+} from '@/ai/schemas/wellness';
 
-export const WellnessSurveyInputSchema = z.object({
-  age: z.number().describe('The age of the user.'),
-  mood: z.number().describe('The user\'s mood on a scale of 0 to 100.'),
-  thoughts: z.string().describe('A summary of what is on the user\'s mind.'),
-});
-export type WellnessSurveyInput = z.infer<typeof WellnessSurveyInputSchema>;
-
-export const WellnessAnalysisOutputSchema = z.object({
-  mood: z.string().describe("A single word describing the user's mood (e.g., Positive, Neutral, Negative)."),
-  summary: z.string().describe('A brief, empathetic summary of the user\'s feelings.'),
-  suggestions: z.array(z.string()).describe('A list of 3-5 actionable suggestions tailored to the user\'s age and mood.'),
-  recommendedAction: z.string().describe('A single, primary recommended action for the user to take.'),
-});
-export type WellnessAnalysisOutput = z.infer<typeof WellnessAnalysisOutputSchema>;
-
-export async function analyzeWellness(input: WellnessSurveyInput): Promise<WellnessAnalysisOutput> {
+export async function analyzeWellness(
+  input: WellnessSurveyInput
+): Promise<WellnessAnalysisOutput> {
   return analyzeWellnessFlow(input);
 }
 

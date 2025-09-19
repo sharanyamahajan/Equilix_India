@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { getWellnessAnalysis } from '@/app/actions';
-import type { WellnessSurveyInput, WellnessAnalysisOutput } from '@/ai/flows/analyze-wellness';
+import type { WellnessSurveyInput, WellnessAnalysisOutput } from '@/ai/schemas/wellness';
 import { WellnessAnalysis } from './wellness-analysis';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';

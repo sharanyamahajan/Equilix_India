@@ -1,6 +1,6 @@
 'use client';
 
-import type { WellnessAnalysisOutput } from '@/ai/flows/analyze-wellness';
+import type { WellnessAnalysisOutput } from '@/ai/schemas/wellness';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Lightbulb, Activity, BrainCircuit } from 'lucide-react';
