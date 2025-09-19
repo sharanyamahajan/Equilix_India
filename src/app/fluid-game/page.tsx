@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -45,7 +46,11 @@ const generateBlobs = () => {
 
 
 export default function FluidGamePage() {
-  const [blobs, setBlobs] = useState(generateBlobs());
+  const [blobs, setBlobs] = useState<ReturnType<typeof generateBlobs>>([]);
+
+  useEffect(() => {
+    setBlobs(generateBlobs());
+  }, []);
   
   const resetAnimation = () => {
     setBlobs(generateBlobs());
