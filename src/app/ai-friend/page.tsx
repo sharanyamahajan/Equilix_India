@@ -32,10 +32,16 @@ const AuraAvatar = ({ aiStatus }: { aiStatus: string }) => {
                 xmlns="http://www.w3.org/2000/svg"
                 className="drop-shadow-lg"
             >
+                <title>Aura, the AI Friend</title>
+                <desc>An animated, friendly avatar for a mental wellness AI companion.</desc>
                 <defs>
                     <radialGradient id="ring-gradient" cx="50%" cy="50%" r="50%" fx="50%" fy="30%">
                         <stop stopColor="#AEC6CF" />
                         <stop offset="1" stopColor="#C2B2E2" />
+                    </radialGradient>
+                    <radialGradient id="face-gradient" cx="50%" cy="40%" r="60%">
+                        <stop stopColor="#FDEFEF" />
+                        <stop offset="1" stopColor="#EAD6E5" />
                     </radialGradient>
                 </defs>
                 
@@ -49,7 +55,7 @@ const AuraAvatar = ({ aiStatus }: { aiStatus: string }) => {
                     transition={{ duration: 1, repeat: Infinity, repeatType: 'reverse', ease: 'easeInOut' }}
                 />
                 
-                <circle cx="200" cy="200" r="180" fill="hsl(var(--background))" />
+                <circle cx="200" cy="200" r="180" fill="url(#face-gradient)" />
                 
                 <g id="body">
                     <path d="M120 370 C 150 340, 250 340, 280 370 L 280 400 L 120 400 Z" fill="#D6E2EA" />
@@ -57,6 +63,10 @@ const AuraAvatar = ({ aiStatus }: { aiStatus: string }) => {
                 </g>
 
                 <g id="face-details">
+                    <g id="cheeks">
+                         <circle cx="145" cy="235" r="20" fill="#E4C1C1" opacity="0.3" />
+                         <circle cx="255" cy="235" r="20" fill="#E4C1C1" opacity="0.3" />
+                    </g>
                     <g id="eyes">
                         <motion.g id="left-eye" initial={false} animate={isSpeaking ? "speaking" : "idle"}>
                            <motion.path d="M 150 190 C 160 175, 180 175, 190 190" stroke="#AEC6CF" strokeWidth="3" fill="none" />
@@ -314,7 +324,7 @@ export default function AiFriendPage() {
                              <div id="ai-character-container" className="relative w-[300px] h-[300px] md:w-[400px] md:h-[400px]">
                                 <AuraAvatar aiStatus={aiStatus} />
                             </div>
-                            <div id="ai-status" className="absolute bottom-40 min-h-[5rem] max-w-[80%] mx-auto px-6 py-4 rounded-xl text-center text-card-foreground transition-all duration-300 glass-card">
+                            <div id="ai-status" className="absolute bottom-40 bg-background/50 backdrop-blur-sm min-h-[5rem] max-w-[80%] mx-auto px-6 py-4 rounded-xl text-center text-card-foreground transition-all duration-300">
                                  <AnimatePresence mode="wait">
                                     <motion.div
                                         key={aiStatusText} // Use aiStatusText to trigger animation on text change
