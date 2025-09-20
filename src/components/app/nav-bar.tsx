@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Camera, HeartPulse, Menu, Info, BrainCircuit, Bot, Home } from 'lucide-react';
+import { LayoutGrid, Menu, Info, BrainCircuit, Bot, Home, HeartPulse } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
@@ -10,9 +10,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 const navLinks = [
   { href: '/', label: 'Home', icon: Home },
-  { href: '/journal', label: 'Journal', icon: HeartPulse },
-  { href: '/emotion-detector', label: 'Emotion Scan', icon: Camera },
-  { href: '/my-twin', label: 'AI Twin', icon: BrainCircuit },
+  { href: '/mode-selection', label: 'Dashboard', icon: LayoutGrid },
   { href: '/ai-friend', label: 'AI Friend', icon: Bot },
   { href: '/about', label: 'About', icon: Info },
 ];
