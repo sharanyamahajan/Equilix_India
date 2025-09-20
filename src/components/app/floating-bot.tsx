@@ -55,7 +55,6 @@ export function FloatingBot() {
     setInput('');
     
     startTransition(async () => {
-      try {
         const response = await getAIFriendResponse({
           history: messages,
           message: currentInput,
@@ -75,16 +74,13 @@ export function FloatingBot() {
           }
 
         } else {
-          throw new Error(response.error || "Failed to get response from AI friend.");
+            console.error('AI Friend error:', response.error);
+            const errorMessage: Message = {
+              role: 'model',
+              text: 'Sorry, I encountered an error. Please try again.',
+            };
+            setMessages((prev) => [...prev, errorMessage]);
         }
-      } catch (error) {
-        console.error('AI Friend error:', error);
-        const errorMessage: Message = {
-          role: 'model',
-          text: 'Sorry, I encountered an error. Please try again.',
-        };
-        setMessages((prev) => [...prev, errorMessage]);
-      }
     });
   };
   
