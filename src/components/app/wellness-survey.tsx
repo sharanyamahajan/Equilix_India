@@ -73,7 +73,7 @@ export function WellnessSurvey() {
   if (analysis) {
     return <WellnessAnalysis analysis={analysis} onReset={() => {
         setAnalysis(null);
-        form.reset();
+        form.reset({ age: '' as any, mood: 50, thoughts: '' });
     }} />;
   }
 
