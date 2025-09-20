@@ -72,7 +72,7 @@ export function NavBar() {
         </div>
 
         {/* Desktop Navigation */}
-        <nav className="hidden items-center justify-center gap-2 text-sm md:flex">
+        <nav className="hidden flex-1 items-center justify-center gap-2 text-sm md:flex">
           <div className="flex items-center gap-1 rounded-full p-1 bg-muted/50 border border-border/50">
             <NavLinksContent />
           </div>
@@ -80,9 +80,11 @@ export function NavBar() {
 
         {/* Desktop Auth Buttons */}
         <div className="hidden md:flex items-center justify-end gap-2 ml-auto">
-            <Button variant="ghost">Logout</Button>
-            <Button asChild className="bg-primary hover:bg-primary/90">
-              <Link href="/mantra-chanting">Mantra</Link>
+            <Button variant="ghost" asChild>
+              <Link href="/login">Login</Link>
+            </Button>
+            <Button asChild>
+              <Link href="/signup">Sign Up</Link>
             </Button>
         </div>
 
@@ -105,9 +107,11 @@ export function NavBar() {
                   <NavLinksContent isMobile={true} />
                 </div>
                  <div className="mt-auto flex flex-col gap-2 px-2">
-                    <Button variant="ghost" className="justify-start text-lg">Logout</Button>
-                     <Button asChild className="bg-primary hover:bg-primary/90 text-lg">
-                        <Link href="/mantra-chanting">Mantra</Link>
+                    <Button variant="ghost" className="justify-start text-lg" asChild>
+                        <Link href="/login">Login</Link>
+                    </Button>
+                     <Button className="justify-center text-lg" asChild>
+                        <Link href="/signup">Sign Up</Link>
                     </Button>
                 </div>
               </div>
