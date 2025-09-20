@@ -2,9 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Camera, HeartPulse, User, Bot, Wind, Menu, Info, BrainCircuit, Gamepad2, Home } from 'lucide-react';
+import { Camera, HeartPulse, Menu, Info, BrainCircuit, Bot, Home } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { EquilixLogo } from '@/components/icons/equilix-logo';
 import { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -12,7 +11,6 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 const navLinks = [
   { href: '/', label: 'Home', icon: Home },
   { href: '/journal', label: 'Journal', icon: HeartPulse },
-  { href: '/games', label: 'Games', icon: Gamepad2 },
   { href: '/emotion-detector', label: 'Emotion Scan', icon: Camera },
   { href: '/my-twin', label: 'AI Twin', icon: BrainCircuit },
   { href: '/ai-friend', label: 'AI Friend', icon: Bot },
@@ -69,8 +67,7 @@ export function NavBar() {
       <div className="container flex h-20 items-center">
         <div className="mr-auto flex items-center">
           <Link href="/" className="flex items-center gap-2">
-            <EquilixLogo className="w-8 h-8 text-primary" />
-            <span className="hidden font-bold sm:inline-block text-lg">Equilix</span>
+            <span className="font-signature text-3xl text-white">Equilix</span>
           </Link>
         </div>
 
@@ -84,7 +81,9 @@ export function NavBar() {
         {/* Desktop Auth Buttons */}
         <div className="hidden md:flex items-center justify-end gap-2 ml-auto">
             <Button variant="ghost">Logout</Button>
-            <Button className="bg-primary hover:bg-primary/90">Dashboard</Button>
+            <Button asChild className="bg-primary hover:bg-primary/90">
+              <Link href="/mantra-chanting">Mantra</Link>
+            </Button>
         </div>
 
 
@@ -100,15 +99,16 @@ export function NavBar() {
             <SheetContent side="left">
               <div className="flex flex-col gap-4 py-4">
                  <Link href="/" className="flex items-center gap-2 px-3 mb-4">
-                    <EquilixLogo className="w-8 h-8 text-primary" />
-                    <span className="font-bold text-xl">Equilix</span>
+                    <span className="font-signature text-4xl text-white">Equilix</span>
                   </Link>
                 <div className="flex flex-col gap-2 px-2">
                   <NavLinksContent isMobile={true} />
                 </div>
                  <div className="mt-auto flex flex-col gap-2 px-2">
                     <Button variant="ghost" className="justify-start text-lg">Logout</Button>
-                    <Button className="bg-primary hover:bg-primary/90 text-lg">Dashboard</Button>
+                     <Button asChild className="bg-primary hover:bg-primary/90 text-lg">
+                        <Link href="/mantra-chanting">Mantra</Link>
+                    </Button>
                 </div>
               </div>
             </SheetContent>
