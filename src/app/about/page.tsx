@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Users, Shield, Heart, Lightbulb, Rocket } from 'lucide-react';
+import { Users, Shield, Heart, Lightbulb, Rocket, Store, LifeBuoy, ShoppingBag } from 'lucide-react';
 
 const principles = [
   {
@@ -26,6 +26,24 @@ const principles = [
     description: 'Our system includes a robust safety layer to detect crisis situations and provide immediate links to human support, such as national helplines. We are committed to responsible innovation.',
   },
 ];
+
+const futureFeatures = [
+    {
+        icon: LifeBuoy,
+        title: 'AI-Moderated Support Groups',
+        description: 'Safe, anonymous spaces for users to connect and share experiences, guided by AI to ensure a supportive environment.',
+    },
+    {
+        icon: Store,
+        title: 'Expert Marketplace',
+        description: 'Connect with certified psychologists, yoga instructors, and mantra gurus for personalized, one-on-one guidance.',
+    },
+    {
+        icon: ShoppingBag,
+        title: 'Curated Wellness Products',
+        description: 'Discover and purchase affiliate health and wellness products recommended by experts in our ecosystem.',
+    }
+]
 
 
 export default function AboutPage() {
@@ -59,6 +77,34 @@ export default function AboutPage() {
                                         </div>
                                     </div>
                                 ))}
+                            </CardContent>
+                        </Card>
+                    </section>
+                    
+                    <section>
+                        <Card className="shadow-lg shadow-primary/5 border-none bg-secondary/50">
+                            <CardHeader>
+                                <CardTitle className="text-center text-2xl md:text-3xl">Our Vision for the Future</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-8">
+                                <div className="grid md:grid-cols-3 gap-8">
+                                    {futureFeatures.map((f, index) => (
+                                        <div key={index} className="flex flex-col items-center text-center gap-2">
+                                            <div className="text-primary p-3 bg-primary/10 rounded-full">
+                                                <f.icon className="w-8 h-8" />
+                                            </div>
+                                            <div>
+                                                <h3 className="font-semibold text-lg">{f.title}</h3>
+                                                <p className="text-muted-foreground text-sm">{f.description}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="text-center bg-background/50 border-l-4 border-primary p-4 rounded-r-lg">
+                                    <p className="font-semibold italic text-primary-foreground">
+                                        “We’re building not just an app, but an ecosystem — with marketplaces, partnerships, and multiple monetization streams.”
+                                    </p>
+                                </div>
                             </CardContent>
                         </Card>
                     </section>
