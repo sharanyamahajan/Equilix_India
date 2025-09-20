@@ -88,12 +88,12 @@ export default function MantraChantingPage() {
         recognition.interimResults = false;
         recognition.lang = 'en-US';
         
+        let lastTranscript = '';
         recognition.onresult = (event) => {
-            const lastResult = event.results[event.results.length - 1];
-            if (lastResult.isFinal) {
-                const transcript = lastResult[0].transcript.trim().toLowerCase();
-                console.log(transcript)
+            const transcript = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
+            if (event.results[event.results.length - 1].isFinal && transcript !== lastTranscript) {
                 if (transcript.includes(selectedMantra.keyword)) {
+                    lastTranscript = transcript;
                     handleMantraRecognized();
                 }
             }
@@ -128,7 +128,7 @@ export default function MantraChantingPage() {
             setIsListening(false);
         }
 
-    }, [isClient, selectedMantra.keyword, handleMantantraRecognized, isListening]);
+    }, [isClient, selectedMantra.keyword, handleMantraRecognized, isListening]);
     
     const stopListening = useCallback(() => {
         if (recognitionRef.current) {
@@ -325,7 +325,7 @@ export default function MantraChantingPage() {
                 {MainContent()}
             </AnimatePresence>
 
-            <style jsx global>{`
+            <style jsx global>{\`
                 .glass-card {
                     background: hsl(var(--card) / 0.5) !important;
                     backdrop-filter: blur(12px) saturate(150%);
@@ -343,7 +343,7 @@ export default function MantraChantingPage() {
                 .control-btn:hover { background-color: hsl(var(--secondary)); transform: translateY(-2px); }
                 .control-btn.active { background-color: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
                 .control-btn.hang-up { background-color: hsl(var(--accent)); color: hsl(var(--accent-foreground)); }
-            `}</style>
+            \`}</style>
         </div>
     );
 }
