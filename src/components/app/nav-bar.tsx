@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { Home, Camera, Bot } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { EquilixLogo } from '@/components/icons/equilix-logo';
+import { useEffect, useState } from 'react';
 
 const navLinks = [
   { href: '/', label: 'Home', icon: Home },
@@ -14,6 +15,15 @@ const navLinks = [
 
 export function NavBar() {
   const pathname = usePathname();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <header className="fixed top-4 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-4 duration-500">
