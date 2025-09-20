@@ -3,6 +3,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { NavBar } from '@/components/app/nav-bar';
 import { AnimatedBackground } from '@/components/app/animated-background';
+import { FloatingBot } from '@/components/app/floating-bot';
 
 
 export const metadata: Metadata = {
@@ -29,6 +30,7 @@ export default function RootLayout({
         <div className="flex-grow z-10">
           {children}
         </div>
+        <FloatingBot />
         <Toaster />
       </body>
     </html>
