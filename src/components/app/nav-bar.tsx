@@ -17,14 +17,20 @@ import {
 
 const navLinks = [
   { href: '/', label: 'Home', icon: Home },
-  { href: '/emotion-detector', label: 'Emotion Scan', icon: Camera },
-  { href: '/games', label: 'Games', icon: Gamepad2 },
   { 
     label: 'Relaxation', 
     icon: Wind,
     children: [
       { href: '/breathing-exercise', label: 'Breathing', icon: HeartPulse },
       { href: '/mantra-chanting', label: 'Mantra', icon: Wind },
+    ]
+  },
+   { 
+    label: 'Fun Things', 
+    icon: Gamepad2,
+    children: [
+      { href: '/emotion-detector', label: 'Emotion Scan', icon: Camera },
+      { href: '/games', label: 'Games', icon: Gamepad2 },
     ]
   },
   { 
@@ -138,7 +144,7 @@ export function NavBar() {
       <div className="container flex h-16 items-center">
         <div className="mr-6 flex items-center">
           <Link href="/" className="flex items-center gap-2">
-            <EquilixLogo className="w-6 h-6 text-primary" />
+            <EquilixLogo className="w-8 h-8 text-primary" />
             <span className="hidden font-bold sm:inline-block">Equilix</span>
           </Link>
         </div>
@@ -160,7 +166,7 @@ export function NavBar() {
             <SheetContent side="left">
               <div className="flex flex-col gap-4 py-4">
                  <Link href="/" className="flex items-center gap-2 px-3 mb-2">
-                    <EquilixLogo className="w-6 h-6 text-primary" />
+                    <EquilixLogo className="w-8 h-8 text-primary" />
                     <span className="font-bold">Equilix</span>
                   </Link>
                 <div className="flex flex-col gap-1">
