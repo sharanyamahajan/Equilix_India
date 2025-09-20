@@ -1,6 +1,5 @@
 'use client';
 
-import { NavBar } from '@/components/app/nav-bar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Users, Shield, Heart, Lightbulb, Rocket } from 'lucide-react';
@@ -32,7 +31,6 @@ const principles = [
 export default function AboutPage() {
     return (
         <>
-            <NavBar />
             <main className="flex-grow container mx-auto px-4 pt-20 pb-12 md:pt-24">
                  <div className="max-w-4xl mx-auto space-y-12 md:space-y-16">
                     <section className="text-center fade-in-section is-visible">
