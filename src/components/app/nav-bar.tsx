@@ -64,8 +64,8 @@ export function NavBar() {
       "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
       isScrolled ? 'bg-background/80 border-b border-border/50 backdrop-blur-lg' : 'bg-transparent border-b border-transparent'
     )}>
-      <div className="container flex h-20 items-center">
-        <div className="mr-auto flex items-center">
+      <div className="container flex h-20 items-center justify-between">
+        <div className="flex items-center">
           <Link href="/" className="flex items-center gap-2">
             <span className="font-signature text-3xl text-white">Equilix</span>
           </Link>
@@ -79,7 +79,7 @@ export function NavBar() {
         </nav>
 
         {/* Desktop Auth Buttons */}
-        <div className="hidden md:flex items-center justify-end gap-2 ml-auto">
+        <div className="hidden md:flex items-center justify-end gap-2">
             <Button variant="ghost">Logout</Button>
             <Button asChild className="bg-primary hover:bg-primary/90">
               <Link href="/mantra-chanting">Mantra</Link>
