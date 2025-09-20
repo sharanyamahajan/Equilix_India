@@ -17,15 +17,15 @@ const affirmations = [
 ];
 
 export function DailyAffirmation() {
-  const [affirmation, setAffirmation] = useState('');
+  const [affirmation, setAffirmation] = useState("Loading your daily boost...");
 
   const getNewAffirmation = () => {
-    // This avoids hydration mismatch by ensuring random is only called client-side
     const randomIndex = Math.floor(Math.random() * affirmations.length);
     setAffirmation(affirmations[randomIndex]);
   };
 
   useEffect(() => {
+    // Ensure random selection only happens on the client-side after initial render
     getNewAffirmation();
   }, []);
 
@@ -40,7 +40,7 @@ export function DailyAffirmation() {
       </CardHeader>
       <CardContent>
         <p className="text-lg font-medium text-center font-headline h-16 flex items-center justify-center">
-          {affirmation || "Loading your daily boost..."}
+          {affirmation}
         </p>
       </CardContent>
     </Card>

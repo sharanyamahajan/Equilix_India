@@ -2,15 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Camera, HeartPulse, User, Bot, Wind, Menu } from 'lucide-react';
+import { Home, Camera, HeartPulse, User, Bot, Wind, Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { EquilixLogo } from '@/components/icons/equilix-logo';
-import { useState } from 'react';
-import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-} from "@/components/ui/sheet"
+import { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
 
 const navLinks = [
@@ -25,8 +20,13 @@ const navLinks = [
 export function NavBar() {
   const pathname = usePathname();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  
-  const NavContent = ({isMobile = false}: {isMobile?: boolean}) => (
+
+  // Close mobile nav on route change
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [pathname]);
+
+  const NavLinks = ({ className }: { className?: string }) => (
     <>
       {navLinks.map((link) => {
         const isActive = pathname === link.href;
@@ -34,13 +34,13 @@ export function NavBar() {
           <Link
             key={link.href}
             href={link.href}
-            onClick={() => isMobile && setMobileNavOpen(false)}
             className={cn(
-              'flex items-center gap-3 px-4 py-2 rounded-md text-sm font-medium transition-colors',
-              isMobile ? 'text-lg text-foreground w-full' : 'text-muted-foreground',
+              'flex items-center gap-3 rounded-md text-sm font-medium transition-colors',
+              'px-3 py-2',
               isActive
-                ? 'text-primary'
-                : 'hover:text-foreground'
+                ? 'bg-secondary text-primary'
+                : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground',
+              className
             )}
           >
             <link.icon className="h-5 w-5" />
@@ -49,11 +49,12 @@ export function NavBar() {
         );
       })}
     </>
-  )
+  );
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
        <div className="container flex h-16 items-center">
+            {/* Desktop Logo */}
             <div className="mr-4 hidden md:flex">
                 <Link href="/" className="flex items-center gap-2">
                     <EquilixLogo className="w-6 h-6 text-primary" />
@@ -61,36 +62,37 @@ export function NavBar() {
                 </Link>
             </div>
 
-            {/* Mobile Header */}
-            <div className="md:hidden flex-1">
-                <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
-                <SheetTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                        <Menu />
-                        <span className="sr-only">Open Menu</span>
-                    </Button>
-                </SheetTrigger>
-                <SheetContent side="left">
-                    <div className="flex flex-col gap-4 py-8">
-                        <Link href="/" className="flex items-center gap-2 px-4 mb-4" onClick={() => setMobileNavOpen(false)}>
-                            <EquilixLogo className="w-8 h-8 text-primary" />
-                            <span className="font-bold text-xl">Equilix</span>
-                        </Link>
-                        <NavContent isMobile={true} />
-                    </div>
-                </SheetContent>
-                </Sheet>
+            {/* Mobile: Menu Button and Centered Logo */}
+            <div className="md:hidden flex-1 flex items-center">
+                 <Button variant="ghost" size="icon" onClick={() => setMobileNavOpen(!mobileNavOpen)}>
+                    {mobileNavOpen ? <X/> : <Menu />}
+                    <span className="sr-only">Open Menu</span>
+                </Button>
             </div>
-            
-            <div className="flex flex-1 items-center justify-center md:justify-end">
-                <Link href="/" className="md:hidden">
+             <div className="md:hidden flex-1 flex justify-center">
+                 <Link href="/" className="flex items-center gap-2">
                     <EquilixLogo className="w-6 h-6 text-primary" />
                 </Link>
-                <nav className="hidden md:flex items-center gap-4 text-sm">
-                    <NavContent />
+             </div>
+             <div className="md:hidden flex-1" />
+
+
+            {/* Desktop Navigation */}
+            <div className="hidden flex-1 items-center justify-end md:flex">
+                <nav className="flex items-center gap-4 text-sm">
+                    <NavLinks />
                 </nav>
             </div>
        </div>
+
+        {/* Mobile Navigation Panel */}
+        {mobileNavOpen && (
+             <div className="md:hidden absolute top-16 left-0 w-full bg-background border-b animate-in fade-in-20 slide-in-from-top-2">
+                <div className="container py-4 flex flex-col gap-2">
+                    <NavLinks className="text-base"/>
+                </div>
+            </div>
+        )}
     </header>
   );
 }

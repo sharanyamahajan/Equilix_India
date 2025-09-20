@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Zap, ZapOff, X } from 'lucide-react';
 import Link from 'next/link';
-import { cn } from '@/lib/utils';
 
 const breathingCycle = [
   { text: 'Breathe In', duration: 4 },
@@ -17,7 +16,7 @@ export default function BreathingExercisePage() {
   const [currentPhase, setCurrentPhase] = useState(0);
   const [hapticsEnabled, setHapticsEnabled] = useState(false);
   
-  // Use a state to avoid hydration errors with window object
+  // Use a state to avoid hydration errors with window/navigator object
   const [isClient, setIsClient] = useState(false);
   useEffect(() => {
     setIsClient(true);
@@ -29,11 +28,11 @@ export default function BreathingExercisePage() {
       setCurrentPhase((prev) => (prev + 1) % breathingCycle.length);
     }, cycle.duration * 1000);
 
-    if (isClient) {
+    if (isClient && hapticsEnabled && 'vibrate' in navigator) {
       if (cycle.text === 'Breathe In') {
-        if (hapticsEnabled && 'vibrate' in navigator) navigator.vibrate([100, 50, 100, 50, 100]);
+        navigator.vibrate([100, 50, 100, 50, 100]);
       } else if (cycle.text === 'Breathe Out') {
-        if (hapticsEnabled && 'vibrate' in navigator) navigator.vibrate(200);
+        navigator.vibrate(200);
       }
     }
     
@@ -46,7 +45,7 @@ export default function BreathingExercisePage() {
       if (!hapticsEnabled) {
           navigator.vibrate(50); // Provide feedback on enable
       }
-    } else {
+    } else if (isClient) {
         alert("Haptic feedback is not supported on your device.");
     }
   };
