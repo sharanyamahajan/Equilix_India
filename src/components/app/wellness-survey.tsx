@@ -15,9 +15,10 @@ import type { WellnessSurveyInput, WellnessAnalysisOutput } from '@/ai/schemas/w
 import { WellnessAnalysis } from './wellness-analysis';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { BrainCircuit } from 'lucide-react';
 
 const surveySchema = z.object({
-  age: z.number().min(13, "You must be at least 13 years old.").max(120),
+  age: z.coerce.number().min(13, "You must be at least 13 years old.").max(120),
   mood: z.number().min(0).max(100),
   thoughts: z.string().min(10, "Please share a bit more about what's on your mind.").max(1000),
 });
@@ -58,7 +59,7 @@ export function WellnessSurvey() {
   
   if (isPending) {
     return (
-       <Card className="min-h-[400px] flex flex-col items-center justify-center">
+       <Card className="min-h-[400px] flex flex-col items-center justify-center bg-transparent">
         <CardHeader className="items-center text-center">
             <Loader2 className="w-12 h-12 animate-spin text-primary" />
             <CardTitle>Analyzing your input...</CardTitle>
@@ -76,11 +77,16 @@ export function WellnessSurvey() {
   }
 
   return (
-    <Card>
+    <Card className="shadow-lg shadow-primary/5">
       <CardHeader>
-        <CardTitle>Wellness Check-in</CardTitle>
+        <CardTitle className="flex items-center gap-3">
+          <span className="grid place-items-center w-10 h-10 rounded-lg bg-primary/10 text-primary">
+            <BrainCircuit className="w-6 h-6" />
+          </span>
+          Daily Wellness Check-in
+        </CardTitle>
         <CardDescription>
-          Take a moment to reflect. Your answers are private.
+          Take a moment to reflect. Your answers are private and secure.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -96,8 +102,7 @@ export function WellnessSurvey() {
                     <Input 
                       type="number" 
                       placeholder="e.g., 25" 
-                      {...field} 
-                      onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)}
+                      {...field}
                     />
                   </FormControl>
                   <FormMessage />
@@ -113,7 +118,7 @@ export function WellnessSurvey() {
                   <FormLabel>On a scale of 1 to 100, how are you feeling?</FormLabel>
                    <FormControl>
                      <Slider
-                        defaultValue={[50]}
+                        value={[field.value]}
                         max={100}
                         step={1}
                         onValueChange={(value) => field.onChange(value[0])}
@@ -136,7 +141,7 @@ export function WellnessSurvey() {
                   <FormLabel>What's on your mind?</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Describe what you've been thinking about lately..."
+                      placeholder="Describe what you've been thinking about lately... The more detail, the better the analysis."
                       className="min-h-[120px]"
                       {...field}
                     />
@@ -146,8 +151,8 @@ export function WellnessSurvey() {
               )}
             />
             
-            <Button type="submit" disabled={isPending} className="w-full">
-              Get My Analysis
+            <Button type="submit" disabled={isPending} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
+              {isPending ? 'Analyzing...' : 'Get My AI Analysis'}
             </Button>
           </form>
         </Form>
