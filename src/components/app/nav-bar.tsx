@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Camera, HeartPulse, User, Bot, Wind, Menu, X } from 'lucide-react';
+import { Home, Camera, HeartPulse, User, Bot, Wind, Menu, X, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { EquilixLogo } from '@/components/icons/equilix-logo';
 import { useState, useEffect } from 'react';
@@ -15,6 +15,7 @@ const navLinks = [
   { href: '/mantra-chanting', label: 'Mantra', icon: Wind },
   { href: '/ai-friend', label: 'AI Companion', icon: Bot },
   { href: '/my-twin', label: 'My Twin', icon: User },
+  { href: '/about', label: 'About', icon: Info },
 ];
 
 export function NavBar() {
@@ -25,6 +26,18 @@ export function NavBar() {
   useEffect(() => {
     setMobileNavOpen(false);
   }, [pathname]);
+  
+  // Prevent body scroll when mobile nav is open
+  useEffect(() => {
+    if (mobileNavOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileNavOpen]);
 
   const NavLinks = ({ className }: { className?: string }) => (
     <>
@@ -79,7 +92,7 @@ export function NavBar() {
 
             {/* Desktop Navigation */}
             <div className="hidden flex-1 items-center justify-end md:flex">
-                <nav className="flex items-center gap-4 text-sm">
+                <nav className="flex items-center gap-1 text-sm">
                     <NavLinks />
                 </nav>
             </div>
@@ -87,7 +100,7 @@ export function NavBar() {
 
         {/* Mobile Navigation Panel */}
         {mobileNavOpen && (
-             <div className="md:hidden absolute top-16 left-0 w-full bg-background border-b animate-in fade-in-20 slide-in-from-top-2">
+             <div className="md:hidden fixed top-16 left-0 w-full h-[calc(100vh-4rem)] bg-background border-b animate-in fade-in-20 slide-in-from-top-2 overflow-y-auto">
                 <div className="container py-4 flex flex-col gap-2">
                     <NavLinks className="text-base"/>
                 </div>
