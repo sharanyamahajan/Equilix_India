@@ -44,9 +44,23 @@ const aiFriendFlow = ai.defineFlow(
       history: history?.map(msg => ({ role: msg.role, content: [{ text: msg.text }] })) || [],
       prompt: message,
       tools: [navigationTool],
+      config: {
+        safetySettings: [
+            { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
+            { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+            { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+            { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+        ],
+      },
     });
 
     const choice = response.candidates[0];
+    
+    if (!choice || !choice.message || !choice.message.content) {
+        return {
+            reply: "I'm sorry, I was unable to generate a response. This might be due to safety settings or an internal error. Please try a different question.",
+        };
+    }
 
     const toolCalls = choice.message.content.filter(part => part.type === 'toolRequest').map(part => {
         if(part.type !== 'toolRequest') throw new Error(); // Should not happen
@@ -56,7 +70,7 @@ const aiFriendFlow = ai.defineFlow(
     const reply = choice.message.content.filter(part => part.type === 'text').map(part => part.type === 'text' ? part.text : '').join('').trim();
 
     return { 
-        reply,
+        reply: reply || "I'm not sure how to respond to that. Can you try rephrasing?",
         toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
     };
   }
