@@ -24,15 +24,13 @@ export function NavBar() {
   }, []);
 
   if (!mounted) {
-    // Avoid rendering the navbar on the server to prevent hydration mismatch
-    // The usePathname hook can cause issues with SSR.
     return null; 
   }
 
   return (
     <header className="fixed top-4 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-4 duration-500">
       <nav className="container mx-auto px-2 py-1 flex items-center gap-2 rounded-full bg-card/60 backdrop-blur-lg border border-border/30 shadow-lg shadow-primary/5">
-        <Link href="/" className="flex items-center justify-center w-11 h-11 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors" aria-label="Equilix Home">
+        <Link href="/" className="flex items-center justify-center w-11 h-11 rounded-full" aria-label="Equilix Home">
             <div className="w-11 h-11 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
              <EquilixLogo className="w-6 h-6 text-white" />
             </div>

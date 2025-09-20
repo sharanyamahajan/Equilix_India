@@ -1,4 +1,3 @@
-// src/app/my-twin/page.tsx
 'use client';
 
 import { useState, useTransition } from 'react';

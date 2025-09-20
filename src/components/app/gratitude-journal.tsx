@@ -22,7 +22,9 @@ export function GratitudeJournal() {
       </CardHeader>
       <CardContent className="space-y-4">
         <Textarea 
-          placeholder="1. A warm cup of coffee...&#10;2. A surprising phone call from a friend...&#10;3. The quiet moment of sunrise..." 
+          placeholder="1. A warm cup of coffee...
+2. A surprising phone call from a friend...
+3. The quiet moment of sunrise..." 
           className="min-h-[150px] text-base resize-none bg-secondary/50"
         />
         <div className="flex justify-end items-center gap-4">

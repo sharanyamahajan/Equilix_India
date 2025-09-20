@@ -31,7 +31,7 @@ export function WellnessSurvey() {
   const form = useForm<z.infer<typeof surveySchema>>({
     resolver: zodResolver(surveySchema),
     defaultValues: {
-      age: '' as any, // Set an initial value to prevent uncontrolled to controlled error
+      age: '' as any,
       mood: 50,
       thoughts: '',
     },
