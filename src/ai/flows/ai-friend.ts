@@ -48,6 +48,12 @@ const aiFriendFlow = ai.defineFlow(
 
     const choice = response.candidates[0];
     
+    if (!choice) {
+        return {
+            reply: "I'm sorry, I was unable to generate a response. This might be due to safety settings or an internal error. Please try a different question.",
+        };
+    }
+
     const toolCalls = choice.message.content.filter(part => part.type === 'toolRequest').map(part => {
         if(part.type !== 'toolRequest') throw new Error(); // Should not happen
         return { toolName: part.toolRequest.name, args: part.toolRequest.input };
