@@ -6,6 +6,7 @@ import type { WellnessSurveyInput } from '@/ai/schemas/wellness';
 import { detectEmotion } from '@/ai/flows/detect-emotion';
 import { aiFriend } from '@/ai/flows/ai-friend';
 import { createAITwin as createAITwinFlow, type CreateAITwinInput } from '@/ai/flows/create-ai-twin';
+import { learnFromHistory as learnFromHistoryFlow, type LearnFromHistoryInput } from '@/ai/flows/learn-from-history';
 
 export async function getHtmlImprovements(htmlContent: string) {
   if (!htmlContent) {
@@ -67,4 +68,14 @@ export async function createAITwin(input: CreateAITwinInput) {
     console.error('AI Error:', error);
     return { success: false, error: 'Failed to create AI twin from the AI model.' };
   }
+}
+
+export async function learnFromJournal(input: LearnFromHistoryInput) {
+    try {
+        const result = await learnFromHistoryFlow(input);
+        return { success: true, data: result };
+    } catch (error) {
+        console.error('AI Error:', error);
+        return { success: false, error: 'Failed to learn from journal entries.' };
+    }
 }
