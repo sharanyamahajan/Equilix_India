@@ -8,7 +8,6 @@ import { aiFriend } from '@/ai/flows/ai-friend';
 import type { AIFriendInput } from '@/ai/schemas/ai-friend';
 import { createAITwin as createAITwinFlow, type CreateAITwinInput } from '@/ai/flows/create-ai-twin';
 import { learnFromHistory as learnFromHistoryFlow, type LearnFromHistoryInput } from '@/ai/flows/learn-from-history';
-import { generateStory as generateStoryFlow, type GenerateStoryInput } from '@/ai/flows/generate-story';
 
 
 export async function getHtmlImprovements(htmlContent: string) {
@@ -78,14 +77,4 @@ export async function learnFromJournal(input: LearnFromHistoryInput) {
         console.error('AI Error:', error);
         return { success: false, error: 'Failed to learn from journal entries.' };
     }
-}
-
-export async function generateStory(input: GenerateStoryInput) {
-  try {
-    const result = await generateStoryFlow(input);
-    return { success: true, data: result };
-  } catch (error) {
-    console.error('AI Error:', error);
-    return { success: false, error: 'Failed to generate story from the AI model.' };
-  }
 }

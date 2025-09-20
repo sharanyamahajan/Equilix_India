@@ -1,162 +1,173 @@
-// Renaming this page to story-generator in a future step
 'use client';
 
-import { useState, useTransition } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { useState, useRef, useEffect, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Wand2, Sparkles } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { generateStory } from '@/app/actions';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Bot, Loader2, Send, User } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { getAIFriendResponse } from '@/app/actions';
+import { useRouter } from 'next/navigation';
+import { Card, CardContent } from '@/components/ui/card';
 
-const storySchema = z.object({
-  prompt: z.string().min(10, "Please enter a prompt of at least 10 characters.").max(500, "The prompt must be 500 characters or less."),
-  genre: z.string(),
-});
+type Message = {
+  role: 'user' | 'model';
+  text: string;
+};
 
-const genres = ['Fantasy', 'Sci-Fi', 'Mystery', 'Adventure', 'Fable'];
+const initialMessages: Message[] = [
+    {
+        role: 'model',
+        text: "Hello! I am Aura, your personal AI companion. How can I help you today?"
+    }
+];
 
-export default function StoryGeneratorPage() {
-  const [isGenerating, startGenerating] = useTransition();
-  const [generatedStory, setGeneratedStory] = useState<string | null>(null);
-  const { toast } = useToast();
+export default function AIFriendPage() {
+  const [messages, setMessages] = useState<Message[]>(initialMessages);
+  const [input, setInput] = useState('');
+  const [isPending, startTransition] = useTransition();
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+  const [aiSystemPrompt, setAiSystemPrompt] = useState<string | undefined>(undefined);
 
-  const form = useForm<z.infer<typeof storySchema>>({
-    resolver: zodResolver(storySchema),
-    defaultValues: {
-      prompt: '',
-      genre: 'Fantasy',
-    },
-  });
+  useEffect(() => {
+    const customPrompt = localStorage.getItem('aiTwinSystemPrompt');
+    if (customPrompt) {
+        setAiSystemPrompt(customPrompt);
+    }
+  }, []);
 
-  const onSubmit = (values: z.infer<typeof storySchema>) => {
-    startGenerating(async () => {
-        setGeneratedStory(null);
-        const result = await generateStory({
-            prompt: values.prompt,
-            genre: values.genre,
+  const handleSend = async () => {
+    if (!input.trim()) return;
+
+    const userMessage: Message = { role: 'user', text: input };
+    setMessages((prev) => [...prev, userMessage]);
+    const currentInput = input;
+    setInput('');
+    
+    startTransition(async () => {
+        const response = await getAIFriendResponse({
+          history: messages,
+          message: currentInput,
+          systemPrompt: aiSystemPrompt,
         });
+        
+        if (response.success && response.data) {
+          const modelMessage: Message = { role: 'model', text: response.data.reply };
+          setMessages((prev) => [...prev, modelMessage]);
 
-        if (result.success && result.data) {
-            setGeneratedStory(result.data.story);
-            toast({
-                title: "Your Story is Ready!",
-                description: "A new tale has been woven for you.",
-            });
+          if (response.data.toolCalls) {
+            for (const toolCall of response.data.toolCalls) {
+              if (toolCall.toolName === 'navigation' && toolCall.args.path) {
+                router.push(toolCall.args.path as string);
+              }
+            }
+          }
+
         } else {
-            toast({
-                title: "Generation Failed",
-                description: "We couldn't create your story at this time. Please try again.",
-                variant: "destructive",
-            });
+            console.error('AI Friend error:', response.error);
+            const errorMessage: Message = {
+              role: 'model',
+              text: response.error || 'Sorry, I encountered an error. Please try again.',
+            };
+            setMessages((prev) => [...prev, errorMessage]);
         }
     });
   };
 
+  useEffect(() => {
+    if (scrollAreaRef.current) {
+        const scrollContainer = scrollAreaRef.current.querySelector('div:first-child');
+        if (scrollContainer) {
+            scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        }
+    }
+  }, [messages]);
+
   return (
     <div className="flex flex-col min-h-screen bg-background font-body">
-      <main className="flex-grow container mx-auto px-4 py-24 md:py-32">
+      <main className="flex-grow container mx-auto px-4 pt-24 md:pt-32">
         <div className="max-w-2xl mx-auto space-y-8">
             <div className="text-center">
                  <h1 className="text-4xl md:text-5xl font-headline font-bold tracking-tight text-foreground">
-                    AI Story Generator
+                    AI Friend
                 </h1>
                 <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mt-4 font-light tracking-wide">
-                    Craft a unique story from your imagination. Provide a prompt and let the AI bring it to life.
+                    Chat with Aura, your personal AI companion.
                 </p>
             </div>
 
-            <Card className="shadow-lg shadow-primary/5 bg-secondary/30 border-none">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-3">
-                        <Wand2 className="text-primary w-6 h-6" />
-                        Create Your Story
-                    </CardTitle>
-                    <CardDescription>
-                       Choose a genre and write a prompt to start the magic.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                        <FormField
-                            control={form.control}
-                            name="genre"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>Genre</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                    <FormControl>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select a genre" />
-                                    </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                    {genres.map(genre => (
-                                        <SelectItem key={genre} value={genre}>{genre}</SelectItem>
-                                    ))}
-                                    </SelectContent>
-                                </Select>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                        control={form.control}
-                        name="prompt"
-                        render={({ field }) => (
-                            <FormItem>
-                            <FormLabel>Story Prompt</FormLabel>
-                            <FormControl>
-                                <Textarea
-                                placeholder="e.g., 'A young librarian discovers a book that writes itself...'"
-                                className="min-h-[120px] resize-none bg-background"
-                                {...field}
-                                />
-                            </FormControl>
-                            <FormMessage />
-                            </FormItem>
+            <Card className="h-[60vh] flex flex-col">
+              <CardContent className="p-0 flex-grow flex flex-col">
+                <ScrollArea className="flex-1 my-4 px-4" ref={scrollAreaRef}>
+                  <div className="space-y-4 pr-4">
+                    {messages.map((message, index) => (
+                      <div
+                        key={index}
+                        className={cn(
+                          'flex items-start gap-3',
+                          message.role === 'user' ? 'justify-end' : 'justify-start'
                         )}
-                        />
-                        <Button type="submit" disabled={isGenerating} className="w-full">
-                            {isGenerating ? (
-                                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating Story...</>
-                            ) : (
-                                <><Sparkles className="mr-2 h-4 w-4" /> Generate Story</>
-                            )}
-                        </Button>
-                    </form>
-                    </Form>
-                </CardContent>
-            </Card>
-
-            {isGenerating && (
-                <Card className="min-h-[200px] flex flex-col items-center justify-center text-muted-foreground">
-                    <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
-                    <p className="font-semibold">Weaving your tale...</p>
-                </Card>
-            )}
-
-            {generatedStory && (
-                 <Card className="animate-in fade-in-50 duration-500 bg-secondary/30 border-none">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-3">
-                            <Sparkles className="text-accent w-6 h-6" />
-                            Your Generated Story
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="bg-background/50 p-6 rounded-md text-base text-secondary-foreground whitespace-pre-wrap leading-relaxed">
-                            {generatedStory}
+                      >
+                        {message.role === 'model' && (
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback>
+                              <Bot className="h-5 w-5" />
+                            </AvatarFallback>
+                          </Avatar>
+                        )}
+                        <div
+                          className={cn(
+                            'max-w-md rounded-lg p-3 text-sm',
+                            message.role === 'user'
+                              ? 'bg-primary text-primary-foreground'
+                              : 'bg-muted'
+                          )}
+                        >
+                          {message.text}
                         </div>
-                    </CardContent>
-                </Card>
-            )}
+                        {message.role === 'user' && (
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback>
+                              <User className="h-5 w-5" />
+                            </AvatarFallback>
+                          </Avatar>
+                        )}
+                      </div>
+                    ))}
+                    {isPending && (
+                      <div className="flex items-start gap-3 justify-start">
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback>
+                              <Bot className="h-5 w-5" />
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="bg-muted rounded-lg p-3 flex items-center">
+                              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground"/>
+                          </div>
+                      </div>
+                      )}
+                  </div>
+                </ScrollArea>
+
+                <div className="border-t p-4">
+                  <div className="flex w-full items-center gap-2">
+                    <Input
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                      placeholder="Type your message..."
+                      disabled={isPending}
+                    />
+                    <Button onClick={handleSend} disabled={isPending || !input.trim()}>
+                      <Send className="h-4 w-4" />
+                      <span className="sr-only">Send</span>
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
         </div>
       </main>
     </div>
