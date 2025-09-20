@@ -5,13 +5,25 @@ export function EquilixLogo(props: SVGProps<SVGSVGElement>) {
     <svg
       width="1em"
       height="1em"
-      viewBox="0 0 100 125"
+      viewBox="0 0 24 24"
+      fill="none"
       xmlns="http://www.w3.org/2000/svg"
       {...props}
     >
       <path
-        d="M50,5.3c-20.9,0-37.9,16.9-37.9,37.9c0,11.2,4.9,21.2,12.6,28.1c-1.2,2.3-1.9,4.9-1.9,7.6c0,11,9,20.1,20.1,20.1 c7.7,0,14.4-4.4,17.9-10.7c2.8,0.7,5.7,1.1,8.7,1.1c20.9,0,37.9-16.9,37.9-37.9S70.9,5.3,50,5.3z M50,15.3c15.4,0,27.9,12.5,27.9,27.9 S65.4,71,50,71s-27.9-12.5-27.9-27.9S34.6,15.3,50,15.3z M56.8,88.9c-2.1-0.4-4.1-1-6-1.8c-1.9,0.8-3.9,1.4-6,1.8 c-7.7,1.4-15.1-3.6-16.5-11.3c-1.4-7.7,3.6-15.1,11.3-16.5c1.9-0.3,3.8,0.3,5.6,1.2c-0.8,2.2-1.2,4.5-1.2,6.9c0,8.3,6.7,15,15,15 c2.4,0,4.7-0.6,6.9-1.6c0.5,2.6,0.3,5.3-0.5,7.8C64.2,87.3,60.5,89.5,56.8,88.9z"
-        fill="currentColor"
+        d="M12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeDasharray="0.1 5"
       />
     </svg>
   );
