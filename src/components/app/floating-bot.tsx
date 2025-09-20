@@ -1,163 +1,183 @@
 'use client';
-
-import { useState, useRef, useEffect, useTransition } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetFooter,
+} from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
-import { Bot, X, Send, Loader2 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Bot, Loader2, Send, User, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { getAIFriendResponse } from '@/app/actions';
-import { ScrollArea } from '../ui/scroll-area';
+import { chat } from '@/ai/flows/chat-flow';
+import ReactMarkdown from 'react-markdown';
 
 type Message = {
   role: 'user' | 'model';
-  text: string;
+  content: string;
 };
+
+const initialMessages: Message[] = [
+    {
+        role: 'model',
+        content: "Hello! I am the Swasthya Raksha Assistant. How can I help you today? You can ask me about water-borne diseases, public health, or how to use this app."
+    }
+];
 
 export function FloatingBot() {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState('');
-  const [isPending, startTransition] = useTransition();
-  const router = useRouter();
-  const pathname = usePathname();
+  const [isLoading, setIsLoading] = useState(false);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (isOpen) {
-      setMessages([
-        { role: 'model', text: "Hello! I'm Aura. How can I help you navigate the app or what's on your mind?" },
-      ]);
-    } else {
-        setMessages([]);
-    }
-  }, [isOpen]);
-
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSend = async () => {
     if (!input.trim()) return;
 
-    const newUserMessage: Message = { role: 'user', text: input };
-    setMessages(prev => [...prev, newUserMessage]);
+    const userMessage: Message = { role: 'user', content: input };
+    setMessages((prev) => [...prev, userMessage]);
     setInput('');
+    setIsLoading(true);
 
-    startTransition(async () => {
-      const response = await getAIFriendResponse({
-        history: messages,
-        message: input,
-        systemPrompt: `You are Aura, a helpful and friendly AI assistant for the Equilix app. Your goal is to assist users. You can chat with them, or if they ask to go to a specific page, you must use the navigation tool. Available pages are: Home, Dashboard, AI Friend, Marketplace, Community, About, Journal, Breathing Exercise, Emotion Scan, Mantra Chanting, My AI Twin. If you use the navigation tool, respond with a confirmation like "Certainly, taking you to the..." and the page name. Otherwise, provide a conversational response. Keep responses very short.`,
-      });
-
-      if (response.success && response.data) {
-        if (response.data.toolCalls?.some(tc => tc.toolName === 'navigation')) {
-          // AI wants to navigate. The navigation tool in the backend will handle the redirect.
-          const navCall = response.data.toolCalls.find(tc => tc.toolName === 'navigation');
-          if (navCall && navCall.args.path) {
-             const message = `Taking you to ${navCall.args.path.replace('/', '') || 'the home page'}...`;
-             setMessages(prev => [...prev, { role: 'model', text: message }]);
-             setTimeout(() => {
-               router.push(navCall.args.path);
-               setIsOpen(false);
-             }, 1000);
-          }
-        } else {
-           setMessages(prev => [...prev, { role: 'model', text: response.data.reply }]);
-        }
-      } else {
-        setMessages(prev => [...prev, { role: 'model', text: "Sorry, I'm having trouble connecting right now." }]);
+    try {
+      const chatHistory = messages.map(msg => ({ role: msg.role, content: msg.content }));
+      const result = await chat({ history: chatHistory, message: input });
+      
+      if (result) {
+        const modelMessage: Message = { role: 'model', content: result.response };
+        setMessages((prev) => [...prev, modelMessage]);
       }
-    });
+    } catch (error) {
+      console.error('Chatbot error:', error);
+      const errorMessage: Message = {
+        role: 'model',
+        content: 'Sorry, I encountered an error. Please try again.',
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
   };
+  
+  const handleSheetOpenChange = (open: boolean) => {
+    setIsOpen(open);
+    if (open && messages.length === 0) {
+        setMessages(initialMessages);
+    }
+  }
 
-  const isCurrentPageAI = pathname === '/ai-friend';
-  if (isCurrentPageAI) return null;
+
+  useEffect(() => {
+    if (scrollAreaRef.current) {
+        const scrollContainer = scrollAreaRef.current.querySelector('div');
+        if (scrollContainer) {
+            scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        }
+    }
+  }, [messages]);
 
   return (
     <>
-      <motion.div
-        initial={{ scale: 0, y: 100 }}
-        animate={{ scale: 1, y: 0 }}
-        transition={{
-          type: 'spring',
-          stiffness: 260,
-          damping: 20,
-          delay: 1,
-        }}
-        className="fixed bottom-8 right-8 z-50"
+      <Button
+        onClick={() => setIsOpen(true)}
+        className="fixed bottom-6 right-6 h-16 w-16 rounded-full shadow-lg"
+        size="icon"
       >
-        <Button onClick={() => setIsOpen(!isOpen)} size="icon" className="w-16 h-16 rounded-full shadow-lg shadow-primary/30">
-           <AnimatePresence>
-            {isOpen ? (
-                 <motion.div key="close" initial={{ rotate: -180, opacity: 0 }} animate={{ rotate: 0, opacity: 1}} exit={{ rotate: 180, opacity: 0}}><X className="w-8 h-8" /></motion.div>
-            ) : (
-                <motion.div key="bot" initial={{ rotate: 180, opacity: 0 }} animate={{ rotate: 0, opacity: 1}} exit={{ rotate: -180, opacity: 0}}><Bot className="w-8 h-8" /></motion.div>
-            )}
-           </AnimatePresence>
-        </Button>
-      </motion.div>
+        <Bot className="h-8 w-8" />
+        <span className="sr-only">Open Chatbot</span>
+      </Button>
 
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="fixed bottom-28 right-8 z-40 w-full max-w-sm"
-          >
-            <Card className="shadow-2xl shadow-primary/20 bg-background/80 backdrop-blur-lg border-primary/20">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Bot className="text-primary" />
-                  Chat with Aura
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <ScrollArea className="h-80 p-4">
-                  <div className="space-y-4">
-                    {messages.map((msg, index) => (
-                      <div key={index} className={cn("flex items-end gap-2", msg.role === 'user' ? 'justify-end' : 'justify-start')}>
-                        {msg.role === 'model' && <Bot className="w-6 h-6 text-primary flex-shrink-0" />}
-                        <div className={cn(
-                            "max-w-[80%] rounded-xl px-4 py-2 text-sm",
-                             msg.role === 'user'
-                                ? "bg-primary text-primary-foreground"
-                                : "bg-secondary"
-                        )}>
-                            {msg.text}
-                        </div>
-                      </div>
-                    ))}
-                    {isPending && (
-                       <div className="flex items-end gap-2 justify-start">
-                         <Bot className="w-6 h-6 text-primary flex-shrink-0" />
-                          <div className="bg-secondary rounded-xl px-4 py-2 text-sm">
-                             <Loader2 className="w-4 h-4 animate-spin"/>
-                          </div>
-                       </div>
+      <Sheet open={isOpen} onOpenChange={handleSheetOpenChange}>
+        <SheetContent className="flex flex-col">
+          <SheetHeader>
+            <SheetTitle>Swasthya Raksha Assistant</SheetTitle>
+            <SheetDescription>
+              Ask me questions about water-borne diseases or the app.
+            </SheetDescription>
+          </SheetHeader>
+          <ScrollArea className="flex-1 my-4 pr-4" ref={scrollAreaRef}>
+            <div className="space-y-4">
+              {messages.map((message, index) => (
+                <div
+                  key={index}
+                  className={cn(
+                    'flex items-start gap-3',
+                    message.role === 'user' ? 'justify-end' : 'justify-start'
+                  )}
+                >
+                  {message.role === 'model' && (
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback>
+                        <Bot className="h-5 w-5" />
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
+                  <div
+                    className={cn(
+                      'max-w-xs rounded-lg p-3 text-sm',
+                      message.role === 'user'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted'
                     )}
+                  >
+                    <ReactMarkdown className="prose prose-sm dark:prose-invert">
+                        {message.content}
+                    </ReactMarkdown>
                   </div>
-                </ScrollArea>
-                <CardFooter className="p-4 border-t">
-                  <form onSubmit={handleSendMessage} className="flex w-full items-center gap-2">
-                    <Input
-                      value={input}
-                      onChange={(e) => setInput(e.target.value)}
-                      placeholder="Ask me anything..."
-                      disabled={isPending}
-                      className="flex-1"
-                    />
-                    <Button type="submit" size="icon" disabled={isPending || !input.trim()}>
-                      <Send className="w-4 h-4" />
-                    </Button>
-                  </form>
-                </CardFooter>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                   {message.role === 'user' && (
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback>
+                        <User className="h-5 w-5" />
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
+                </div>
+              ))}
+               {isLoading && (
+                 <div className="flex items-start gap-3 justify-start">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback>
+                        <Bot className="h-5 w-5" />
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="bg-muted rounded-lg p-3 flex items-center">
+                        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground"/>
+                    </div>
+                 </div>
+                )}
+            </div>
+          </ScrollArea>
+          <SheetFooter>
+            <div className="flex w-full items-center gap-2">
+              <Input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                placeholder="Type your message..."
+                disabled={isLoading}
+              />
+              <Button onClick={handleSend} disabled={isLoading || !input.trim()}>
+                <Send className="h-4 w-4" />
+                <span className="sr-only">Send</span>
+              </Button>
+            </div>
+          </SheetFooter>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsOpen(false)}
+            className="absolute top-3 right-3 rounded-full h-8 w-8"
+          >
+            <X className="h-4 w-4" />
+            <span className="sr-only">Close</span>
+          </Button>
+        </SheetContent>
+      </Sheet>
     </>
   );
 }
