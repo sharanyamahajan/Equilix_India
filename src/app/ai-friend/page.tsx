@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useRef, useEffect, useTransition, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getAIFriendResponse } from '@/app/actions';
 import { type AIFriendInput } from '@/ai/schemas/ai-friend';
@@ -75,6 +75,7 @@ export default function AIFriendPage() {
   }, [character.mouthShapes.neutral]);
 
   const setAIStatus = (status: 'thinking' | 'speaking' | 'listening', text: string = "") => {
+    if (!isMounted.current) return;
     if (status === 'speaking') {
       setIsAIThinking(true);
       setAiStatusText(text);
@@ -99,11 +100,19 @@ export default function AIFriendPage() {
 
   const stopSpeechRecognition = useCallback(() => {
     if (recognitionRef.current) {
-      recognitionRef.current.stop();
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {
+        // May already have been stopped
+      }
     }
   }, []);
 
   const speak = useCallback((text: string) => {
+    if (!isMounted.current) return;
+    
+    window.speechSynthesis.cancel(); // Clear queue before speaking
+
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.onstart = () => {
       setIsAIThinking(true);
@@ -167,7 +176,7 @@ export default function AIFriendPage() {
       };
       
       recognition.onerror = (event) => {
-        if (event.error !== 'no-speech') {
+        if (event.error !== 'no-speech' && event.error !== 'aborted') {
           console.error('Speech recognition error:', event.error);
         }
       };
@@ -231,9 +240,9 @@ export default function AIFriendPage() {
   const handleEndCall = () => {
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach(track => track.stop());
+      localStreamRef.current = null;
     }
     stopSpeechRecognition();
-    window.speechSynthesis?.cancel();
     setScreen('welcome');
   };
 
@@ -418,3 +427,5 @@ export default function AIFriendPage() {
     </>
   );
 }
+
+    
