@@ -11,6 +11,7 @@ export function AnimatedBackground() {
         animate={{
           x: ['-20%', '100%', '50%', '-20%'],
           y: ['-20%', '50%', '120%', '-20%'],
+          scale: [1, 1.2, 0.8, 1],
         }}
         transition={{
           duration: 40,
@@ -25,6 +26,7 @@ export function AnimatedBackground() {
         animate={{
           x: ['120%', '-20%', '50%', '120%'],
           y: ['120%', '50%', '-20%', '120%'],
+          rotate: [0, 180, 0],
         }}
         transition={{
           duration: 50,
