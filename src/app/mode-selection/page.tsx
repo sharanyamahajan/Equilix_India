@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { BookText, Wind, ScanFace, Mic, BrainCircuit } from 'lucide-react';
+import { BookText, Wind, ScanFace, Mic, BrainCircuit, HeartPulse, Store } from 'lucide-react';
 
 const modes = [
   {
@@ -35,6 +35,18 @@ const modes = [
     title: 'My AI Twin',
     description: 'Craft and interact with your personalized AI companion.',
     icon: BrainCircuit,
+  },
+  {
+    href: '/health-dashboard',
+    title: 'Health Dashboard',
+    description: 'AI-powered insights into your wellness trends and potential risks.',
+    icon: HeartPulse,
+  },
+  {
+    href: '/marketplace',
+    title: 'Expert Marketplace',
+    description: 'Connect with therapists, coaches, and join wellness workshops.',
+    icon: Store,
   },
 ];
 
