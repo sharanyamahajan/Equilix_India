@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Users, Shield, Heart, Lightbulb, Rocket } from 'lucide-react';
+import { Users, Shield, Heart, Lightbulb, Rocket, ShieldAlert, Store, HeartPulse } from 'lucide-react';
 
 const principles = [
   {
@@ -26,6 +26,22 @@ const principles = [
     description: 'Our system includes a robust safety layer to detect crisis situations and provide immediate links to human support, such as national helplines. We are committed to responsible innovation.',
   },
 ];
+
+const advancedFeatures = [
+    {
+        icon: HeartPulse,
+        title: 'Early Detection & Risk Prediction',
+        description: 'Our AI analyzes journaling, mood data, and behavior patterns to predict early signs of anxiety, depression, or burnout, providing proactive nudges and professional recommendations.',
+        investorHook: 'Unlocks partnership opportunities with healthcare providers, insurance companies, and corporate wellness programs.'
+    },
+    {
+        icon: Store,
+        title: 'Marketplace for Mental Health Services',
+        description: 'Connect with a curated network of premium experts—therapists, yoga teachers, and coaches. Book sessions, join workshops, and access exclusive content packs securely.',
+        investorHook: 'Diversifies revenue beyond subscriptions through transaction fees, premium content, and workshop commissions.'
+    }
+];
+
 
 export default function AboutPage() {
     return (
@@ -62,6 +78,30 @@ export default function AboutPage() {
                         </Card>
                     </section>
                     
+                    <section>
+                        <Card className="shadow-lg shadow-accent/5 border-none bg-secondary/50">
+                            <CardHeader>
+                                <CardTitle className="text-center text-2xl md:text-3xl">Advanced Features</CardTitle>
+                            </CardHeader>
+                            <CardContent className="grid md:grid-cols-1 gap-8">
+                                {advancedFeatures.map((feature, index) => (
+                                    <div key={index} className="flex gap-4 items-start">
+                                        <div className="text-accent p-2 bg-accent/10 rounded-full">
+                                            <feature.icon className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-semibold text-lg">{feature.title}</h3>
+                                            <p className="text-muted-foreground text-sm mb-2">{feature.description}</p>
+                                            <p className="text-xs font-semibold text-accent border-l-2 border-accent pl-2">
+                                               <span className="font-bold">Investor Value:</span> {feature.investorHook}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </CardContent>
+                        </Card>
+                    </section>
+
                      <section className="text-center">
                         <h2 className="text-3xl md:text-4xl font-bold text-foreground">Meet the Team</h2>
                         <div className="mt-8 flex flex-col md:flex-row justify-center items-center gap-8">
