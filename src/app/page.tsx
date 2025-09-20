@@ -5,7 +5,7 @@ import { GratitudeJournal } from '@/components/app/gratitude-journal';
 import { WellnessSurvey } from '@/components/app/wellness-survey';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Camera, Bot, Sparkles, Brain, Feather, Wind } from 'lucide-react';
+import { Camera, Bot, Sparkles, Brain, Feather, Wind, HeartPulse } from 'lucide-react';
 import Link from 'next/link';
 import { JournalingStreak } from '@/components/app/journaling-streak';
 
@@ -36,7 +36,7 @@ export default function Home() {
                         <Link href="#check-in">Start Your Check-in</Link>
                     </Button>
                     <Button asChild size="lg" variant="outline" className="bg-background/50 backdrop-blur-sm">
-                        <Link href="/emotion-detector">Try Emotion Check-in</Link>
+                        <Link href="/breathing-exercise">Try Breathing Exercise</Link>
                     </Button>
                 </div>
               </div>
@@ -68,6 +68,15 @@ export default function Home() {
                               <span>
                                 <p className="font-semibold">Real-time Emotion Scan</p>
                                 <p className="text-xs text-muted-foreground">Check in with your feelings.</p>
+                              </span>
+                          </Button>
+                      </Link>
+                      <Link href="/breathing-exercise" passHref>
+                          <Button variant="outline" className="w-full justify-start gap-4 p-6 text-base bg-background/50">
+                              <HeartPulse className="text-primary w-5 h-5" />
+                              <span>
+                                <p className="font-semibold">Immersive Breathing</p>
+                                <p className="text-xs text-muted-foreground">Calm your mind and body.</p>
                               </span>
                           </Button>
                       </Link>
