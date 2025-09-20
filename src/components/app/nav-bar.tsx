@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { Home, Camera, HeartPulse, User, Bot, Wind, Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { EquilixLogo } from '@/components/icons/equilix-logo';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   Sheet,
   SheetContent,
@@ -24,12 +24,7 @@ const navLinks = [
 
 export function NavBar() {
   const pathname = usePathname();
-  const [mounted, setMounted] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
   
   const NavContent = ({isMobile = false}: {isMobile?: boolean}) => (
     <>
@@ -67,34 +62,25 @@ export function NavBar() {
             </div>
 
             {/* Mobile Header */}
-            {mounted ? (
-              <div className="md:hidden flex-1">
-                  <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
-                  <SheetTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                          <Menu />
-                          <span className="sr-only">Open Menu</span>
-                      </Button>
-                  </SheetTrigger>
-                  <SheetContent side="left">
-                      <div className="flex flex-col gap-4 py-8">
-                          <Link href="/" className="flex items-center gap-2 px-4 mb-4" onClick={() => setMobileNavOpen(false)}>
-                              <EquilixLogo className="w-8 h-8 text-primary" />
-                              <span className="font-bold text-xl">Equilix</span>
-                          </Link>
-                          <NavContent isMobile={true} />
-                      </div>
-                  </SheetContent>
-                  </Sheet>
-              </div>
-            ) : (
-              <div className="md:hidden flex-1">
-                <Button variant="ghost" size="icon" disabled>
-                    <Menu />
-                    <span className="sr-only">Open Menu</span>
-                </Button>
-              </div>
-            )}
+            <div className="md:hidden flex-1">
+                <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
+                <SheetTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                        <Menu />
+                        <span className="sr-only">Open Menu</span>
+                    </Button>
+                </SheetTrigger>
+                <SheetContent side="left">
+                    <div className="flex flex-col gap-4 py-8">
+                        <Link href="/" className="flex items-center gap-2 px-4 mb-4" onClick={() => setMobileNavOpen(false)}>
+                            <EquilixLogo className="w-8 h-8 text-primary" />
+                            <span className="font-bold text-xl">Equilix</span>
+                        </Link>
+                        <NavContent isMobile={true} />
+                    </div>
+                </SheetContent>
+                </Sheet>
+            </div>
             
             <div className="flex flex-1 items-center justify-center md:justify-end">
                 <Link href="/" className="md:hidden">
