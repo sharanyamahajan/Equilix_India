@@ -19,11 +19,12 @@ export function BreathingExercise() {
         <div className="w-32 h-32 rounded-full bg-primary/20 flex items-center justify-center">
           <div
             className={cn(
-              'w-16 h-16 bg-primary rounded-full transition-all duration-4000 ease-in-out',
+              'w-16 h-16 bg-primary rounded-full transition-all ease-in-out',
               isAnimating ? 'scale-150' : 'scale-100'
             )}
             style={{
-              animation: isAnimating ? 'breathe 8s ease-in-out infinite' : 'none'
+              animation: isAnimating ? 'breathe 8s ease-in-out infinite' : 'none',
+              transitionDuration: '4000ms'
             }}
           />
         </div>

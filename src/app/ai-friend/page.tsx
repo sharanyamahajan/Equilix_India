@@ -1,5 +1,3 @@
-
-
 // src/app/ai-friend/page.tsx
 'use client';
 
@@ -405,8 +403,3 @@ export default function AiFriendPage() {
         </div>
     );
 }
-
-
-    
-
-
