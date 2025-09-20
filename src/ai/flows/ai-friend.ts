@@ -53,14 +53,12 @@ const aiFriendFlow = ai.defineFlow(
         return { toolName: part.toolRequest.name, args: part.toolRequest.input };
     });
 
-    const textReply = choice.message.content.filter(part => part.type === 'text').map(part => part.type === 'text' ? part.text : '').join('').trim();
+    let reply = choice.message.content.filter(part => part.type === 'text').map(part => part.type === 'text' ? part.text : '').join('').trim();
     
-    let reply = textReply;
-
-    if (toolCalls.length > 0 && !textReply) {
+    if (toolCalls.length > 0 && !reply) {
         reply = "Certainly, one moment...";
-    } else if (!textReply) {
-        reply = "I'm not sure what to say. Could you try rephrasing?";
+    } else if (!reply) {
+        reply = "I'm sorry, I don't have a response for that right now. Could you please try asking in a different way?";
     }
     
     return { 
