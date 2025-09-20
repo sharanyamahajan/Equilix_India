@@ -74,11 +74,7 @@ export default function MantraChantingPage() {
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         
-        // Stop any existing recognition instance
         if (recognitionRef.current) {
-            recognitionRef.current.onresult = null;
-            recognitionRef.current.onerror = null;
-            recognitionRef.current.onend = null;
             recognitionRef.current.stop();
         }
         
@@ -86,22 +82,16 @@ export default function MantraChantingPage() {
         recognitionRef.current = recognition;
         
         recognition.continuous = true;
-        recognition.interimResults = false; // Only get final results
+        recognition.interimResults = false;
         recognition.lang = 'en-US';
-
-        let finalTranscript = '';
         
         recognition.onresult = (event) => {
-            let currentTranscript = '';
-            for (let i = event.resultIndex; i < event.results.length; ++i) {
-                if (event.results[i].isFinal) {
-                    currentTranscript += event.results[i][0].transcript;
+            const lastResult = event.results[event.results.length - 1];
+            if (lastResult.isFinal) {
+                const transcript = lastResult[0].transcript.trim().toLowerCase();
+                if (transcript.includes(selectedMantra.keyword)) {
+                    handleMantraRecognized();
                 }
-            }
-
-            if (currentTranscript.toLowerCase().includes(selectedMantra.keyword)) {
-                handleMantraRecognized();
-                // We don't reset the transcript here as continuous recognition handles it.
             }
         };
 
@@ -136,12 +126,20 @@ export default function MantraChantingPage() {
     }, [isClient, selectedMantra.keyword, handleMantraRecognized, isListening]);
     
     const stopListening = useCallback(() => {
-        setIsListening(false);
         if (recognitionRef.current) {
             recognitionRef.current.stop();
             recognitionRef.current = null;
         }
+        setIsListening(false);
     }, []);
+
+    const toggleListening = () => {
+        if (isListening) {
+            stopListening();
+        } else {
+            startListening();
+        }
+    };
 
     const handleSelectMantra = (value: string) => {
         const newMantra = mantras.find(m => m.text === value);
