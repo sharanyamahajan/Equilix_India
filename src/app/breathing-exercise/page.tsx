@@ -23,23 +23,6 @@ export default function BreathingExercisePage() {
     setIsClient(true);
   }, []);
 
-  const [inhaleSound, setInhaleSound] = useState<HTMLAudioElement | null>(null);
-  const [exhaleSound, setExhaleSound] = useState<HTMLAudioElement | null>(null);
-
-  useEffect(() => {
-    if (isClient) {
-      setInhaleSound(new Audio('/sounds/inhale.mp3'));
-      setExhaleSound(new Audio('/sounds/exhale.mp3'));
-    }
-  }, [isClient]);
-
-  const playSound = (sound: HTMLAudioElement | null) => {
-    if (sound) {
-      sound.currentTime = 0;
-      sound.play().catch(e => console.error("Audio play failed:", e));
-    }
-  };
-
   useEffect(() => {
     const cycle = breathingCycle[currentPhase];
     const timer = setTimeout(() => {
@@ -48,16 +31,14 @@ export default function BreathingExercisePage() {
 
     if (isClient) {
       if (cycle.text === 'Breathe In') {
-        playSound(inhaleSound);
         if (hapticsEnabled && 'vibrate' in navigator) navigator.vibrate([100, 50, 100, 50, 100]);
       } else if (cycle.text === 'Breathe Out') {
-        playSound(exhaleSound);
         if (hapticsEnabled && 'vibrate' in navigator) navigator.vibrate(200);
       }
     }
     
     return () => clearTimeout(timer);
-  }, [currentPhase, hapticsEnabled, isClient, inhaleSound, exhaleSound]);
+  }, [currentPhase, hapticsEnabled, isClient]);
 
   const toggleHaptics = () => {
     if ('vibrate' in navigator) {
