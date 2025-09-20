@@ -2,20 +2,38 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Camera, HeartPulse, User, Bot, Wind, Menu, X, Info } from 'lucide-react';
+import { Home, Camera, HeartPulse, User, Bot, Wind, Menu, X, Info, BrainCircuit, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { EquilixLogo } from '@/components/icons/equilix-logo';
 import { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 const navLinks = [
   { href: '/', label: 'Home', icon: Home },
   { href: '/emotion-detector', label: 'Emotion Scan', icon: Camera },
-  { href: '/breathing-exercise', label: 'Breathing', icon: HeartPulse },
-  { href: '/mantra-chanting', label: 'Mantra', icon: Wind },
-  { href: '/ai-friend', label: 'AI Companion', icon: Bot },
-  { href: '/my-twin', label: 'My Twin', icon: User },
+  { 
+    label: 'Relaxation', 
+    icon: Wind,
+    children: [
+      { href: '/breathing-exercise', label: 'Breathing', icon: HeartPulse },
+      { href: '/mantra-chanting', label: 'Mantra', icon: Wind },
+    ]
+  },
+  { 
+    label: 'AI Services', 
+    icon: BrainCircuit,
+    children: [
+      { href: '/ai-friend', label: 'AI Companion', icon: Bot },
+      { href: '/my-twin', label: 'My Twin', icon: User },
+    ]
+  },
   { href: '/about', label: 'About', icon: Info },
 ];
 
@@ -27,22 +45,83 @@ export function NavBar() {
   useEffect(() => {
     setMobileNavOpen(false);
   }, [pathname]);
-
-  const NavLinks = ({ className }: { className?: string }) => (
+  
+  const NavLinksContent = ({ isMobile = false }: { isMobile?: boolean }) => (
     <>
       {navLinks.map((link) => {
-        const isActive = pathname === link.href;
+        const isActive = link.href === pathname || (link.children && link.children.some(child => child.href === pathname));
+
+        if (link.children) {
+          if (isMobile) {
+            return (
+              <div key={link.label}>
+                <div className={cn(
+                  'flex items-center gap-3 rounded-md text-sm font-medium transition-colors px-3 py-2',
+                  isActive ? 'text-primary' : 'text-muted-foreground'
+                )}>
+                  <link.icon className="h-5 w-5" />
+                  <span>{link.label}</span>
+                </div>
+                <div className="flex flex-col pl-8">
+                  {link.children.map(child => {
+                     const isChildActive = pathname === child.href;
+                     return (
+                        <Link
+                          key={child.href}
+                          href={child.href}
+                          className={cn(
+                            'flex items-center gap-3 rounded-md text-sm font-medium transition-colors px-3 py-2',
+                            isChildActive
+                              ? 'text-primary'
+                              : 'text-muted-foreground hover:text-foreground'
+                          )}
+                        >
+                          <child.icon className="h-5 w-5" />
+                          <span>{child.label}</span>
+                        </Link>
+                     )
+                  })}
+                </div>
+              </div>
+            )
+          }
+          return (
+             <DropdownMenu key={link.label}>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className={cn(
+                  'flex items-center gap-1 text-sm font-medium transition-colors',
+                  isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+                )}>
+                   <link.icon className="h-5 w-5" />
+                   {link.label}
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                {link.children.map(child => (
+                   <DropdownMenuItem key={child.href} asChild>
+                      <Link href={child.href} className="flex items-center gap-2">
+                        <child.icon className="h-4 w-4 text-muted-foreground" />
+                        {child.label}
+                      </Link>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )
+        }
+        
         return (
           <Link
             key={link.href}
             href={link.href}
             className={cn(
               'flex items-center gap-3 rounded-md text-sm font-medium transition-colors',
-              'px-3 py-2',
+              isMobile ? 'px-3 py-2' : '',
               isActive
                 ? 'text-primary'
                 : 'text-muted-foreground hover:text-foreground',
-              className
+               !isMobile ? 'px-3 py-2' : ''
             )}
           >
             <link.icon className="h-5 w-5" />
@@ -64,8 +143,8 @@ export function NavBar() {
         </div>
 
         {/* Desktop Navigation */}
-        <nav className="hidden flex-1 items-center justify-end gap-6 text-sm md:flex">
-          <NavLinks />
+        <nav className="hidden flex-1 items-center justify-end gap-2 text-sm md:flex">
+          <NavLinksContent />
         </nav>
 
         {/* Mobile Navigation */}
@@ -79,11 +158,13 @@ export function NavBar() {
             </SheetTrigger>
             <SheetContent side="left">
               <div className="flex flex-col gap-4 py-4">
-                 <Link href="/" className="flex items-center gap-2 px-3">
+                 <Link href="/" className="flex items-center gap-2 px-3 mb-2">
                     <EquilixLogo className="w-6 h-6 text-primary" />
                     <span className="font-bold">Equilix</span>
                   </Link>
-                <NavLinks className="flex-col items-start" />
+                <div className="flex flex-col gap-1">
+                  <NavLinksContent isMobile={true} />
+                </div>
               </div>
             </SheetContent>
           </Sheet>
