@@ -91,7 +91,7 @@ export default function MyTwinPage() {
                 </p>
             </div>
 
-            <Card className="shadow-lg shadow-primary/5">
+            <Card className="shadow-lg shadow-primary/5 bg-secondary/30 border-none">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-3">
                         <User className="text-primary w-6 h-6" />
@@ -113,7 +113,7 @@ export default function MyTwinPage() {
                             <FormControl>
                                 <Textarea
                                 placeholder="e.g., 'A calm, wise mentor who is incredibly patient and always offers philosophical insights. They have a dry sense of humor and love to use metaphors related to nature.'"
-                                className="min-h-[150px] resize-none"
+                                className="min-h-[150px] resize-none bg-background"
                                 {...field}
                                 />
                             </FormControl>
@@ -129,7 +129,7 @@ export default function MyTwinPage() {
                                     <><BookCopy className="mr-2 h-4 w-4" /> Learn from Journal</>
                                 )}
                             </Button>
-                            <Button type="submit" disabled={isGenerating || isLearning} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
+                            <Button type="submit" disabled={isGenerating || isLearning} className="w-full">
                                 {isGenerating ? (
                                     <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating Persona...</>
                                 ) : (
@@ -143,7 +143,7 @@ export default function MyTwinPage() {
             </Card>
 
             {generatedPrompt && (
-                 <Card className="animate-in fade-in-50 duration-500">
+                 <Card className="animate-in fade-in-50 duration-500 bg-secondary/30 border-none">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-3">
                             <Bot className="text-accent w-6 h-6" />
@@ -154,7 +154,7 @@ export default function MyTwinPage() {
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="bg-secondary/50 p-4 rounded-md text-sm text-secondary-foreground font-mono whitespace-pre-wrap">
+                        <div className="bg-background/50 p-4 rounded-md text-sm text-secondary-foreground font-mono whitespace-pre-wrap">
                             {generatedPrompt}
                         </div>
                     </CardContent>
