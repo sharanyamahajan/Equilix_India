@@ -127,9 +127,10 @@ export default function MantraChantingPage() {
      useEffect(() => {
         if (audioRef.current) {
             if (selectedBackground.sound) {
-                audioRef.current.src = selectedBackground.sound;
-                audioRef.current.loop = true;
-                audioRef.current.play().catch(e => console.error("Audio play failed:", e));
+                // audioRef.current.src = selectedBackground.sound;
+                // audioRef.current.loop = true;
+                // audioRef.current.play().catch(e => console.error("Audio play failed:", e));
+                 console.log(`Audio source would be: ${selectedBackground.sound}`);
             } else {
                 audioRef.current.pause();
                 audioRef.current.src = '';
