@@ -59,53 +59,51 @@ export function NavBar() {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
        <div className="container flex h-16 items-center">
-            {mounted && (
-                <>
-                    <div className="mr-4 hidden md:flex">
-                        <Link href="/" className="flex items-center gap-2">
-                            <EquilixLogo className="w-6 h-6 text-primary" />
-                            <span className="font-bold text-lg">Equilix</span>
-                        </Link>
-                    </div>
+            <div className="mr-4 hidden md:flex">
+                <Link href="/" className="flex items-center gap-2">
+                    <EquilixLogo className="w-6 h-6 text-primary" />
+                    <span className="font-bold text-lg">Equilix</span>
+                </Link>
+            </div>
 
-                    {/* Mobile Header */}
-                    <div className="md:hidden flex-1">
-                        <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
-                        <SheetTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                                <Menu />
-                                <span className="sr-only">Open Menu</span>
-                            </Button>
-                        </SheetTrigger>
-                        <SheetContent side="left">
-                            <div className="flex flex-col gap-4 py-8">
-                                <Link href="/" className="flex items-center gap-2 px-4 mb-4" onClick={() => setMobileNavOpen(false)}>
-                                    <EquilixLogo className="w-8 h-8 text-primary" />
-                                    <span className="font-bold text-xl">Equilix</span>
-                                </Link>
-                                <NavContent isMobile={true} />
-                            </div>
-                        </SheetContent>
-                        </Sheet>
-                    </div>
-                    <div className="flex flex-1 items-center justify-center md:justify-end">
-                        <Link href="/" className="md:hidden">
-                            <EquilixLogo className="w-6 h-6 text-primary" />
-                        </Link>
-                        <nav className="hidden md:flex items-center gap-4 text-sm">
-                            <NavContent />
-                        </nav>
-                    </div>
-                </>
+            {/* Mobile Header */}
+            {mounted ? (
+              <div className="md:hidden flex-1">
+                  <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
+                  <SheetTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                          <Menu />
+                          <span className="sr-only">Open Menu</span>
+                      </Button>
+                  </SheetTrigger>
+                  <SheetContent side="left">
+                      <div className="flex flex-col gap-4 py-8">
+                          <Link href="/" className="flex items-center gap-2 px-4 mb-4" onClick={() => setMobileNavOpen(false)}>
+                              <EquilixLogo className="w-8 h-8 text-primary" />
+                              <span className="font-bold text-xl">Equilix</span>
+                          </Link>
+                          <NavContent isMobile={true} />
+                      </div>
+                  </SheetContent>
+                  </Sheet>
+              </div>
+            ) : (
+              <div className="md:hidden flex-1">
+                <Button variant="ghost" size="icon" disabled>
+                    <Menu />
+                    <span className="sr-only">Open Menu</span>
+                </Button>
+              </div>
             )}
-            {!mounted && (
-                <div className="w-full flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <EquilixLogo className="w-6 h-6 text-primary" />
-                        <span className="font-bold text-lg">Equilix</span>
-                    </div>
-                </div>
-            )}
+            
+            <div className="flex flex-1 items-center justify-center md:justify-end">
+                <Link href="/" className="md:hidden">
+                    <EquilixLogo className="w-6 h-6 text-primary" />
+                </Link>
+                <nav className="hidden md:flex items-center gap-4 text-sm">
+                    <NavContent />
+                </nav>
+            </div>
        </div>
     </header>
   );
