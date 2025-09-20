@@ -45,6 +45,7 @@ export default function MantraChantingPage() {
 
     // This ref will hold the latest transcript and will be used to prevent multiple counts for the same phrase.
     const lastProcessedTranscript = useRef('');
+    const recognitionIsActive = useRef(false);
 
     useEffect(() => {
         setIsClient(true);
@@ -66,37 +67,19 @@ export default function MantraChantingPage() {
     }, [triggerAnimationAndHaptics]);
     
     const startListening = useCallback(() => {
-        if (recognitionRef.current) {
-            try {
-                recognitionRef.current.start();
-                setIsListening(true);
-            } catch (e) {
-                // If it's already started, that's fine.
-                setIsListening(true);
-            }
-        }
-    }, []);
-    
-    const stopListening = useCallback(() => {
-        if (recognitionRef.current) {
-            recognitionRef.current.stop();
-        }
-        setIsListening(false);
-    }, []);
-
-    useEffect(() => {
-        if (!isClient || !isListening) return;
-
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) {
-            if (isClient) alert("Speech recognition is not supported in this browser.");
+        if (!isClient || !('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
             return;
         }
 
-        const recognition = new SpeechRecognition();
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognitionRef.current = new SpeechRecognition();
+        const recognition = recognitionRef.current;
+        
         recognition.continuous = true;
         recognition.interimResults = true;
         recognition.lang = 'en-US';
+
+        let lastChantTime = 0;
 
         recognition.onresult = (event) => {
             const transcript = Array.from(event.results)
@@ -105,43 +88,67 @@ export default function MantraChantingPage() {
                 .join('')
                 .toLowerCase();
 
-            // Check if the new transcript contains the keyword and is different from the last processed one.
-            // This prevents counting the same utterance multiple times as interim results come in.
-            if (transcript.includes(selectedMantra.keyword) && transcript !== lastProcessedTranscript.current) {
+            const now = Date.now();
+            if (transcript.includes(selectedMantra.keyword) && (now - lastChantTime > 1000)) {
+                lastChantTime = now;
                 handleMantraRecognized();
-                lastProcessedTranscript.current = transcript; // Mark this transcript as processed.
-                // Abort and restart to clear the buffer and listen for a new, distinct chant.
-                recognitionRef.current?.abort();
+                // We don't abort, just let it run. The time check prevents recounting.
             }
         };
 
         recognition.onerror = (event) => {
+            // Ignore "aborted" errors which can happen when we programmatically stop listening.
+            if (event.error === 'aborted') {
+                return;
+            }
             console.error('Speech recognition error:', event.error);
             if (event.error === 'not-allowed') {
                 alert("Microphone access was denied. Please allow microphone access to count chants.");
-                stopListening();
+                setIsListening(false);
             }
         };
         
         recognition.onend = () => {
-           lastProcessedTranscript.current = ''; // Clear memory when recognition cycle ends.
+           recognitionIsActive.current = false;
+           // If we are still supposed to be listening, restart it.
            if (isListening) {
-             // If it stops and we still want to listen, restart it.
              startListening();
            }
         };
 
-        recognitionRef.current = recognition;
-        startListening();
-
-        return () => {
-            if (recognitionRef.current) {
-                recognitionRef.current.stop();
-            }
+        try {
+            recognition.start();
+            recognitionIsActive.current = true;
+            setIsListening(true);
+        } catch(e) {
+            console.error("Could not start recognition", e);
         }
 
-    }, [isClient, selectedMantra.keyword, handleMantraRecognized, isListening, startListening, stopListening]);
+    }, [isClient, selectedMantra.keyword, handleMantraRecognized]);
     
+    const stopListening = useCallback(() => {
+        if (recognitionRef.current && recognitionIsActive.current) {
+            recognitionRef.current.stop();
+        }
+        setIsListening(false);
+    }, []);
+
+    
+    useEffect(() => {
+        if (isListening) {
+            startListening();
+        } else {
+            stopListening();
+        }
+        
+        return () => {
+            if (recognitionRef.current) {
+               recognitionRef.current.stop();
+            }
+        }
+    }, [isListening]); // Only depend on isListening here. start/stopListening have their own dependencies.
+
+
     useEffect(() => {
         if (audioRef.current) {
             if (selectedBackground.sound && isListening) {
@@ -165,11 +172,7 @@ export default function MantraChantingPage() {
     };
     
     const toggleListening = () => {
-        if (isListening) {
-            stopListening();
-        } else {
-            setIsListening(true); // Let the useEffect handle the start
-        }
+       setIsListening(prev => !prev);
     }
     
      const resetCounter = () => {
