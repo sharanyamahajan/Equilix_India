@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useTransition, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getAIFriendResponse } from '@/app/actions';
 import { type AIFriendInput } from '@/ai/schemas/ai-friend';
@@ -28,24 +28,39 @@ export default function AIFriendPage() {
     prompt: `You are Aura, a professional and empathetic AI companion. Your purpose is to provide a safe, supportive space for users. Listen carefully, offer thoughtful perspectives, and gently guide them to reflect on their feelings. Do not give medical advice. Keep your responses concise, clear, and calm.`,
     svg: `<svg viewBox="0 0 200 200" id="aura-svg" class="w-full h-full">
             <defs>
-                <radialGradient id="auraGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-                    <stop offset="0%" style="stop-color:#93c5fd; stop-opacity:0.8" />
-                    <stop offset="100%" style="stop-color:#3b82f6; stop-opacity:0.9" />
+                <radialGradient id="auraGradientOuter" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                    <stop offset="0%" stop-color="#3b82f6" stop-opacity="0" />
+                    <stop offset="60%" stop-color="#3b82f6" stop-opacity="0.1" />
+                    <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.3" />
                 </radialGradient>
+                <radialGradient id="auraGradientInner" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                    <stop offset="0%" stop-color="#bfdbfe" stop-opacity="0.8" />
+                    <stop offset="100%" stop-color="#60a5fa" stop-opacity="0.9" />
+                </radialGradient>
+                 <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="5" result="coloredBlur" />
+                    <feMerge>
+                        <feMergeNode in="coloredBlur" />
+                        <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                </filter>
             </defs>
-            <circle cx="100" cy="100" r="90" fill="url(#auraGradient)" />
-            <circle cx="100" cy="100" r="70" fill="none" stroke="#ffffff" stroke-width="2" stroke-opacity="0.5" />
+             <circle cx="100" cy="100" r="95" fill="url(#auraGradientOuter)">
+                 <animate attributeName="r" from="90" to="100" dur="4s" begin="0s" repeatCount="indefinite" />
+                 <animate attributeName="opacity" from="0.3" to="0.5" dur="4s" begin="0s" repeatCount="indefinite" />
+            </circle>
+            <circle cx="100" cy="100" r="80" fill="url(#auraGradientInner)" filter="url(#glow)" />
             <g id="eyes" style="transition: transform 0.2s ease-out;">
-                <path class="eye-line" d="M 70 90 L 90 90" stroke="#ffffff" stroke-width="3" stroke-linecap="round" />
-                <path class="eye-line" d="M 110 90 L 130 90" stroke="#ffffff" stroke-width="3" stroke-linecap="round" />
+                <circle cx="80" cy="90" r="5" fill="white" />
+                <circle cx="120" cy="90" r="5" fill="white" />
             </g>
-            <path id="mouth" d="M 80 130 Q 100 130 120 130" stroke="#ffffff" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <path id="mouth" d="M 85 130 Q 100 135 115 130" stroke="#ffffff" stroke-width="3" fill="none" stroke-linecap="round"/>
         </svg>`,
     mouthShapes: {
-      neutral: 'M 80 130 Q 100 130 120 130',
-      a: 'M 80 130 Q 100 145 120 130', // Open mouth for 'aah' sounds
-      b: 'M 80 135 Q 100 135 120 135', // Flat line for 'm', 'b' sounds
-      c: 'M 80 125 Q 100 140 120 125', // Wider shape for 'ooh' sounds
+      neutral: 'M 85 130 Q 100 135 115 130',
+      a: 'M 85 130 Q 100 145 115 130', // Open mouth for 'aah' sounds
+      b: 'M 85 135 Q 100 135 115 135', // Flat line for 'm', 'b' sounds
+      c: 'M 85 125 Q 100 140 115 125', // Wider shape for 'ooh' sounds
     },
   };
 
@@ -169,7 +184,7 @@ export default function AIFriendPage() {
         if (document.hidden || !eyes) return;
         eyes.style.transform = 'scaleY(0.1)';
         setTimeout(() => {
-          eyes.style.transform = 'scaleY(1)';
+          if(eyes) eyes.style.transform = 'scaleY(1)';
         }, 200);
       }, 4000);
 
@@ -237,8 +252,8 @@ export default function AIFriendPage() {
       <div id="app-wrapper" className="h-screen w-screen flex flex-col items-center justify-center transition-opacity duration-500 font-body">
         {screen === 'welcome' && (
           <div id="welcome-screen" className="text-center p-8">
-            <h1 className="text-5xl font-bold mb-2 text-gray-800">Welcome to AI Video Call</h1>
-            <p className="text-xl text-gray-600 mb-8">Your professional AI companion for mental wellness.</p>
+             <h1 className="text-5xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-600 animate-pulse">Welcome to AI Video Call</h1>
+             <p className="text-xl text-gray-600 mb-8">Your professional AI companion for mental wellness.</p>
             <p className="max-w-2xl mx-auto text-gray-600 mb-8">
               This is a safe space to talk about whatever&apos;s on your mind. <strong>Aura</strong> is here to listen without judgment. Ready to chat?
             </p>
@@ -378,3 +393,5 @@ export default function AIFriendPage() {
     </>
   );
 }
+
+    
