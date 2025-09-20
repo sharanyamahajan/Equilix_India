@@ -3,20 +3,20 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { BookText, Wind, ScanFace, Mic, BrainCircuit, HeartPulse, Store } from 'lucide-react';
+import { BookText, Wind, ScanFace, Mic, BrainCircuit, HeartPulse } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const modes = [
-  {
-    href: '/health-dashboard',
-    title: 'Health Dashboard',
-    description: 'AI-powered insights into your wellness trends and potential risks.',
-    icon: HeartPulse,
-    highlight: true,
-  },
+const primaryFeature = {
+  href: '/health-dashboard',
+  title: 'Health Dashboard',
+  description: 'AI-powered insights into your wellness trends and potential risks for stress & hypertension.',
+  icon: HeartPulse,
+};
+
+const secondaryModes = [
   {
     href: '/journal',
-    title: 'Journal',
+    title: 'Journal & Wellness Check-in',
     description: 'Reflect on your day, track your mood, and express your thoughts.',
     icon: BookText,
   },
@@ -64,34 +64,54 @@ export default function ModeSelectionPage() {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-          {modes.map((mode, index) => (
-            <Link href={mode.href} key={mode.href} passHref>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 + index * 0.1, ease: 'easeOut' }}
-              >
-                <Card className={cn(
-                  "h-full bg-secondary/30 hover:bg-secondary/50 hover:shadow-primary/10 hover:shadow-lg transition-all transform hover:-translate-y-1 cursor-pointer",
-                  mode.highlight && "bg-primary/5 shadow-lg shadow-primary/20 hover:shadow-primary/30"
-                )}>
-                  <CardHeader className="flex flex-row items-center gap-4">
-                    <div className={cn(
-                      "bg-primary/10 text-primary p-3 rounded-lg",
-                      mode.highlight && "bg-primary/20"
-                    )}>
-                      <mode.icon className="w-7 h-7" />
+        <div className="max-w-6xl mx-auto space-y-10">
+          {/* Primary Feature */}
+          <Link href={primaryFeature.href} passHref>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2, ease: 'easeOut' }}
+            >
+              <Card className="bg-primary/10 shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:bg-primary/20 transition-all transform hover:-translate-y-1 cursor-pointer">
+                <CardHeader className="p-8">
+                    <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
+                        <div className="bg-primary/20 text-primary p-4 rounded-lg">
+                        <primaryFeature.icon className="w-10 h-10" />
+                        </div>
+                        <div>
+                        <CardTitle className="text-2xl">{primaryFeature.title}</CardTitle>
+                        <CardDescription className="text-foreground/80 mt-2 text-base">{primaryFeature.description}</CardDescription>
+                        </div>
                     </div>
-                    <div>
-                      <CardTitle>{mode.title}</CardTitle>
-                      <CardDescription className={cn("mt-1", mode.highlight && "text-foreground/80")}>{mode.description}</CardDescription>
-                    </div>
-                  </CardHeader>
-                </Card>
-              </motion.div>
-            </Link>
-          ))}
+                </CardHeader>
+              </Card>
+            </motion.div>
+          </Link>
+          
+          {/* Secondary Features */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {secondaryModes.map((mode, index) => (
+              <Link href={mode.href} key={mode.href} passHref>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.4 + index * 0.1, ease: 'easeOut' }}
+                  className="h-full"
+                >
+                  <Card className="h-full bg-secondary/30 hover:bg-secondary/50 hover:shadow-primary/10 hover:shadow-lg transition-all transform hover:-translate-y-1 cursor-pointer">
+                    <CardHeader className="flex flex-row items-center gap-4">
+                      <div className="bg-primary/10 text-primary p-3 rounded-lg">
+                        <mode.icon className="w-7 h-7" />
+                      </div>
+                      <div>
+                        <CardTitle>{mode.title}</CardTitle>
+                      </div>
+                    </CardHeader>
+                  </Card>
+                </motion.div>
+              </Link>
+            ))}
+          </div>
         </div>
       </main>
     </div>
