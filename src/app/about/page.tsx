@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Users, Shield, Heart, Lightbulb, Rocket, Store, LifeBuoy, ShoppingBag } from 'lucide-react';
+import { Users, Shield, Heart, Lightbulb, Rocket, Store, LifeBuoy, ShoppingBag, Target, ShieldCheck, Gamepad2, Briefcase, Sparkles, UserCheck } from 'lucide-react';
 
 const principles = [
   {
@@ -27,21 +27,48 @@ const principles = [
   },
 ];
 
-const futureFeatures = [
+const roadmap = [
     {
-        icon: LifeBuoy,
-        title: 'AI-Moderated Support Groups',
-        description: 'Safe, anonymous spaces for users to connect and share experiences, guided by AI to ensure a supportive environment.',
+        icon: Target,
+        title: 'Personalized AI Care Pathways',
+        description: 'Instead of just offering random tools, we build personalized journeys (stress relief, focus boost, sleep improvement). The AI adapts the path daily based on mood and emotion scans.',
+        investorHook: 'Stickiness, personalization, high engagement.'
     },
     {
+        icon: UserCheck,
+        title: 'Early Detection & Risk Prediction',
+        description: 'We use mood data, journaling, and behavior patterns to predict early signs of anxiety, depression, or burnout, and provide proactive nudges or recommend professional help.',
+        investorHook: 'Potential for partnerships with insurance, healthcare, and corporates.'
+    },
+    {
+        icon: Gamepad2,
+        title: 'Gamified Engagement Loop',
+        description: 'Daily streaks, milestones, and leaderboards (anonymous) keep users motivated. Unlockable content creates rewarding experiences, like a "Mental Wellness Journey" summary.',
+        investorHook: 'Proven engagement loops lead to higher user retention and revenue.'
+    },
+    {
+        icon: Briefcase,
+        title: 'Corporate Wellness Dashboard (B2B SaaS)',
+        description: 'We sell companies anonymous, aggregated stress and mood reports, helping HR measure team burnout and productivity risks before they escalate.',
+        investorHook: 'Scalable, repeatable revenue with a large Total Addressable Market (TAM).'
+    },
+    {
+        icon: Sparkles,
+        title: 'Cultural Differentiation',
+        description: 'Features like AI-powered Mantra chanting with pronunciation coaching and a digital mala give us a unique edge in a crowded market, attracting both local and global users.',
+        investorHook: 'Clear differentiation in a crowded market.'
+    },
+    {
+        icon: ShieldCheck,
+        title: 'AI-Moderated Safe Community',
+        description: 'We provide anonymous peer-support forums where AI moderation prevents triggering or harmful content, fostering a truly safe and supportive community space.',
+        investorHook: 'Scalable community creates a powerful network effect and a competitive moat.'
+    },
+     {
         icon: Store,
-        title: 'Expert Marketplace',
-        description: 'Connect with certified psychologists, yoga instructors, and mantra gurus for personalized, one-on-one guidance.',
-    },
-    {
-        icon: ShoppingBag,
-        title: 'Curated Wellness Products',
-        description: 'Discover and purchase affiliate health and wellness products recommended by experts in our ecosystem.',
+        title: 'Marketplace for Mental Health Services',
+        description: 'Connect with certified psychologists, yoga instructors, and wellness coaches for paid workshops on stress management, chanting retreats, or sleep clinics.',
+        investorHook: 'Multiple revenue streams beyond the core subscription.'
     }
 ]
 
@@ -84,18 +111,19 @@ export default function AboutPage() {
                     <section>
                         <Card className="shadow-lg shadow-primary/5 border-none bg-secondary/50">
                             <CardHeader>
-                                <CardTitle className="text-center text-2xl md:text-3xl">Our Vision for the Future</CardTitle>
+                                <CardTitle className="text-center text-2xl md:text-3xl">Our Roadmap & Vision</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-8">
-                                <div className="grid md:grid-cols-3 gap-8">
-                                    {futureFeatures.map((f, index) => (
-                                        <div key={index} className="flex flex-col items-center text-center gap-2">
-                                            <div className="text-primary p-3 bg-primary/10 rounded-full">
-                                                <f.icon className="w-8 h-8" />
+                                <div className="space-y-6">
+                                    {roadmap.map((item, index) => (
+                                        <div key={index} className="flex flex-col sm:flex-row gap-6 p-4 rounded-lg bg-background/30 border border-border/50">
+                                            <div className="flex-shrink-0 text-primary pt-1">
+                                                <item.icon className="w-8 h-8 mx-auto sm:mx-0" />
                                             </div>
-                                            <div>
-                                                <h3 className="font-semibold text-lg">{f.title}</h3>
-                                                <p className="text-muted-foreground text-sm">{f.description}</p>
+                                            <div className="text-center sm:text-left">
+                                                <h3 className="font-semibold text-lg">{item.title}</h3>
+                                                <p className="text-muted-foreground text-sm mt-1">{item.description}</p>
+                                                <p className="text-xs text-primary/80 font-semibold mt-2 tracking-wide">👉 For Investors: <span className="italic">{item.investorHook}</span></p>
                                             </div>
                                         </div>
                                     ))}
