@@ -22,10 +22,12 @@ type Message = {
   text: string;
 };
 
+const novaSystemPrompt = `You are Nova, a friendly and efficient AI assistant for the Equilix app. Your primary role is to help users navigate the application and understand its features. You are knowledgeable, concise, and slightly more direct than Aura. Your goal is to provide clear, helpful answers. You can navigate users to different pages if they ask. Do not give medical advice.`;
+
 const initialMessages: Message[] = [
     {
         role: 'model',
-        text: "Hello! I am Aura, your personal AI companion. How can I help you today?"
+        text: "Hello! I am Nova, your guide to the Equilix app. How can I help you explore today?"
     }
 ];
 
@@ -36,15 +38,6 @@ export function FloatingBot() {
   const [isPending, startTransition] = useTransition();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
-  const [aiSystemPrompt, setAiSystemPrompt] = useState<string | undefined>(undefined);
-
-  useEffect(() => {
-    // On component mount, check for a custom AI twin prompt in localStorage
-    const customPrompt = localStorage.getItem('aiTwinSystemPrompt');
-    if (customPrompt) {
-        setAiSystemPrompt(customPrompt);
-    }
-  }, [isOpen]);
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -58,7 +51,7 @@ export function FloatingBot() {
         const response = await getAIFriendResponse({
           history: messages,
           message: currentInput,
-          systemPrompt: aiSystemPrompt,
+          systemPrompt: novaSystemPrompt,
         });
         
         if (response.success && response.data) {
@@ -69,6 +62,7 @@ export function FloatingBot() {
             for (const toolCall of response.data.toolCalls) {
               if (toolCall.toolName === 'navigation' && toolCall.args.path) {
                 router.push(toolCall.args.path as string);
+                setIsOpen(false);
               }
             }
           }
@@ -115,7 +109,7 @@ export function FloatingBot() {
       <Sheet open={isOpen} onOpenChange={handleSheetOpenChange}>
         <SheetContent className="flex flex-col">
           <SheetHeader>
-            <SheetTitle>Aura - Your AI Companion</SheetTitle>
+            <SheetTitle>Nova - Your AI Companion</SheetTitle>
             <SheetDescription>
               I'm here to listen and help you navigate the app.
             </SheetDescription>
