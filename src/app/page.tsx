@@ -80,6 +80,15 @@ export default function Home() {
                               </span>
                           </Button>
                       </Link>
+                      <Link href="/mantra-chanting" passHref>
+                          <Button variant="outline" className="w-full justify-start gap-4 p-6 text-base bg-background/50">
+                              <Wind className="text-primary w-5 h-5" />
+                              <span>
+                                <p className="font-semibold">Mantra Chanting</p>
+                                <p className="text-xs text-muted-foreground">Focus your intention.</p>
+                              </span>
+                          </Button>
+                      </Link>
                        <Link href="/ai-friend" passHref>
                           <Button variant="outline" className="w-full justify-start gap-4 p-6 text-base bg-background/50">
                               <Bot className="text-primary w-5 h-5" />
