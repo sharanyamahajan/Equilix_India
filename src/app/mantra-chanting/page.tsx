@@ -347,8 +347,3 @@ export default function MantraChantingPage() {
         </div>
     );
 }
-
-// NOTE: I had to rename a function to avoid a duplicate declaration error.
-function handleMantraRecognized() {
-    // This is a placeholder. The real logic is in the component.
-}
