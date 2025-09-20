@@ -1,418 +1,164 @@
-
+// Renaming this page to story-generator in a future step
 'use client';
 
-import { useState, useRef, useEffect, useCallback, useTransition } from 'react';
-import { getAIFriendResponse } from '@/app/actions';
+import { useState, useTransition } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import { Mic, MicOff, Video, VideoOff, PhoneOff } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Textarea } from '@/components/ui/textarea';
+import { Loader2, Wand2, Sparkles } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { generateStory } from '@/app/actions';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-// --- SVG Icons ---
-const UserPlaceholderIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-full h-full">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-  </svg>
-);
+const storySchema = z.object({
+  prompt: z.string().min(10, "Please enter a prompt of at least 10 characters.").max(500, "The prompt must be 500 characters or less."),
+  genre: z.string(),
+});
 
-const DotFlashing = () => <div className="dot-flashing"></div>;
+const genres = ['Fantasy', 'Sci-Fi', 'Mystery', 'Adventure', 'Fable'];
 
-const AuraAvatar = ({ aiStatus }: { aiStatus: 'listening' | 'thinking' | 'speaking' }) => {
-    const mouthRef = useRef<SVGPathElement | null>(null);
-    const eyesRef = useRef<SVGGElement | null>(null);
+export default function StoryGeneratorPage() {
+  const [isGenerating, startGenerating] = useTransition();
+  const [generatedStory, setGeneratedStory] = useState<string | null>(null);
+  const { toast } = useToast();
 
-    const mouthShapes = {
-        neutral: "M 80 132 C 85 134, 115 134, 120 132", // Neutral flat
-        a: "M 85 130 C 90 140, 110 140, 115 130", // Slightly open 'aah'
-        b: "M 80 132 C 85 134, 115 134, 120 132", // Closed 'm'
-        c: "M 88 128 C 90 138, 110 138, 112 128", // 'ooh' shape
-        d: "M 82 130 C 87 136, 113 136, 118 130", // gentle smile
-    };
+  const form = useForm<z.infer<typeof storySchema>>({
+    resolver: zodResolver(storySchema),
+    defaultValues: {
+      prompt: '',
+      genre: 'Fantasy',
+    },
+  });
 
-    useEffect(() => {
-        let lipSyncInterval: NodeJS.Timeout | null = null;
-        if (aiStatus === 'speaking') {
-            const shapes = [mouthShapes.a, mouthShapes.c, mouthShapes.d, mouthShapes.b];
-            lipSyncInterval = setInterval(() => {
-                if (mouthRef.current) {
-                    mouthRef.current.setAttribute('d', shapes[Math.floor(Math.random() * shapes.length)]);
-                }
-            }, 150);
+  const onSubmit = (values: z.infer<typeof storySchema>) => {
+    startGenerating(async () => {
+        setGeneratedStory(null);
+        const result = await generateStory({
+            prompt: values.prompt,
+            genre: values.genre,
+        });
+
+        if (result.success && result.data) {
+            setGeneratedStory(result.data.story);
+            toast({
+                title: "Your Story is Ready!",
+                description: "A new tale has been woven for you.",
+            });
         } else {
-            if (mouthRef.current) {
-                 mouthRef.current.setAttribute('d', mouthShapes.d); // default to a gentle smile
-            }
+            toast({
+                title: "Generation Failed",
+                description: "We couldn't create your story at this time. Please try again.",
+                variant: "destructive",
+            });
         }
-        return () => {
-            if (lipSyncInterval) {
-                clearInterval(lipSyncInterval);
-            }
-        };
-    }, [aiStatus, mouthShapes.a, mouthShapes.b, mouthShapes.c, mouthShapes.d]);
-    
-     useEffect(() => {
-        const eyes = eyesRef.current;
-        if (!eyes) return;
+    });
+  };
 
-        const blink = () => {
-            if (document.hidden) return;
-            eyes.style.transform = 'scaleY(0.1)';
-            setTimeout(() => {
-                eyes.style.transform = 'scaleY(1)';
-            }, 200);
-        };
-
-        const intervalId = setInterval(blink, 4000);
-        return () => clearInterval(intervalId);
-    }, []);
-
-
-    return (
-         <svg viewBox="0 0 200 200" id="aura-svg" className="w-full h-full">
-            <defs>
-                <radialGradient id="auraGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-                    <stop offset="0%" style={{stopColor: '#AEC6CF', stopOpacity: 0.8}} />
-                    <stop offset="100%" style={{stopColor: '#7C939A', stopOpacity: 0.9}} />
-                </radialGradient>
-            </defs>
-            <circle cx="100" cy="100" r="90" fill="url(#auraGradient)" />
-            <circle cx="100" cy="100" r="70" fill="none" stroke="#ffffff" strokeWidth="2" strokeOpacity="0.5" />
-            <g ref={eyesRef} id="eyes" style={{transition: 'transform 0.2s ease-out', transformOrigin: 'center'}}>
-                {/* Left Eye */}
-                <ellipse cx="80" cy="95" rx="14" ry="16" fill="white" />
-                <circle cx="80" cy="95" r="7" fill="#333" />
-                <circle cx="83" cy="92" r="2.5" fill="white" />
-                
-                {/* Right Eye */}
-                <ellipse cx="120" cy="95" rx="14" ry="16" fill="white" />
-                <circle cx="120" cy="95" r="7" fill="#333" />
-                <circle cx="123" cy="92" r="2.5" fill="white" />
-            </g>
-            <g id="mouth-group" fill="#FFF" stroke="none">
-                 <path
-                    ref={mouthRef}
-                    id="mouth"
-                    d={mouthShapes.d}
-                    stroke="#FFF"
-                    strokeWidth="3.5"
-                    strokeLinecap="round"
-                    fill="none"
-                    style={{ transition: 'd 0.1s ease-in-out' }}
-                />
-            </g>
-        </svg>
-    );
-};
-
-
-// --- Main Component ---
-export default function AiFriendPage() {
-    const [screen, setScreen] = useState('welcome'); // 'welcome' | 'call'
-    const [loadingText, setLoadingText] = useState('');
-    const [isMicOn, setIsMicOn] = useState(true);
-    const [isCameraOn, setIsCameraOn] = useState(true);
-    const [aiStatus, setAiStatus] = useState<'listening' | 'thinking' | 'speaking'>('speaking');
-    const [aiStatusText, setAiStatusText] = useState("Hi there! What's on your mind today?");
-    const [aiSystemPrompt, setAiSystemPrompt] = useState<string | undefined>(undefined);
-    const [conversationHistory, setConversationHistory] = useState<{ role: 'user' | 'model'; text: string }[]>([]);
-    
-    const localStreamRef = useRef<MediaStream | null>(null);
-    const userVideoRef = useRef<HTMLVideoElement>(null);
-    const recognitionRef = useRef<SpeechRecognition | null>(null);
-    const isAIThinkingRef = useRef(false);
-
-    const [isPending, startTransition] = useTransition();
-
-    useEffect(() => {
-        // On component mount, check for a custom AI twin prompt in localStorage
-        const customPrompt = localStorage.getItem('aiTwinSystemPrompt');
-        if (customPrompt) {
-            setAiSystemPrompt(customPrompt);
-        }
-    }, []);
-
-    const startSpeechRecognition = useCallback(() => {
-        if (recognitionRef.current && !isAIThinkingRef.current) {
-            try {
-                recognitionRef.current.start();
-                setAiStatus('listening');
-                setAiStatusText("I'm listening...");
-            } catch (e) {
-                // Already started
-            }
-        }
-    }, []);
-
-    const stopSpeechRecognition = useCallback(() => {
-        if (recognitionRef.current) {
-            recognitionRef.current.stop();
-        }
-    }, []);
-
-    const speak = useCallback((text: string) => {
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.onstart = () => {
-            isAIThinkingRef.current = true;
-            stopSpeechRecognition();
-            setAiStatus('speaking');
-            setAiStatusText(text);
-        };
-        utterance.onend = () => {
-            setConversationHistory(prev => [...prev, { role: 'model', text }]);
-            isAIThinkingRef.current = false;
-            if (isMicOn) {
-                startSpeechRecognition();
-            } else {
-                 setAiStatus('listening');
-                 setAiStatusText("Microphone is muted.");
-            }
-        };
-        utterance.onerror = (e) => {
-            if ((e as SpeechSynthesisErrorEvent).error !== 'canceled') {
-              console.error('Speech synthesis error', e);
-              setAiStatus('listening');
-              setAiStatusText("I'm having trouble speaking. Please try again.");
-              isAIThinkingRef.current = false;
-            }
-        };
-        window.speechSynthesis.speak(utterance);
-    }, [isMicOn, startSpeechRecognition, stopSpeechRecognition]);
-
-    useEffect(() => {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (SpeechRecognition) {
-            const recognition = new SpeechRecognition();
-            recognition.continuous = true;
-            recognition.interimResults = true;
-
-            recognition.onresult = (event) => {
-                let finalTranscript = '';
-                for (let i = event.resultIndex; i < event.results.length; ++i) {
-                    if (event.results[i].isFinal) {
-                        finalTranscript += event.results[i][0].transcript;
-                    }
-                }
-                if (finalTranscript.trim()) {
-                    stopSpeechRecognition();
-                    
-                    isAIThinkingRef.current = true;
-                    setAiStatus('thinking');
-                    setAiStatusText(''); // Clear text while thinking
-                    const userMessage = finalTranscript.trim();
-                    setConversationHistory(prev => [...prev, { role: 'user', text: userMessage }]);
-                    
-                    startTransition(async () => {
-                        const response = await getAIFriendResponse({
-                            history: conversationHistory,
-                            message: userMessage,
-                            systemPrompt: aiSystemPrompt,
-                        });
-                        if (response.success && response.data) {
-                            speak(response.data.reply);
-                        } else {
-                            speak("I'm having a little trouble connecting right now. Please try again in a moment.");
-                            setConversationHistory(prev => prev.slice(0, -1)); // remove user message if AI fails
-                        }
-                    });
-                }
-            };
-            
-            recognition.onerror = (event) => {
-                if (event.error !== 'no-speech' && event.error !== 'aborted') console.error('Speech recognition error:', event.error);
-                 if (event.error === 'not-allowed') {
-                    alert("Microphone access was denied. Please allow microphone access to talk to the AI friend.")
-                    setIsMicOn(false);
-                }
-            };
-
-            recognition.onend = () => {
-                if (isMicOn && !isAIThinkingRef.current) {
-                    startSpeechRecognition();
-                }
-            };
-
-            recognitionRef.current = recognition;
-        }
-
-        return () => {
-            stopSpeechRecognition();
-            if (localStreamRef.current) {
-                localStreamRef.current.getTracks().forEach(track => track.stop());
-            }
-            window.speechSynthesis.cancel();
-        };
-    }, [isMicOn, speak, startSpeechRecognition, stopSpeechRecognition, aiSystemPrompt, conversationHistory]);
-
-    const startMedia = async () => {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-            localStreamRef.current = stream;
-            if (userVideoRef.current) {
-                userVideoRef.current.srcObject = stream;
-            }
-            setIsCameraOn(true);
-            setIsMicOn(true);
-        } catch (err) {
-            console.error("Error accessing media devices.", err);
-            alert("Could not access camera or microphone. Please check permissions.");
-            setIsCameraOn(false);
-            setIsMicOn(false);
-        }
-    };
-
-    const handleStartCall = async () => {
-        setLoadingText('Initializing...');
-        await startMedia();
-        setScreen('call');
-        setLoadingText('');
-        speak("Hi there! What's on your mind today?");
-    };
-
-    const handleEndCall = () => {
-        if (localStreamRef.current) {
-            localStreamRef.current.getTracks().forEach(track => track.stop());
-            localStreamRef.current = null;
-        }
-        stopSpeechRecognition();
-        window.speechSynthesis.cancel();
-        setConversationHistory([]);
-        setScreen('welcome');
-    };
-
-    const toggleMic = () => {
-        const newMicState = !isMicOn;
-        setIsMicOn(newMicState);
-        if (localStreamRef.current) {
-            localStreamRef.current.getAudioTracks().forEach(track => track.enabled = newMicState);
-        }
-        if (newMicState) {
-            startSpeechRecognition();
-        } else {
-            stopSpeechRecognition();
-            setAiStatus('listening');
-            setAiStatusText("Microphone is muted.");
-        }
-    };
-
-    const toggleCamera = () => {
-        const newCameraState = !isCameraOn;
-        setIsCameraOn(newCameraState);
-        if (localStreamRef.current) {
-            localStreamRef.current.getVideoTracks().forEach(track => track.enabled = newCameraState);
-        }
-    };
-
-    return (
-        <div className="font-sans min-h-screen m-0">
-            <div id="app-wrapper" className="h-screen w-screen flex flex-col items-center justify-center transition-opacity duration-500 bg-background">
-                {screen === 'welcome' && (
-                    <div id="welcome-screen" className="text-center p-8">
-                        <h1 className="text-5xl font-bold mb-2 text-foreground">Aura is Ready</h1>
-                        <p className="text-xl text-muted-foreground mb-8">Your professional AI companion for mental wellness.</p>
-                        <p className="max-w-2xl mx-auto text-muted-foreground mb-8">
-                            This is a safe space to talk about whatever's on your mind. <b>Aura</b> is here to listen without judgment. Ready to chat?
-                        </p>
-                        <Button
-                            id="start-call-btn"
-                            onClick={handleStartCall}
-                            disabled={!!loadingText}
-                            size="lg"
-                            className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-lg transition-transform transform hover:scale-105"
-                        >
-                            Start Conversation
-                        </Button>
-                        {loadingText && <p className="mt-4 text-gray-500">{loadingText}</p>}
-                    </div>
-                )}
-
-                {screen === 'call' && (
-                    <div id="call-screen" className="h-full w-full flex flex-col items-center justify-center relative p-4">
-                        <div className="w-full flex-grow flex flex-col items-center justify-center gap-4 overflow-hidden relative">
-                             <div id="ai-character-container" className="relative w-[250px] h-[250px] md:w-[350px] md:h-[350px] shrink-0">
-                                <AuraAvatar aiStatus={aiStatus} />
-                            </div>
-
-                            <div id="ai-status" className="min-h-[5rem] w-full max-w-md mx-auto px-6 py-4 rounded-xl text-center text-foreground transition-all duration-300">
-                                <AnimatePresence mode="wait">
-                                    <motion.div
-                                        key={aiStatusText} // Use aiStatusText to trigger animation on text change
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: -10 }}
-                                        transition={{ duration: 0.3 }}
-                                        className="flex items-center justify-center min-h-[3rem]"
-                                    >
-                                        {aiStatus === 'thinking' ? <DotFlashing /> : <p id="ai-status-text">{aiStatusText}</p>}
-                                    </motion.div>
-                                </AnimatePresence>
-                            </div>
-                        </div>
-
-
-                        <div id="user-video-container" className="glass-card absolute bottom-28 right-8 w-[200px] h-[150px] rounded-xl overflow-hidden cursor-move flex items-center justify-center">
-                            <video id="user-video" ref={userVideoRef} autoPlay muted playsInline className={cn("w-full h-full object-cover", { 'hidden': !isCameraOn })}></video>
-                            {!isCameraOn && <div className="w-1/2 h-1/2 text-gray-600"><UserPlaceholderIcon /></div>}
-                        </div>
-                        
-                        <div className="w-full p-4 absolute bottom-0">
-                            <div className="max-w-sm mx-auto flex justify-center items-center space-x-4 glass-card rounded-full p-2">
-                                <button onClick={toggleMic} className={cn("control-btn", { 'active': isMicOn })} title="Mute/Unmute Mic">
-                                    {isMicOn ? <Mic className="h-6 w-6" /> : <MicOff className="h-6 w-6" />}
-                                </button>
-                                <button onClick={toggleCamera} className={cn("control-btn", { 'active': isCameraOn })} title="Camera On/Off">
-                                    {isCameraOn ? <Video className="h-6 w-6" /> : <VideoOff className="h-6 w-6" />}
-                                </button>
-                                <button onClick={handleEndCall} className="control-btn hang-up" title="End Conversation">
-                                    <PhoneOff className="h-6 w-6" />
-                               </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
+  return (
+    <div className="flex flex-col min-h-screen bg-background font-body">
+      <main className="flex-grow container mx-auto px-4 py-24 md:py-32">
+        <div className="max-w-2xl mx-auto space-y-8">
+            <div className="text-center">
+                 <h1 className="text-4xl md:text-5xl font-headline font-bold tracking-tight text-foreground">
+                    AI Story Generator
+                </h1>
+                <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mt-4 font-light tracking-wide">
+                    Craft a unique story from your imagination. Provide a prompt and let the AI bring it to life.
+                </p>
             </div>
-            <style jsx global>{`
-                body {
-                  font-family: 'Inter', sans-serif;
-                }
-                .glass-card {
-                    background: hsl(var(--card) / 0.5) !important;
-                    backdrop-filter: blur(12px) saturate(150%);
-                    -webkit-backdrop-filter: blur(12px) saturate(150%);
-                    border: 1px solid hsl(var(--border) / 0.2);
-                    box-shadow: 0 8px 32px 0 hsl(var(--primary) / 0.1);
-                }
-                .control-btn {
-                    background-color: hsl(var(--muted));
-                    border-radius: 9999px;
-                    width: 52px; height: 52px;
-                    display: flex; align-items: center; justify-content: center;
-                    transition: all 0.2s ease-in-out; color: hsl(var(--muted-foreground));
-                }
-                .control-btn:hover { background-color: hsl(var(--secondary)); transform: translateY(-2px); }
-                .control-btn.active { background-color: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
-                .control-btn.hang-up { background-color: hsl(var(--destructive)); color: hsl(var(--destructive-foreground)); }
-                .control-btn.hang-up:hover { background-color: hsl(var(--destructive) / 0.9); }
-                
-                .dot-flashing {
-                    position: relative; width: 10px; height: 10px; border-radius: 5px; background-color: hsl(var(--primary)); color: hsl(var(--primary));
-                    animation: dotFlashing 1s infinite linear alternate; animation-delay: .5s; display: inline-block; margin: 0 5px;
-                }
-                .dot-flashing::before, .dot-flashing::after { content: ''; display: inline-block; position: absolute; top: 0; }
-                .dot-flashing::before {
-                    left: -15px; width: 10px; height: 10px; border-radius: 5px; background-color: hsl(var(--primary)); color: hsl(var(--primary));
-                    animation: dotFlashing 1s infinite alternate; animation-delay: 0s;
-                }
-                .dot-flashing::after {
-                    left: 15px; width: 10px; height: 10px; border-radius: 5px; background-color: hsl(var(--primary)); color: hsl(var(--primary));
-                    animation: dotFlashing 1s infinite alternate; animation-delay: 1s;
-                }
-                @keyframes dotFlashing { 
-                    0% { background-color: hsl(var(--primary)); } 
-                    50%, 100% { background-color: hsl(var(--primary) / 0.5); } 
-                }
-            `}</style>
-        </div>
-    );
-}
 
-    
+            <Card className="shadow-lg shadow-primary/5 bg-secondary/30 border-none">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-3">
+                        <Wand2 className="text-primary w-6 h-6" />
+                        Create Your Story
+                    </CardTitle>
+                    <CardDescription>
+                       Choose a genre and write a prompt to start the magic.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                        <FormField
+                            control={form.control}
+                            name="genre"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Genre</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select a genre" />
+                                    </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                    {genres.map(genre => (
+                                        <SelectItem key={genre} value={genre}>{genre}</SelectItem>
+                                    ))}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                        control={form.control}
+                        name="prompt"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Story Prompt</FormLabel>
+                            <FormControl>
+                                <Textarea
+                                placeholder="e.g., 'A young librarian discovers a book that writes itself...'"
+                                className="min-h-[120px] resize-none bg-background"
+                                {...field}
+                                />
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                        />
+                        <Button type="submit" disabled={isGenerating} className="w-full">
+                            {isGenerating ? (
+                                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating Story...</>
+                            ) : (
+                                <><Sparkles className="mr-2 h-4 w-4" /> Generate Story</>
+                            )}
+                        </Button>
+                    </form>
+                    </Form>
+                </CardContent>
+            </Card>
+
+            {isGenerating && (
+                <Card className="min-h-[200px] flex flex-col items-center justify-center text-muted-foreground">
+                    <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
+                    <p className="font-semibold">Weaving your tale...</p>
+                </Card>
+            )}
+
+            {generatedStory && (
+                 <Card className="animate-in fade-in-50 duration-500 bg-secondary/30 border-none">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-3">
+                            <Sparkles className="text-accent w-6 h-6" />
+                            Your Generated Story
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="bg-background/50 p-6 rounded-md text-base text-secondary-foreground whitespace-pre-wrap leading-relaxed">
+                            {generatedStory}
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+        </div>
+      </main>
+    </div>
+  );
+}

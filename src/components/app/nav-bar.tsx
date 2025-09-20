@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutGrid, Menu, Info, Bot, Home, Store, Users } from 'lucide-react';
+import { LayoutGrid, Menu, Info, Bot, Home, Store, Users, Feather } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
@@ -11,7 +11,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 const navLinks = [
   { href: '/', label: 'Home', icon: Home },
   { href: '/mode-selection', label: 'Dashboard', icon: LayoutGrid },
-  { href: '/ai-friend', label: 'AI Friend', icon: Bot },
+  { href: '/story-generator', label: 'Story Generator', icon: Feather },
   { href: '/marketplace', label: 'Marketplace', icon: Store },
   { href: '/community', label: 'Community', icon: Users },
   { href: '/about', label: 'About', icon: Info },
@@ -21,6 +21,13 @@ export function NavBar() {
   const pathname = usePathname();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    // A temporary fix for the new page name
+    if (pathname === '/ai-friend') {
+      window.history.replaceState(null, '', '/story-generator');
+    }
+  }, [pathname]);
 
   useEffect(() => {
     setMobileNavOpen(false);
@@ -37,7 +44,7 @@ export function NavBar() {
   const NavLinksContent = ({ isMobile = false }: { isMobile?: boolean }) => (
     <>
       {navLinks.map((link) => {
-        const isActive = link.href === '/' ? pathname === '/' : pathname.startsWith(link.href);
+        const isActive = link.href === '/' ? pathname === '/' : pathname.startsWith(link.href) || (link.href === '/story-generator' && pathname === '/ai-friend');
         return (
           <Link
             key={link.href}

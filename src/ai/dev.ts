@@ -7,3 +7,4 @@ import '@/ai/flows/detect-emotion.ts';
 import '@/ai/flows/ai-friend.ts';
 import '@/ai/flows/create-ai-twin.ts';
 import '@/ai/flows/learn-from-history.ts';
+import '@/ai/flows/generate-story.ts';
