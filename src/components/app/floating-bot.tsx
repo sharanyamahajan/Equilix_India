@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -12,20 +12,20 @@ import {
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Bot, Loader2, Send, User, X } from 'lucide-react';
+import { Bot, Loader2, Send, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { chat } from '@/app/actions';
-import ReactMarkdown from 'react-markdown';
+import { getAIFriendResponse } from '@/app/actions';
+import { useRouter } from 'next/navigation';
 
 type Message = {
   role: 'user' | 'model';
-  content: string;
+  text: string;
 };
 
 const initialMessages: Message[] = [
     {
         role: 'model',
-        content: "Hello! I am the Swasthya Raksha Assistant. How can I help you today? You can ask me about water-borne diseases, public health, or how to use this app."
+        text: "Hello! I am Aura, your personal AI companion. How can I help you today?"
     }
 ];
 
@@ -33,38 +33,59 @@ export function FloatingBot() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+  const [aiSystemPrompt, setAiSystemPrompt] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    // On component mount, check for a custom AI twin prompt in localStorage
+    const customPrompt = localStorage.getItem('aiTwinSystemPrompt');
+    if (customPrompt) {
+        setAiSystemPrompt(customPrompt);
+    }
+  }, [isOpen]);
 
   const handleSend = async () => {
     if (!input.trim()) return;
 
-    const userMessage: Message = { role: 'user', content: input };
+    const userMessage: Message = { role: 'user', text: input };
     setMessages((prev) => [...prev, userMessage]);
     const currentInput = input;
     setInput('');
-    setIsLoading(true);
+    
+    startTransition(async () => {
+      try {
+        const response = await getAIFriendResponse({
+          history: messages,
+          message: currentInput,
+          systemPrompt: aiSystemPrompt,
+        });
+        
+        if (response.success && response.data) {
+          const modelMessage: Message = { role: 'model', text: response.data.reply };
+          setMessages((prev) => [...prev, modelMessage]);
 
-    try {
-      const chatHistory = messages.map(msg => ({ role: msg.role, content: msg.content }));
-      const result = await chat({ history: chatHistory, message: currentInput });
-      
-      if (result.success && result.data) {
-        const modelMessage: Message = { role: 'model', content: result.data.response };
-        setMessages((prev) => [...prev, modelMessage]);
-      } else {
-        throw new Error(result.error || "Failed to get response from chat bot.");
+          if (response.data.toolCalls) {
+            for (const toolCall of response.data.toolCalls) {
+              if (toolCall.toolName === 'navigation' && toolCall.args.path) {
+                router.push(toolCall.args.path as string);
+              }
+            }
+          }
+
+        } else {
+          throw new Error(response.error || "Failed to get response from AI friend.");
+        }
+      } catch (error) {
+        console.error('AI Friend error:', error);
+        const errorMessage: Message = {
+          role: 'model',
+          text: 'Sorry, I encountered an error. Please try again.',
+        };
+        setMessages((prev) => [...prev, errorMessage]);
       }
-    } catch (error) {
-      console.error('Chatbot error:', error);
-      const errorMessage: Message = {
-        role: 'model',
-        content: 'Sorry, I encountered an error. Please try again.',
-      };
-      setMessages((prev) => [...prev, errorMessage]);
-    } finally {
-      setIsLoading(false);
-    }
+    });
   };
   
   const handleSheetOpenChange = (open: boolean) => {
@@ -98,9 +119,9 @@ export function FloatingBot() {
       <Sheet open={isOpen} onOpenChange={handleSheetOpenChange}>
         <SheetContent className="flex flex-col">
           <SheetHeader>
-            <SheetTitle>Swasthya Raksha Assistant</SheetTitle>
+            <SheetTitle>Aura - Your AI Companion</SheetTitle>
             <SheetDescription>
-              Ask me questions about water-borne diseases or the app.
+              I'm here to listen and help you navigate the app.
             </SheetDescription>
           </SheetHeader>
           <ScrollArea className="flex-1 my-4 pr-4" ref={scrollAreaRef}>
@@ -128,9 +149,7 @@ export function FloatingBot() {
                         : 'bg-muted'
                     )}
                   >
-                    <ReactMarkdown className="prose prose-sm dark:prose-invert max-w-full">
-                        {message.content}
-                    </ReactMarkdown>
+                    {message.text}
                   </div>
                    {message.role === 'user' && (
                     <Avatar className="h-8 w-8">
@@ -141,7 +160,7 @@ export function FloatingBot() {
                   )}
                 </div>
               ))}
-               {isLoading && (
+               {isPending && (
                  <div className="flex items-start gap-3 justify-start">
                     <Avatar className="h-8 w-8">
                       <AvatarFallback>
@@ -162,9 +181,9 @@ export function FloatingBot() {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                 placeholder="Type your message..."
-                disabled={isLoading}
+                disabled={isPending}
               />
-              <Button onClick={handleSend} disabled={isLoading || !input.trim()}>
+              <Button onClick={handleSend} disabled={isPending || !input.trim()}>
                 <Send className="h-4 w-4" />
                 <span className="sr-only">Send</span>
               </Button>
