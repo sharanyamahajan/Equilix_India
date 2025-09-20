@@ -48,7 +48,7 @@ const aiFriendFlow = ai.defineFlow(
 
     const choice = response.candidates[0];
     
-    if (!choice) {
+    if (!choice || !choice.message || !choice.message.content) {
         return {
             reply: "I'm sorry, I was unable to generate a response. This might be due to safety settings or an internal error. Please try a different question.",
         };
