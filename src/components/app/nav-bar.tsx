@@ -13,6 +13,8 @@ const navLinks = [
   { href: '/', label: 'Home', icon: Home },
   { href: '/journal', label: 'Journal', icon: HeartPulse },
   { href: '/games', label: 'Games', icon: Gamepad2 },
+  { href: '/emotion-detector', label: 'Emotion Scan', icon: Camera },
+  { href: '/my-twin', label: 'AI Twin', icon: BrainCircuit },
   { href: '/ai-friend', label: 'AI Friend', icon: Bot },
   { href: '/about', label: 'About', icon: Info },
 ];
@@ -51,7 +53,7 @@ export function NavBar() {
             )}
           >
             <link.icon className="h-5 w-5" />
-            {!isMobile && <span>{link.label}</span>}
+            <span className={cn({ 'hidden lg:inline': !isMobile })}>{link.label}</span>
             {isMobile && <span className="text-lg">{link.label}</span>}
           </Link>
         );
@@ -74,7 +76,7 @@ export function NavBar() {
 
         {/* Desktop Navigation */}
         <nav className="hidden flex-1 items-center justify-center gap-2 text-sm md:flex">
-          <div className="flex items-center gap-2 rounded-full p-1 bg-muted/50 border border-border/50">
+          <div className="flex items-center gap-1 rounded-full p-1 bg-muted/50 border border-border/50">
             <NavLinksContent />
           </div>
         </nav>
