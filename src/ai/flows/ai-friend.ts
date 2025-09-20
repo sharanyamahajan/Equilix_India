@@ -46,13 +46,13 @@ const aiFriendFlow = ai.defineFlow(
       tools: [navigationTool],
     });
 
-    const choice = response.candidates[0];
-    
-    if (!choice || !choice.message || !choice.message.content) {
+    if (!response.candidates || response.candidates.length === 0 || !response.candidates[0].message || !response.candidates[0].message.content) {
         return {
             reply: "I'm sorry, I was unable to generate a response. This might be due to safety settings or an internal error. Please try a different question.",
         };
     }
+
+    const choice = response.candidates[0];
 
     const toolCalls = choice.message.content.filter(part => part.type === 'toolRequest').map(part => {
         if(part.type !== 'toolRequest') throw new Error(); // Should not happen
