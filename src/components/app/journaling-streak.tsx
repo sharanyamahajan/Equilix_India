@@ -56,12 +56,12 @@ export function JournalingStreak() {
       </CardHeader>
       <CardContent className="flex flex-col items-center justify-center text-center space-y-2">
         <div className="relative">
-          <Flame className={`w-16 h-16 transition-colors duration-500 ${badge.color}`} strokeWidth={1.5} />
-          <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 font-bold text-sm text-background dark:text-foreground pt-1">{streak}</span>
+          <Flame className={`w-24 h-24 transition-colors duration-500 ${badge.color}`} strokeWidth={1.5} />
+          <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 font-bold text-2xl text-foreground pt-2">{streak}</span>
         </div>
         <p className="font-semibold text-lg">{badge.label}</p>
         <p className="text-sm text-muted-foreground">
-          {streak > 0 ? `You've written for ${streak} day${streak > 1 ? 's' : ''} in a row.` : 'Write in your journal to start a streak!'}
+          {streak > 0 ? `You've written for ${streak} day${streak > 1 ? 's' : ''} in a row. Keep the fire going!` : 'Write in your journal to start a streak!'}
         </p>
       </CardContent>
     </Card>
