@@ -1,4 +1,3 @@
-// src/app/ai-friend/page.tsx
 'use client';
 
 import { useState, useRef, useEffect, useCallback, useTransition } from 'react';
@@ -96,7 +95,7 @@ const AuraAvatar = ({ aiStatus }: { aiStatus: 'listening' | 'thinking' | 'speaki
                     stroke="#FFF"
                     strokeWidth="3.5"
                     strokeLinecap="round"
-                    fill="#c44"
+                    fill="none"
                     style={{ transition: 'd 0.1s ease-in-out' }}
                 />
             </g>
@@ -114,6 +113,7 @@ export default function AiFriendPage() {
     const [aiStatus, setAiStatus] = useState<'listening' | 'thinking' | 'speaking'>('speaking');
     const [aiStatusText, setAiStatusText] = useState("Hi there! What's on your mind today?");
     const [aiSystemPrompt, setAiSystemPrompt] = useState<string | undefined>(undefined);
+    const [conversationHistory, setConversationHistory] = useState<{ role: 'user' | 'model'; text: string }[]>([]);
     
     const localStreamRef = useRef<MediaStream | null>(null);
     const userVideoRef = useRef<HTMLVideoElement>(null);
@@ -157,6 +157,7 @@ export default function AiFriendPage() {
             setAiStatusText(text);
         };
         utterance.onend = () => {
+            setConversationHistory(prev => [...prev, { role: 'model', text }]);
             isAIThinkingRef.current = false;
             if (isMicOn) {
                 startSpeechRecognition();
@@ -196,13 +197,20 @@ export default function AiFriendPage() {
                     isAIThinkingRef.current = true;
                     setAiStatus('thinking');
                     setAiStatusText(''); // Clear text while thinking
+                    const userMessage = finalTranscript.trim();
+                    setConversationHistory(prev => [...prev, { role: 'user', text: userMessage }]);
                     
                     startTransition(async () => {
-                        const response = await getAIFriendResponse(finalTranscript.trim(), aiSystemPrompt);
+                        const response = await getAIFriendResponse({
+                            history: conversationHistory,
+                            message: userMessage,
+                            systemPrompt: aiSystemPrompt,
+                        });
                         if (response.success && response.data) {
                             speak(response.data.reply);
                         } else {
                             speak("I'm having a little trouble connecting right now. Please try again in a moment.");
+                            setConversationHistory(prev => prev.slice(0, -1)); // remove user message if AI fails
                         }
                     });
                 }
@@ -232,7 +240,7 @@ export default function AiFriendPage() {
             }
             window.speechSynthesis.cancel();
         };
-    }, [isMicOn, speak, startSpeechRecognition, stopSpeechRecognition, aiSystemPrompt]);
+    }, [isMicOn, speak, startSpeechRecognition, stopSpeechRecognition, aiSystemPrompt, conversationHistory]);
 
     const startMedia = async () => {
         try {
@@ -266,6 +274,7 @@ export default function AiFriendPage() {
         }
         stopSpeechRecognition();
         window.speechSynthesis.cancel();
+        setConversationHistory([]);
         setScreen('welcome');
     };
 
@@ -294,12 +303,12 @@ export default function AiFriendPage() {
 
     return (
         <div className="font-sans min-h-screen m-0">
-            <div id="app-wrapper" className="h-screen w-screen flex flex-col items-center justify-center transition-opacity duration-500 bg-[#ccd8f1]">
+            <div id="app-wrapper" className="h-screen w-screen flex flex-col items-center justify-center transition-opacity duration-500 bg-background">
                 {screen === 'welcome' && (
                     <div id="welcome-screen" className="text-center p-8">
-                        <h1 className="text-5xl font-bold mb-2 text-gray-800">Welcome to AI Video Call</h1>
-                        <p className="text-xl text-gray-600 mb-8">Your professional AI companion for mental wellness.</p>
-                        <p className="max-w-2xl mx-auto text-gray-600 mb-8">
+                        <h1 className="text-5xl font-bold mb-2 text-foreground">Aura is Ready</h1>
+                        <p className="text-xl text-muted-foreground mb-8">Your professional AI companion for mental wellness.</p>
+                        <p className="max-w-2xl mx-auto text-muted-foreground mb-8">
                             This is a safe space to talk about whatever's on your mind. <b>Aura</b> is here to listen without judgment. Ready to chat?
                         </p>
                         <Button
@@ -307,7 +316,7 @@ export default function AiFriendPage() {
                             onClick={handleStartCall}
                             disabled={!!loadingText}
                             size="lg"
-                            className="bg-blue-500 hover:bg-blue-600 text-white font-bold text-lg transition-transform transform hover:scale-105"
+                            className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-lg transition-transform transform hover:scale-105"
                         >
                             Start Conversation
                         </Button>
@@ -322,7 +331,7 @@ export default function AiFriendPage() {
                                 <AuraAvatar aiStatus={aiStatus} />
                             </div>
 
-                            <div id="ai-status" className="min-h-[5rem] w-full max-w-md mx-auto px-6 py-4 rounded-xl text-center text-gray-800 transition-all duration-300">
+                            <div id="ai-status" className="min-h-[5rem] w-full max-w-md mx-auto px-6 py-4 rounded-xl text-center text-foreground transition-all duration-300">
                                 <AnimatePresence mode="wait">
                                     <motion.div
                                         key={aiStatusText} // Use aiStatusText to trigger animation on text change
@@ -366,47 +375,44 @@ export default function AiFriendPage() {
                 }
                 #app-wrapper {
                     background-image:
-                        radial-gradient(circle 50px at 20% 20%, rgba(255, 255, 255, 0.3), transparent 70%),
-                        radial-gradient(circle 40px at 80% 30%, rgba(255, 255, 255, 0.25), transparent 70%),
-                        radial-gradient(circle 60px at 50% 80%, rgba(255, 255, 255, 0.2), transparent 70%);
-                    background-repeat: no-repeat;
-                    background-size: cover;
+                        radial-gradient(circle at 25% 30%, hsl(var(--primary) / 0.05), transparent 40%),
+                        radial-gradient(circle at 75% 70%, hsl(var(--accent) / 0.05), transparent 40%);
                 }
                 .glass-card {
-                    background: rgba(255, 255, 255, 0.25) !important;
-                    backdrop-filter: blur(14px) saturate(150%);
-                    -webkit-backdrop-filter: blur(14px) saturate(150%);
-                    border: 1px solid rgba(255, 255, 255, 0.4);
-                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+                    background: hsl(var(--card) / 0.5) !important;
+                    backdrop-filter: blur(12px) saturate(150%);
+                    -webkit-backdrop-filter: blur(12px) saturate(150%);
+                    border: 1px solid hsl(var(--border) / 0.2);
+                    box-shadow: 0 8px 32px 0 hsl(var(--primary) / 0.1);
                 }
                 .control-btn {
-                    background-color: rgba(255, 255, 255, 0.3);
+                    background-color: hsl(var(--muted));
                     border-radius: 9999px;
                     width: 52px; height: 52px;
                     display: flex; align-items: center; justify-content: center;
-                    transition: all 0.2s ease-in-out; color: #374151; /* text-gray-700 */
+                    transition: all 0.2s ease-in-out; color: hsl(var(--muted-foreground));
                 }
-                .control-btn:hover { background-color: rgba(255, 255, 255, 0.5); transform: translateY(-2px); }
-                .control-btn.active { background-color: #3B82F6; /* bg-blue-500 */ color: white; }
-                .control-btn.hang-up { background-color: #ef4444; /* bg-red-500 */ color: white; }
-                .control-btn.hang-up:hover { background-color: #dc2626; /* bg-red-600 */ }
+                .control-btn:hover { background-color: hsl(var(--secondary)); transform: translateY(-2px); }
+                .control-btn.active { background-color: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
+                .control-btn.hang-up { background-color: hsl(var(--destructive)); color: hsl(var(--destructive-foreground)); }
+                .control-btn.hang-up:hover { background-color: hsl(var(--destructive) / 0.9); }
                 
                 .dot-flashing {
-                    position: relative; width: 10px; height: 10px; border-radius: 5px; background-color: #3B82F6; color: #3B82F6;
+                    position: relative; width: 10px; height: 10px; border-radius: 5px; background-color: hsl(var(--primary)); color: hsl(var(--primary));
                     animation: dotFlashing 1s infinite linear alternate; animation-delay: .5s; display: inline-block; margin: 0 5px;
                 }
                 .dot-flashing::before, .dot-flashing::after { content: ''; display: inline-block; position: absolute; top: 0; }
                 .dot-flashing::before {
-                    left: -15px; width: 10px; height: 10px; border-radius: 5px; background-color: #3B82F6; color: #3B82F6;
+                    left: -15px; width: 10px; height: 10px; border-radius: 5px; background-color: hsl(var(--primary)); color: hsl(var(--primary));
                     animation: dotFlashing 1s infinite alternate; animation-delay: 0s;
                 }
                 .dot-flashing::after {
-                    left: 15px; width: 10px; height: 10px; border-radius: 5px; background-color: #3B82F6; color: #3B82F6;
+                    left: 15px; width: 10px; height: 10px; border-radius: 5px; background-color: hsl(var(--primary)); color: hsl(var(--primary));
                     animation: dotFlashing 1s infinite alternate; animation-delay: 1s;
                 }
                 @keyframes dotFlashing { 
-                    0% { background-color: #3B82F6; } 
-                    50%, 100% { background-color: #93c5fd; } 
+                    0% { background-color: hsl(var(--primary)); } 
+                    50%, 100% { background-color: hsl(var(--primary) / 0.5); } 
                 }
             `}</style>
         </div>

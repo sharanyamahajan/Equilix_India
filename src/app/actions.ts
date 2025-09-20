@@ -5,6 +5,7 @@ import { analyzeWellness } from '@/ai/flows/analyze-wellness';
 import type { WellnessSurveyInput } from '@/ai/schemas/wellness';
 import { detectEmotion } from '@/ai/flows/detect-emotion';
 import { aiFriend } from '@/ai/flows/ai-friend';
+import type { AIFriendInput } from '@/ai/schemas/ai-friend';
 import { createAITwin as createAITwinFlow, type CreateAITwinInput } from '@/ai/flows/create-ai-twin';
 import { learnFromHistory as learnFromHistoryFlow, type LearnFromHistoryInput } from '@/ai/flows/learn-from-history';
 
@@ -46,13 +47,9 @@ export async function getEmotionDetection(imageDataUri: string) {
   }
 }
 
-export async function getAIFriendResponse(message: string, systemPrompt?: string) {
-  if (!message) {
-    return { success: false, error: 'Message cannot be empty.' };
-  }
-
+export async function getAIFriendResponse(input: AIFriendInput) {
   try {
-    const result = await aiFriend({ message, systemPrompt });
+    const result = await aiFriend(input);
     return { success: true, data: result };
   } catch (error) {
     console.error('AI Error:', error);

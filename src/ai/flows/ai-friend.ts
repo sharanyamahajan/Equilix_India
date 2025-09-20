@@ -1,23 +1,14 @@
 'use server';
 /**
- * @fileOverview A conversational AI friend.
- * 
- * - aiFriend - A function that provides conversational responses.
+ * @fileOverview A conversational AI friend with memory.
+ *
+ * - aiFriend - A function that provides conversational responses based on history.
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'zod';
+import { AIFriendInputSchema, AIFriendOutputSchema, type AIFriendInput, type AIFriendOutput } from '@/ai/schemas/ai-friend';
 
-const AIFriendInputSchema = z.object({
-  message: z.string().describe("The user's message to the AI friend."),
-  systemPrompt: z.string().optional().describe("An optional system prompt to define the AI's personality. If not provided, a default persona will be used."),
-});
-export type AIFriendInput = z.infer<typeof AIFriendInputSchema>;
-
-const AIFriendOutputSchema = z.object({
-  reply: z.string().describe("The AI friend's conversational reply."),
-});
-export type AIFriendOutput = z.infer<typeof AIFriendOutputSchema>;
+export { type AIFriendInput, type AIFriendOutput };
 
 export async function aiFriend(input: AIFriendInput): Promise<AIFriendOutput> {
   return aiFriendFlow(input);
@@ -31,23 +22,19 @@ const aiFriendFlow = ai.defineFlow(
     inputSchema: AIFriendInputSchema,
     outputSchema: AIFriendOutputSchema,
   },
-  async ({ message, systemPrompt }) => {
+  async ({ history, message, systemPrompt }) => {
     const finalSystemPrompt = systemPrompt || defaultSystemPrompt;
 
-    const prompt = ai.definePrompt({
-      name: 'aiFriendPrompt',
-      prompt: `${finalSystemPrompt}
+    const model = ai.getModel('googleai/gemini-2.5-flash');
 
-User's message: "{{{message}}}"`,
-      input: {
-        schema: z.object({ message: z.string() })
-      },
-      output: {
-        schema: AIFriendOutputSchema
-      }
+    const { candidates } = await model.generate({
+      system: finalSystemPrompt,
+      history: history?.map(msg => ({ role: msg.role, content: [{ text: msg.text }] })) || [],
+      prompt: message,
     });
 
-    const { output } = await prompt({ message });
-    return output!;
+    const reply = candidates[0]?.message.content[0]?.text ?? "I'm not sure what to say. Could you try rephrasing?";
+
+    return { reply };
   }
 );
