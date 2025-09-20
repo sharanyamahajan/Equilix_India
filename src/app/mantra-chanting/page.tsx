@@ -19,7 +19,7 @@ import { Label } from '@/components/ui/label';
 const mantras = [
     { text: 'Om', keyword: 'om' },
     { text: 'Om Shanti Om', keyword: 'shanti' },
-    { text: 'So Hum', keyword: 'soham' }, // More phonetic
+    { text: 'So Hum', keyword: 'soham' },
     { text: 'Aham Prema', keyword: 'prema' },
 ];
 
@@ -74,24 +74,23 @@ export default function MantraChantingPage() {
 
     
     const startListening = useCallback(() => {
-        if (recognitionRef.current && !isListening) {
+        if (recognitionRef.current) {
             try {
                 recognitionRef.current.start();
                 setIsListening(true);
             } catch (e) {
                 console.error("Could not start recognition:", e);
-                // It might already be listening
-                setIsListening(true);
+                setIsListening(true); // It might already be listening
             }
         }
-    }, [isListening]);
+    }, []);
     
     const stopListening = useCallback(() => {
-        if (recognitionRef.current && isListening) {
+        if (recognitionRef.current) {
             recognitionRef.current.stop();
             setIsListening(false);
         }
-    }, [isListening]);
+    }, []);
 
     useEffect(() => {
         if (!isClient) return;
@@ -108,12 +107,14 @@ export default function MantraChantingPage() {
         recognition.lang = 'en-US';
 
         recognition.onresult = (event) => {
-            const last = event.results[event.results.length - 1];
-            const transcript = last[0].transcript.trim().toLowerCase();
+            const transcript = Array.from(event.results)
+                .map(result => result[0])
+                .map(result => result.transcript)
+                .join('')
+                .toLowerCase();
 
             if (transcript.includes(selectedMantra.keyword)) {
                 handleMantraRecognized();
-                // We don't need to do anything with the final result, interim is enough for this use case
             }
         };
 
@@ -122,18 +123,32 @@ export default function MantraChantingPage() {
             if (event.error === 'not-allowed') {
                 alert("Microphone access was denied. Please allow microphone access to count chants.");
                 setIsListening(false);
-            } else if (event.error !== 'no-speech' && event.error !== 'aborted'){
-                // Try to restart on other errors
-                 if (isListening) {
-                    setTimeout(() => startListening(), 100);
-                }
+            } else if (isListening && event.error !== 'aborted') {
+                 // Try to restart on other errors if we are supposed to be listening
+                setTimeout(() => {
+                    if (recognitionRef.current) {
+                        try {
+                           recognitionRef.current.start();
+                        } catch (e) {
+                           // Already started
+                        }
+                    }
+                }, 100);
             }
         };
         
         recognition.onend = () => {
            if (isListening) {
              // If it stops for any reason (like silence) and we still want to listen, restart it.
-             setTimeout(() => startListening(), 50);
+             setTimeout(() => {
+                if (recognitionRef.current) {
+                    try {
+                        recognitionRef.current.start();
+                    } catch (e) {
+                        // Already started
+                    }
+                }
+             }, 50);
            }
         };
 
@@ -150,7 +165,7 @@ export default function MantraChantingPage() {
             if (debounceTimeoutRef.current) clearTimeout(debounceTimeoutRef.current);
         }
 
-    }, [isClient, selectedMantra.keyword, handleMantraRecognized, isListening, startListening]);
+    }, [isClient, selectedMantra.keyword, handleMantraRecognized, isListening]);
     
     useEffect(() => {
         if (audioRef.current) {
@@ -191,7 +206,7 @@ export default function MantraChantingPage() {
     return (
         <div className="fixed inset-0 bg-background flex flex-col items-center justify-center font-body overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-accent/5 -z-10" />
-            <audio ref={audioRef} />
+            <audio ref={audioRef} loop />
 
             <div className="absolute top-4 right-4 z-20 flex gap-2">
                  <Link href="/" passHref>
@@ -252,59 +267,71 @@ export default function MantraChantingPage() {
                 </motion.div>
             </AnimatePresence>
             
-            <Card className="absolute bottom-28 z-10 w-80">
-                <CardHeader>
-                    <CardTitle className="text-lg">Mantra Settings</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="grid w-full items-center gap-1.5">
-                        <Label htmlFor="mantra-select">Mantra</Label>
-                        <Select
-                            value={selectedMantra.text}
-                            onValueChange={(value) => {
-                                const newMantra = mantras.find(m => m.text === value);
-                                if (newMantra) {
-                                    setSelectedMantra(newMantra);
-                                    resetCounter();
-                                }
-                            }}
-                        >
-                            <SelectTrigger id="mantra-select">
-                                <SelectValue placeholder="Select a mantra" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {mantras.map(m => (
-                                    <SelectItem key={m.text} value={m.text}>{m.text}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="grid w-full items-center gap-1.5">
-                         <Label htmlFor="background-select">Background Sound</Label>
-                        <Select
-                            value={selectedBackground.name}
-                            onValueChange={(value) => {
-                                const newBg = backgrounds.find(b => b.name === value);
-                                if (newBg) setSelectedBackground(newBg);
-                            }}
-                        >
-                            <SelectTrigger id="background-select">
-                                <SelectValue placeholder="Select a sound" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {backgrounds.map(b => (
-                                    <SelectItem key={b.name} value={b.name}>
-                                        <div className="flex items-center gap-2">
-                                            <b.icon className="w-4 h-4" />
-                                            {b.name}
-                                        </div>
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </CardContent>
-            </Card>
+             <AnimatePresence>
+                {!isListening && (
+                    <motion.div 
+                        initial={{ y: 100, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: 100, opacity: 0 }}
+                        transition={{ ease: 'easeInOut' }}
+                        className="absolute bottom-[calc(theme(spacing.4)_+_70px)] z-10"
+                    >
+                        <Card className="w-80 shadow-xl">
+                            <CardHeader>
+                                <CardTitle className="text-lg">Mantra Settings</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="grid w-full items-center gap-1.5">
+                                    <Label htmlFor="mantra-select">Mantra</Label>
+                                    <Select
+                                        value={selectedMantra.text}
+                                        onValueChange={(value) => {
+                                            const newMantra = mantras.find(m => m.text === value);
+                                            if (newMantra) {
+                                                setSelectedMantra(newMantra);
+                                                resetCounter();
+                                            }
+                                        }}
+                                    >
+                                        <SelectTrigger id="mantra-select">
+                                            <SelectValue placeholder="Select a mantra" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {mantras.map(m => (
+                                                <SelectItem key={m.text} value={m.text}>{m.text}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="grid w-full items-center gap-1.5">
+                                    <Label htmlFor="background-select">Background Sound</Label>
+                                    <Select
+                                        value={selectedBackground.name}
+                                        onValueChange={(value) => {
+                                            const newBg = backgrounds.find(b => b.name === value);
+                                            if (newBg) setSelectedBackground(newBg);
+                                        }}
+                                    >
+                                        <SelectTrigger id="background-select">
+                                            <SelectValue placeholder="Select a sound" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {backgrounds.map(b => (
+                                                <SelectItem key={b.name} value={b.name}>
+                                                    <div className="flex items-center gap-2">
+                                                        <b.icon className="w-4 h-4" />
+                                                        {b.name}
+                                                    </div>
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             <style jsx global>{`
                 .glass-card {
