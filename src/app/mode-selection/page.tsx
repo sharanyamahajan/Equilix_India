@@ -42,12 +42,6 @@ const modes = [
     description: 'AI-powered insights into your wellness trends and potential risks.',
     icon: HeartPulse,
   },
-  {
-    href: '/marketplace',
-    title: 'Expert Marketplace',
-    description: 'Connect with therapists, coaches, and join wellness workshops.',
-    icon: Store,
-  },
 ];
 
 export default function ModeSelectionPage() {
