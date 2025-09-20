@@ -55,10 +55,16 @@ const aiFriendFlow = ai.defineFlow(
 
     const textReply = choice.message.content.filter(part => part.type === 'text').map(part => part.type === 'text' ? part.text : '').join('').trim();
     
-    const reply = textReply.length > 0 ? textReply : "I'm not sure what to say. Could you try rephrasing?";
+    let reply = textReply;
+
+    if (toolCalls.length > 0 && !textReply) {
+        reply = "Certainly, one moment...";
+    } else if (!textReply) {
+        reply = "I'm not sure what to say. Could you try rephrasing?";
+    }
     
     return { 
-        reply: reply,
+        reply,
         toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
     };
   }
