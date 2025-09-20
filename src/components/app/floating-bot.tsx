@@ -14,7 +14,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Bot, Loader2, Send, User, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { chat } from '@/ai/flows/chat-flow';
+import { chat } from '@/app/actions';
 import ReactMarkdown from 'react-markdown';
 
 type Message = {
@@ -41,16 +41,19 @@ export function FloatingBot() {
 
     const userMessage: Message = { role: 'user', content: input };
     setMessages((prev) => [...prev, userMessage]);
+    const currentInput = input;
     setInput('');
     setIsLoading(true);
 
     try {
       const chatHistory = messages.map(msg => ({ role: msg.role, content: msg.content }));
-      const result = await chat({ history: chatHistory, message: input });
+      const result = await chat({ history: chatHistory, message: currentInput });
       
-      if (result) {
-        const modelMessage: Message = { role: 'model', content: result.response };
+      if (result.success && result.data) {
+        const modelMessage: Message = { role: 'model', content: result.data.response };
         setMessages((prev) => [...prev, modelMessage]);
+      } else {
+        throw new Error(result.error || "Failed to get response from chat bot.");
       }
     } catch (error) {
       console.error('Chatbot error:', error);
@@ -66,7 +69,7 @@ export function FloatingBot() {
   
   const handleSheetOpenChange = (open: boolean) => {
     setIsOpen(open);
-    if (open && messages.length === 0) {
+    if (open && messages.length <= 1) { // Reset if only initial message is there
         setMessages(initialMessages);
     }
   }
@@ -74,7 +77,7 @@ export function FloatingBot() {
 
   useEffect(() => {
     if (scrollAreaRef.current) {
-        const scrollContainer = scrollAreaRef.current.querySelector('div');
+        const scrollContainer = scrollAreaRef.current.querySelector('div:first-child');
         if (scrollContainer) {
             scrollContainer.scrollTop = scrollContainer.scrollHeight;
         }
@@ -85,7 +88,7 @@ export function FloatingBot() {
     <>
       <Button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 h-16 w-16 rounded-full shadow-lg"
+        className="fixed bottom-6 right-6 h-16 w-16 rounded-full shadow-lg z-20"
         size="icon"
       >
         <Bot className="h-8 w-8" />
@@ -125,7 +128,7 @@ export function FloatingBot() {
                         : 'bg-muted'
                     )}
                   >
-                    <ReactMarkdown className="prose prose-sm dark:prose-invert">
+                    <ReactMarkdown className="prose prose-sm dark:prose-invert max-w-full">
                         {message.content}
                     </ReactMarkdown>
                   </div>
@@ -167,15 +170,6 @@ export function FloatingBot() {
               </Button>
             </div>
           </SheetFooter>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsOpen(false)}
-            className="absolute top-3 right-3 rounded-full h-8 w-8"
-          >
-            <X className="h-4 w-4" />
-            <span className="sr-only">Close</span>
-          </Button>
         </SheetContent>
       </Sheet>
     </>
