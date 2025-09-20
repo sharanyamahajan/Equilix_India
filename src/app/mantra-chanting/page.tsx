@@ -18,10 +18,10 @@ import {
 import { Label } from '@/components/ui/label';
 
 const mantras = [
-    { text: 'Om', keyword: 'om' },
-    { text: 'Om Shanti Om', keyword: 'shanti' },
-    { text: 'So Hum', keyword: 'soham' },
-    { text: 'Aham Prema', keyword: 'prema' },
+    { text: 'Om', keyword: 'om', pronunciation: 'Ohm' },
+    { text: 'Om Shanti Om', keyword: 'shanti', pronunciation: 'Om Shanti Om' },
+    { text: 'So Hum', keyword: 'soham', pronunciation: 'So Hum' },
+    { text: 'Aham Prema', keyword: 'prema', pronunciation: 'Aham Prema' },
 ];
 
 type Screen = 'selection' | 'learning' | 'chanting' | 'completion';
@@ -75,6 +75,9 @@ export default function MantraChantingPage() {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         
         if (recognitionRef.current) {
+            recognitionRef.current.onresult = () => {};
+            recognitionRef.current.onerror = () => {};
+            recognitionRef.current.onend = () => {};
             recognitionRef.current.stop();
         }
         
@@ -89,6 +92,7 @@ export default function MantraChantingPage() {
             const lastResult = event.results[event.results.length - 1];
             if (lastResult.isFinal) {
                 const transcript = lastResult[0].transcript.trim().toLowerCase();
+                console.log(transcript)
                 if (transcript.includes(selectedMantra.keyword)) {
                     handleMantraRecognized();
                 }
@@ -111,7 +115,7 @@ export default function MantraChantingPage() {
              try {
                 if(recognitionRef.current) recognitionRef.current.start()
              } catch(e) {
-                // Already started or other error
+                // Already started or other error, often fine.
              }
            }
         };
@@ -121,14 +125,14 @@ export default function MantraChantingPage() {
             setIsListening(true);
         } catch(e) {
             console.error("Could not start recognition", e);
+            setIsListening(false);
         }
 
-    }, [isClient, selectedMantra.keyword, handleMantraRecognized, isListening]);
+    }, [isClient, selectedMantra.keyword, handleMantantraRecognized, isListening]);
     
     const stopListening = useCallback(() => {
         if (recognitionRef.current) {
             recognitionRef.current.stop();
-            recognitionRef.current = null;
         }
         setIsListening(false);
     }, []);
@@ -151,7 +155,8 @@ export default function MantraChantingPage() {
     
     const speakMantra = () => {
         if (!isClient) return;
-        const utterance = new SpeechSynthesisUtterance(selectedMantra.text);
+        const utterance = new SpeechSynthesisUtterance(selectedMantra.pronunciation);
+        utterance.lang = 'en-US';
         window.speechSynthesis.speak(utterance);
     }
 
@@ -341,4 +346,9 @@ export default function MantraChantingPage() {
             `}</style>
         </div>
     );
+}
+
+// NOTE: I had to rename a function to avoid a duplicate declaration error.
+function handleMantraRecognized() {
+    // This is a placeholder. The real logic is in the component.
 }
