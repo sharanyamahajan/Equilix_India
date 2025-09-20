@@ -3,7 +3,10 @@
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ScanFace, BrainCircuit, Mic, Wind, Users } from 'lucide-react';
+import { ScanFace, BrainCircuit, Mic, Wind, Users, ArrowRight } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import Image from 'next/image';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 const features = [
   { name: 'Emotion Scan', icon: ScanFace },
@@ -11,6 +14,27 @@ const features = [
   { name: 'Mantra Coach', icon: Mic },
   { name: 'Breathing', icon: Wind },
   { name: 'Community', icon: Users },
+];
+
+const experts = [
+    { 
+        name: 'Dr. Alisha Gupta', 
+        title: 'Psychiatrist', 
+        image: PlaceHolderImages.find(p => p.id === 'expert-1')?.imageUrl,
+        hint: 'woman professional',
+    },
+    { 
+        name: 'Rohan Sharma', 
+        title: 'Yoga Master', 
+        image: PlaceHolderImages.find(p => p.id === 'expert-2')?.imageUrl,
+        hint: 'man yoga',
+    },
+    { 
+        name: 'Priya Singh', 
+        title: 'Wellness Coach', 
+        image: PlaceHolderImages.find(p => p.id === 'expert-3')?.imageUrl,
+        hint: 'woman smiling',
+     },
 ];
 
 export default function Home() {
@@ -60,6 +84,54 @@ export default function Home() {
           </div>
         </motion.div>
       </main>
+
+      <section className="relative z-10 w-full max-w-6xl mx-auto py-20 px-4">
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.8, ease: 'easeOut' }}
+        >
+            <Card className="bg-secondary/20 border-none backdrop-blur-md">
+                <CardContent className="p-8 md:p-12">
+                    <div className="text-center">
+                        <h2 className="text-3xl md:text-4xl font-headline font-bold">Connect with Our Experts</h2>
+                        <p className="mt-3 max-w-2xl mx-auto text-muted-foreground">
+                            Elevate your wellness journey by connecting with our curated network of professionals.
+                        </p>
+                    </div>
+
+                    <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+                        {experts.map((expert) => (
+                            <div key={expert.name} className="flex flex-col items-center">
+                                <div className="relative w-32 h-32 rounded-full overflow-hidden ring-4 ring-primary/20">
+                                    <Image 
+                                        src={expert.image || "https://picsum.photos/seed/placeholder/200/200"}
+                                        alt={`Profile of ${expert.name}`}
+                                        width={128}
+                                        height={128}
+                                        data-ai-hint={expert.hint}
+                                        className="object-cover"
+                                    />
+                                </div>
+                                <h3 className="mt-4 font-bold text-lg">{expert.name}</h3>
+                                <p className="text-sm text-primary">{expert.title}</p>
+                            </div>
+                        ))}
+                    </div>
+                    
+                    <div className="mt-12 text-center">
+                        <Button asChild size="lg">
+                            <Link href="/marketplace">
+                                Explore the Marketplace <ArrowRight className="ml-2 h-5 w-5" />
+                            </Link>
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
+        </motion.div>
+    </section>
+
     </div>
   );
 }

@@ -1,0 +1,40 @@
+{
+    "placeholderImages": [
+        {
+            "id": "expert-1",
+            "description": "A professional woman, suitable for a psychiatrist profile.",
+            "imageUrl": "https://picsum.photos/seed/expert1/200/200",
+            "imageHint": "woman professional"
+        },
+        {
+            "id": "expert-2",
+            "description": "A man in a yoga pose, suitable for a yoga master profile.",
+            "imageUrl": "https://picsum.photos/seed/expert2/200/200",
+            "imageHint": "man yoga"
+        },
+        {
+            "id": "expert-3",
+            "description": "A smiling woman, suitable for a wellness coach profile.",
+            "imageUrl": "https://picsum.photos/seed/expert3/200/200",
+            "imageHint": "woman smiling"
+        },
+        {
+            "id": "expert-4",
+            "description": "A professional man, suitable for a therapist profile.",
+            "imageUrl": "https://picsum.photos/seed/expert4/200/200",
+            "imageHint": "man professional"
+        },
+        {
+            "id": "expert-5",
+            "description": "A woman meditating, suitable for a mantra guru.",
+            "imageUrl": "https://picsum.photos/seed/expert5/200/200",
+            "imageHint": "woman meditation"
+        },
+        {
+            "id": "expert-6",
+            "description": "A man in a corporate setting, suitable for a mindfulness coach for businesses.",
+            "imageUrl": "https://picsum.photos/seed/expert6/200/200",
+            "imageHint": "man corporate"
+        }
+    ]
+}

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutGrid, Menu, Info, BrainCircuit, Bot, Home, HeartPulse, Store } from 'lucide-react';
+import { LayoutGrid, Menu, Info, Bot, Home, Store } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
@@ -12,6 +12,7 @@ const navLinks = [
   { href: '/', label: 'Home', icon: Home },
   { href: '/mode-selection', label: 'Dashboard', icon: LayoutGrid },
   { href: '/ai-friend', label: 'AI Friend', icon: Bot },
+  { href: '/marketplace', label: 'Marketplace', icon: Store },
   { href: '/about', label: 'About', icon: Info },
 ];
 
