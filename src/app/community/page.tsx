@@ -8,18 +8,17 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 const forumCategories = [
-    { title: 'General Discussion', description: 'Talk about anything on your mind.', icon: MessageSquare },
-    { title: 'Success Stories', description: 'Share your progress and inspire others.', icon: Heart },
-    { title: 'Ask for Advice', description: 'Seek guidance from the community.', icon: Users },
+    { title: 'General Discussion', description: 'Talk about anything on your mind.', icon: MessageSquare, link: 'https://chat.whatsapp.com/CkHl8mWdKXFJ39UvA3svu4' },
+    { title: 'Success Stories', description: 'Share your progress and inspire others.', icon: Heart, link: 'https://chat.whatsapp.com/Jez6G6BUyUSG9vasOJoHHI' },
+    { title: 'Ask for Advice', description: 'Seek guidance from the community.', icon: Users, link: 'https://chat.whatsapp.com/ETwfkT0i1jP2xrIImHX8HS' },
 ];
 
 const supportGroups = [
-    { title: 'Anxiety Support', imageHint: 'calm nature' },
-    { title: 'Student & Academic Stress', imageHint: 'books library' },
-    { title: 'Workplace Burnout', imageHint: 'office stress' },
+    { title: 'Anxiety Support', imageHint: 'calm nature', link: 'https://chat.whatsapp.com/DTyp14ybffzHAJCtUnHuDK' },
+    { title: 'Student & Academic Stress', imageHint: 'books library', link: 'https://chat.whatsapp.com/KUZx1Ayx8CfAJBAhR9oLtB' },
+    { title: 'Workplace Burnout', imageHint: 'office stress', link: 'https://chat.whatsapp.com/BsKV3hog2N77fMy6am6cYz' },
 ];
 
-const whatsAppGroupLink = "https://chat.whatsapp.com/BUwjfL9ee6g7rWQ3h5hSen?mode=ems_wa_t";
 
 export default function CommunityPage() {
     return (
@@ -41,7 +40,7 @@ export default function CommunityPage() {
                     </CardHeader>
                     <CardContent className="grid md:grid-cols-3 gap-4">
                         {forumCategories.map(cat => (
-                            <Link key={cat.title} href={whatsAppGroupLink} target="_blank" rel="noopener noreferrer">
+                            <Link key={cat.title} href={cat.link} target="_blank" rel="noopener noreferrer">
                                 <Card className="hover:bg-secondary/50 transition-colors h-full">
                                     <CardHeader>
                                         <div className="flex items-center gap-3">
@@ -78,7 +77,7 @@ export default function CommunityPage() {
                                     <h3 className="text-white font-bold text-lg">{group.title}</h3>
                                 </div>
                                 <Button asChild className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity" size="sm">
-                                    <Link href={whatsAppGroupLink} target="_blank" rel="noopener noreferrer">Join</Link>
+                                    <Link href={group.link} target="_blank" rel="noopener noreferrer">Join</Link>
                                 </Button>
                             </div>
                         ))}
