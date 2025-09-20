@@ -4,8 +4,16 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { BookText, Wind, ScanFace, Mic, BrainCircuit, HeartPulse, Store } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const modes = [
+  {
+    href: '/health-dashboard',
+    title: 'Health Dashboard',
+    description: 'AI-powered insights into your wellness trends and potential risks.',
+    icon: HeartPulse,
+    highlight: true,
+  },
   {
     href: '/journal',
     title: 'Journal',
@@ -36,12 +44,6 @@ const modes = [
     description: 'Craft and interact with your personalized AI companion.',
     icon: BrainCircuit,
   },
-  {
-    href: '/health-dashboard',
-    title: 'Health Dashboard',
-    description: 'AI-powered insights into your wellness trends and potential risks.',
-    icon: HeartPulse,
-  },
 ];
 
 export default function ModeSelectionPage() {
@@ -70,14 +72,20 @@ export default function ModeSelectionPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.2 + index * 0.1, ease: 'easeOut' }}
               >
-                <Card className="h-full bg-secondary/30 hover:bg-secondary/50 hover:shadow-primary/10 hover:shadow-lg transition-all transform hover:-translate-y-1 cursor-pointer">
+                <Card className={cn(
+                  "h-full bg-secondary/30 hover:bg-secondary/50 hover:shadow-primary/10 hover:shadow-lg transition-all transform hover:-translate-y-1 cursor-pointer",
+                  mode.highlight && "bg-primary/5 shadow-lg shadow-primary/20 hover:shadow-primary/30"
+                )}>
                   <CardHeader className="flex flex-row items-center gap-4">
-                    <div className="bg-primary/10 text-primary p-3 rounded-lg">
+                    <div className={cn(
+                      "bg-primary/10 text-primary p-3 rounded-lg",
+                      mode.highlight && "bg-primary/20"
+                    )}>
                       <mode.icon className="w-7 h-7" />
                     </div>
                     <div>
                       <CardTitle>{mode.title}</CardTitle>
-                      <CardDescription className="mt-1">{mode.description}</CardDescription>
+                      <CardDescription className={cn("mt-1", mode.highlight && "text-foreground/80")}>{mode.description}</CardDescription>
                     </div>
                   </CardHeader>
                 </Card>
