@@ -77,7 +77,7 @@ export function FloatingBot() {
             console.error('AI Friend error:', response.error);
             const errorMessage: Message = {
               role: 'model',
-              text: 'Sorry, I encountered an error. Please try again.',
+              text: response.error || 'Sorry, I encountered an error. Please try again.',
             };
             setMessages((prev) => [...prev, errorMessage]);
         }
