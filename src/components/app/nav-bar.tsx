@@ -12,7 +12,6 @@ const navLinks = [
   { href: '/', label: 'Home', icon: Home },
   { href: '/mode-selection', label: 'Dashboard', icon: LayoutGrid },
   { href: '/ai-friend', label: 'AI Friend', icon: Bot },
-  { href: '/marketplace', label: 'Marketplace', icon: Store },
   { href: '/about', label: 'About', icon: Info },
 ];
 
