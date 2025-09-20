@@ -6,9 +6,23 @@
  */
 
 import { ai } from '@/ai/genkit';
+import { z } from 'genkit';
 import { AIFriendInputSchema, AIFriendOutputSchema, type AIFriendInput, type AIFriendOutput } from '@/ai/schemas/ai-friend';
 
 export { type AIFriendInput, type AIFriendOutput };
+
+const navigationTool = ai.defineTool(
+  {
+    name: 'navigation',
+    description: 'Navigate to a specific page in the application. Available pages are: Home, Dashboard, AI Friend, Marketplace, Community, About, Journal, Breathing Exercise, Emotion Scan, Mantra Chanting, My AI Twin.',
+    inputSchema: z.object({
+      path: z.string().describe('The path to navigate to, e.g., /journal'),
+    }),
+    outputSchema: z.string(),
+  },
+  async ({ path }) => `Navigating to ${path}`
+);
+
 
 export async function aiFriend(input: AIFriendInput): Promise<AIFriendOutput> {
   return aiFriendFlow(input);
@@ -25,15 +39,24 @@ const aiFriendFlow = ai.defineFlow(
   async ({ history, message, systemPrompt }) => {
     const finalSystemPrompt = systemPrompt || defaultSystemPrompt;
 
-    const model = ai.getModel('googleai/gemini-2.5-flash');
-
-    const { candidates } = await model.generate({
+    const response = await ai.generate({
       system: finalSystemPrompt,
       history: history?.map(msg => ({ role: msg.role, content: [{ text: msg.text }] })) || [],
       prompt: message,
+      tools: [navigationTool],
     });
 
-    const reply = candidates[0]?.message.content[0]?.text ?? "I'm not sure what to say. Could you try rephrasing?";
+    const choice = response.candidates[0];
+    const part = choice.message.content[0];
+
+    if (part.type === 'toolRequest') {
+      return {
+        reply: '', // No direct reply when a tool is called
+        toolCalls: [{ toolName: part.toolRequest.name, args: part.toolRequest.input }],
+      };
+    }
+
+    const reply = part.text ?? "I'm not sure what to say. Could you try rephrasing?";
 
     return { reply };
   }

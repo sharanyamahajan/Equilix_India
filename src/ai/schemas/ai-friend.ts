@@ -23,5 +23,9 @@ export type AIFriendInput = z.infer<typeof AIFriendInputSchema>;
 
 export const AIFriendOutputSchema = z.object({
   reply: z.string().describe("The AI friend's conversational reply."),
+  toolCalls: z.array(z.object({
+    toolName: z.string(),
+    args: z.record(z.any()),
+  })).optional().describe('A list of tool calls made by the AI.'),
 });
 export type AIFriendOutput = z.infer<typeof AIFriendOutputSchema>;
