@@ -10,12 +10,27 @@ export function EquilixLogo(props: SVGProps<SVGSVGElement>) {
       xmlns="http://www.w3.org/2000/svg"
       {...props}
     >
-        <path d="M12 21.9999C17.5228 21.9999 22 17.5228 22 11.9999C22 6.47705 17.5228 1.99991 12 1.99991C6.47715 1.99991 2 6.47705 2 11.9999C2 17.5228 6.47715 21.9999 12 21.9999Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M9.41016 18.47C10.1902 18.8 11.0602 19 12.0002 19C12.9402 19 13.8102 18.8 14.5902 18.47" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M7.42969 15.8C8.54969 16.53 10.1997 17 12.0097 17C13.8197 17 15.4697 16.53 16.5897 15.8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M12.25 11.2C12.11 11.33 11.89 11.33 11.75 11.2C11.31 10.82 10.93 10.37 10.63 9.87C10.39 9.47 10.27 9.04 10.27 8.6C10.27 7.72 11.06 7 12 7C12.94 7 13.73 7.72 13.73 8.6C13.73 9.04 13.61 9.47 13.37 9.87C13.07 10.37 12.69 10.82 12.25 11.2Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M6 13C6.78 14.07 8.51 15 12 15C15.49 15 17.22 14.07 18 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M4.19922 9.5C5.59922 11.19 8.69922 12.5 11.9992 12.5C15.2992 12.5 18.3992 11.19 19.7992 9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      <path
+        d="M12 2C6.477 2 2 6.477 2 12C2 17.523 6.477 22 12 22C17.523 22 22 17.523 22 12C22 6.477 17.523 2 12 2Z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M7 14C8.5 16,10.5 17,12 17C13.5 17,15.5 16,17 14"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M8 9.5C9 10.5,10.5 11,12 11C13.5 11,15 10.5,16 9.5"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
