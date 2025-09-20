@@ -31,7 +31,7 @@ const roadmap = [
     {
         icon: Target,
         title: 'Personalized AI Care Pathways',
-        description: 'Instead of just offering random tools, we build personalized journeys (stress relief, focus boost, sleep improvement). The AI adapts the path daily based on mood and emotion scans.',
+        description: 'Instead of just offering random tools, we build personalized journeys (stress relief, focus boost, sleep improvement, trauma healing). The AI adapts the path daily based on mood and emotion scans.',
         investorHook: 'Stickiness, personalization, high engagement.'
     },
     {
@@ -42,33 +42,33 @@ const roadmap = [
     },
     {
         icon: Gamepad2,
-        title: 'Gamified Engagement Loop',
-        description: 'Daily streaks, milestones, and leaderboards (anonymous) keep users motivated. Unlockable content creates rewarding experiences, like a "Mental Wellness Journey" summary.',
-        investorHook: 'Proven engagement loops lead to higher user retention and revenue.'
+        title: 'Gamified Engagement',
+        description: 'Daily streaks, milestones, and leaderboards (anonymous) keep users motivated. Unlockable content (like Spotify Wrapped, but “Your Mental Wellness Journey 2025”).',
+        investorHook: 'Engagement loop = user retention = revenue.'
     },
     {
         icon: Briefcase,
-        title: 'Corporate Wellness Dashboard (B2B SaaS)',
-        description: 'We sell companies anonymous, aggregated stress and mood reports, helping HR measure team burnout and productivity risks before they escalate.',
-        investorHook: 'Scalable, repeatable revenue with a large Total Addressable Market (TAM).'
+        title: 'Corporate Wellness Dashboard (B2B SaaS Angle)',
+        description: 'Sell to companies → anonymous stress/mood reports. Helps HR measure team burnout, productivity risks.',
+        investorHook: 'Scalable, repeatable, big TAM (corporate wellness).'
     },
     {
         icon: Sparkles,
         title: 'Cultural Differentiation',
-        description: 'Features like AI-powered Mantra chanting with pronunciation coaching and a digital mala give us a unique edge in a crowded market, attracting both local and global users.',
-        investorHook: 'Clear differentiation in a crowded market.'
+        description: 'Calm & Headspace don’t have mantra chanting. AI Pronunciation + Digital Mala = local edge + global curiosity.',
+        investorHook: 'Differentiation in a crowded market.'
     },
     {
         icon: ShieldCheck,
-        title: 'AI-Moderated Safe Community',
-        description: 'We provide anonymous peer-support forums where AI moderation prevents triggering or harmful content, fostering a truly safe and supportive community space.',
-        investorHook: 'Scalable community creates a powerful network effect and a competitive moat.'
+        title: 'Safe Community with AI Moderation',
+        description: 'Anonymous peer-support forums. AI moderation to avoid triggering or harmful content.',
+        investorHook: 'Scalable community → network effect → moat.'
     },
      {
         icon: Store,
         title: 'Marketplace for Mental Health Services',
-        description: 'Connect with certified psychologists, yoga instructors, and wellness coaches for paid workshops on stress management, chanting retreats, or sleep clinics.',
-        investorHook: 'Multiple revenue streams beyond the core subscription.'
+        description: 'Premium experts (therapists, yoga teachers, coaches). Paid workshops (stress management, chanting retreats, sleep clinics).',
+        investorHook: 'Extra revenue streams beyond subscription.'
     }
 ]
 
