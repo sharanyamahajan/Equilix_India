@@ -54,12 +54,10 @@ const aiFriendFlow = ai.defineFlow(
       },
     });
 
-    const choice = response.candidates[0];
+    const choice = response.candidates?.[0];
     
     if (!choice || !choice.message || !choice.message.content) {
-        return {
-            reply: "I'm sorry, I was unable to generate a response. This might be due to safety settings or an internal error. Please try a different question.",
-        };
+        throw new Error("I'm sorry, I was unable to generate a response. This might be due to safety settings or an internal error. Please try a different question.");
     }
 
     const toolCalls = choice.message.content.filter(part => part.type === 'toolRequest').map(part => {
