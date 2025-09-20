@@ -3,14 +3,14 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Journal, Wind, ScanFace, Mic, BrainCircuit } from 'lucide-react';
+import { BookText, Wind, ScanFace, Mic, BrainCircuit } from 'lucide-react';
 
 const modes = [
   {
     href: '/journal',
     title: 'Journal',
     description: 'Reflect on your day, track your mood, and express your thoughts.',
-    icon: Journal,
+    icon: BookText,
   },
   {
     href: '/breathing-exercise',
