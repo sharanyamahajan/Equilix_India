@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Camera, HeartPulse, User, Bot, Wind, Menu, X, Info, BrainCircuit, ChevronDown } from 'lucide-react';
+import { Home, Camera, HeartPulse, User, Bot, Wind, Menu, X, Info, BrainCircuit, ChevronDown, Gamepad2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { EquilixLogo } from '@/components/icons/equilix-logo';
 import { useState, useEffect } from 'react';
@@ -18,6 +18,7 @@ import {
 const navLinks = [
   { href: '/', label: 'Home', icon: Home },
   { href: '/emotion-detector', label: 'Emotion Scan', icon: Camera },
+  { href: '/games', label: 'Games', icon: Gamepad2 },
   { 
     label: 'Relaxation', 
     icon: Wind,

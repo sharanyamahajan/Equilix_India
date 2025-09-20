@@ -1,7 +1,6 @@
 'use client';
 
 import { EmotionDetector } from '@/components/app/emotion-detector';
-import { RelaxingGames } from '@/components/app/relaxing-games';
 
 export default function EmotionDetectorPage() {
   return (
@@ -10,7 +9,6 @@ export default function EmotionDetectorPage() {
         <main className="flex-grow container mx-auto px-4 py-8 md:py-12">
           <div className="max-w-2xl mx-auto space-y-8">
              <EmotionDetector />
-             <RelaxingGames />
           </div>
         </main>
       </div>
