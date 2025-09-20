@@ -111,7 +111,8 @@ export default function AIFriendPage() {
   const speak = useCallback((text: string) => {
     if (!isMounted.current) return;
     
-    window.speechSynthesis.cancel(); // Clear queue before speaking
+    // Clear any ongoing speech before starting a new one.
+    window.speechSynthesis.cancel(); 
 
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.onstart = () => {
@@ -128,6 +129,8 @@ export default function AIFriendPage() {
       }
     };
     utterance.onerror = (e) => {
+      // This error often fires harmlessly on rapid state changes (e.g., ending call while speaking).
+      // We log it but primarily ensure the UI resets correctly.
       console.error('Speech synthesis error', e);
       stopLipSync();
       setAIStatus("listening");
@@ -238,11 +241,7 @@ export default function AIFriendPage() {
   };
 
   const handleEndCall = () => {
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(track => track.stop());
-      localStreamRef.current = null;
-    }
-    stopSpeechRecognition();
+    // The main useEffect cleanup hook handles stopping streams, speech, etc.
     setScreen('welcome');
   };
 
@@ -251,7 +250,11 @@ export default function AIFriendPage() {
     if (localStreamRef.current && localStreamRef.current.getAudioTracks().length > 0) {
       localStreamRef.current.getAudioTracks()[0].enabled = newMicState;
       setIsMicOn(newMicState);
-      newMicState ? startSpeechRecognition() : stopSpeechRecognition();
+      if (newMicState) {
+        startSpeechRecognition();
+      } else {
+        stopSpeechRecognition();
+      }
     }
   };
   
