@@ -325,7 +325,7 @@ export default function MantraChantingPage() {
                 {MainContent()}
             </AnimatePresence>
 
-            <style jsx global>{\`
+            <style jsx global>{`
                 .glass-card {
                     background: hsl(var(--card) / 0.5) !important;
                     backdrop-filter: blur(12px) saturate(150%);
@@ -343,7 +343,8 @@ export default function MantraChantingPage() {
                 .control-btn:hover { background-color: hsl(var(--secondary)); transform: translateY(-2px); }
                 .control-btn.active { background-color: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
                 .control-btn.hang-up { background-color: hsl(var(--accent)); color: hsl(var(--accent-foreground)); }
-            \`}</style>
+            `}
+            </style>
         </div>
     );
 }
