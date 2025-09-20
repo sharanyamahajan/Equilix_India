@@ -46,17 +46,17 @@ const aiFriendFlow = ai.defineFlow(
       tools: [navigationTool],
       config: {
         safetySettings: [
-            { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
-            { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-            { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-            { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+            { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
+            { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+            { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+            { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
         ],
       },
     });
 
     const choice = response.candidates?.[0];
     
-    if (!choice || !choice.message || !choice.message.content) {
+    if (!choice || !choice.message || !choice.message.content || choice.message.content.length === 0) {
         throw new Error("I'm sorry, I was unable to generate a response. This might be due to safety settings or an internal error. Please try a different question.");
     }
 

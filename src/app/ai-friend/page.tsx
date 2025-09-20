@@ -1,25 +1,32 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { getAIFriendResponse } from '@/app/actions';
 import { type AIFriendInput } from '@/ai/schemas/ai-friend';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Loader2, Send } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+
+type Message = {
+  role: 'user' | 'model';
+  text: string;
+};
 
 export default function AIFriendPage() {
   const router = useRouter();
+  const { toast } = useToast();
 
-  // --- DOM Elements & State ---
+  // --- State ---
   const [screen, setScreen] = useState<'welcome' | 'call'>('welcome');
-  const [isMicOn, setIsMicOn] = useState(true);
-  const [isCameraOn, setIsCameraOn] = useState(true);
-  const [aiStatus, setAIStatus] = useState('Hi there! What\'s on your mind today?');
-  const [aiStatusMode, setAIStatusMode] = useState<'speaking' | 'thinking' | 'listening'>('speaking');
-  const [isLoading, setIsLoading] = useState(false);
-  const [isAIThinking, setIsAIThinking] = useState(false);
-  
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState('');
+  const [isAIResponding, startAIResponse] = useTransition();
+
+  // --- DOM & Animation Refs ---
   const videoRef = useRef<HTMLVideoElement>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
   const lipSyncIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const mouthRef = useRef<SVGPathElement | null>(null);
 
@@ -58,9 +65,9 @@ export default function AIFriendPage() {
         </svg>`,
     mouthShapes: {
       neutral: 'M 85 130 Q 100 135 115 130',
-      a: 'M 85 130 Q 100 145 115 130', // Open mouth for 'aah' sounds
-      b: 'M 85 135 Q 100 135 115 135', // Flat line for 'm', 'b' sounds
-      c: 'M 85 125 Q 100 140 115 125', // Wider shape for 'ooh' sounds
+      a: 'M 85 130 Q 100 145 115 130',
+      b: 'M 85 135 Q 100 135 115 135',
+      c: 'M 85 125 Q 100 140 115 125',
     },
   };
 
@@ -84,139 +91,104 @@ export default function AIFriendPage() {
     }
   }, [character.mouthShapes.neutral]);
 
-  const startSpeechRecognition = useCallback(() => {
-    if (recognitionRef.current && !isAIThinking) {
-      try {
-        recognitionRef.current.start();
-      } catch (e) {
-        // May already be started
-      }
-    }
-  }, [isAIThinking]);
-
-  const stopSpeechRecognition = useCallback(() => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-    }
-  }, []);
-
   const speak = useCallback((text: string) => {
+    if(!window.speechSynthesis) {
+        console.warn("Speech synthesis not supported.");
+        return;
+    }
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.onstart = () => {
-      setIsAIThinking(true);
-      stopSpeechRecognition();
-      setAIStatusMode('speaking');
-      setAIStatus(text);
-      startLipSync();
-    };
-    utterance.onend = () => {
-      stopLipSync();
-      setAIStatusMode('listening');
-      setAIStatus("I'm listening...");
-      setIsAIThinking(false);
-      if (isMicOn) startSpeechRecognition();
-    };
+    utterance.onstart = startLipSync;
+    utterance.onend = stopLipSync;
     utterance.onerror = (e) => {
       console.error('Speech synthesis error', e);
-      setAIStatusMode('listening');
-      setIsAIThinking(false);
+      stopLipSync();
+      toast({ title: 'Speech Error', description: 'Could not play audio response.', variant: 'destructive' });
     };
     window.speechSynthesis.speak(utterance);
-  }, [startLipSync, stopLipSync, isMicOn, startSpeechRecognition, stopSpeechRecognition]);
+  }, [startLipSync, stopLipSync, toast]);
 
+  const handleSend = () => {
+    if (!input.trim() || isAIResponding) return;
+    
+    const newUserMessage: Message = { role: 'user', text: input };
+    const newMessages = [...messages, newUserMessage];
+    setMessages(newMessages);
+    setInput('');
 
-  const getAIResponse = useCallback(async (userText: string) => {
-    setIsAIThinking(true);
-    setAIStatusMode('thinking');
+    startAIResponse(async () => {
+      const response = await getAIFriendResponse({
+        history: newMessages,
+        message: input,
+        systemPrompt: character.prompt,
+      } as AIFriendInput);
+      
+      if (response.success && response.data) {
+        const modelMessage: Message = { role: 'model', text: response.data.reply };
+        setMessages(prev => [...prev, modelMessage]);
+        speak(response.data.reply);
 
-    const result = await getAIFriendResponse({ message: userText, systemPrompt: character.prompt } as AIFriendInput);
-    if(result.success && result.data?.reply) {
-      speak(result.data.reply);
-    } else {
-      console.error("Error calling AI Friend:", result.error);
-      speak("I'm having a little trouble connecting right now. Please try again in a moment.");
-    }
-  }, [character.prompt, speak]);
-
-
-  useEffect(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      const recognition = new SpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognitionRef.current = recognition;
-
-      recognition.onresult = (event) => {
-        let finalTranscript = '';
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          if (event.results[i].isFinal) {
-            finalTranscript += event.results[i][0].transcript;
+        if (response.data.toolCalls) {
+          for (const toolCall of response.data.toolCalls) {
+            if (toolCall.toolName === 'navigation' && toolCall.args.path) {
+              toast({ title: 'Navigation', description: `Moving to ${toolCall.args.path}` });
+              router.push(toolCall.args.path as string);
+            }
           }
         }
-        if (finalTranscript.trim()) {
-          stopSpeechRecognition();
-          getAIResponse(finalTranscript.trim());
-        }
-      };
-
-      recognition.onerror = (event) => {
-        if (event.error !== 'no-speech' && event.error !== 'aborted') {
-          console.error('Speech recognition error:', event.error);
-        }
-      };
-
-      recognition.onend = () => {
-        if (isMicOn && !isAIThinking) {
-          startSpeechRecognition();
-        }
-      };
-    }
-
-    return () => {
-        stopSpeechRecognition();
-    }
-  }, [getAIResponse, isMicOn, isAIThinking, startSpeechRecognition, stopSpeechRecognition]);
+      } else {
+        toast({
+          title: "AI Error",
+          description: response.error || "Failed to get a response from the AI.",
+          variant: "destructive",
+        });
+        // Add a message to the chat to indicate failure
+        setMessages(prev => [...prev, { role: 'model', text: "I'm sorry, I encountered an issue. Please try again." }]);
+      }
+    });
+  };
 
   useEffect(() => {
-      const eyeBlinkInterval = setInterval(() => {
-        const eyes = document.getElementById('eyes');
-        if (document.hidden || !eyes) return;
-        eyes.style.transform = 'scaleY(0.1)';
-        setTimeout(() => {
-          if(eyes) eyes.style.transform = 'scaleY(1)';
-        }, 200);
-      }, 4000);
+    // Blinking effect
+    const eyeBlinkInterval = setInterval(() => {
+      const eyes = document.getElementById('eyes');
+      if (document.hidden || !eyes) return;
+      eyes.style.transform = 'scaleY(0.1)';
+      setTimeout(() => { if (eyes) eyes.style.transform = 'scaleY(1)'; }, 200);
+    }, 4000);
 
-      return () => {
-        clearInterval(eyeBlinkInterval);
-        if (lipSyncIntervalRef.current) clearInterval(lipSyncIntervalRef.current);
+    return () => {
+      clearInterval(eyeBlinkInterval);
+      if (lipSyncIntervalRef.current) clearInterval(lipSyncIntervalRef.current);
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach(track => track.stop());
       }
+      window.speechSynthesis?.cancel();
+    };
   }, []);
-
+  
   const startMedia = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
       localStreamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
       }
-      setIsCameraOn(true);
-      setIsMicOn(true);
     } catch (err) {
       console.error("Error accessing media devices.", err);
-      alert("Could not access camera or microphone. Please check permissions and ensure you are using a secure (HTTPS) connection.");
-      setIsCameraOn(false);
-      setIsMicOn(false);
+      toast({
+        title: "Camera Access Denied",
+        description: "Could not access camera. The video feed will be disabled.",
+        variant: "destructive",
+      });
     }
   };
 
   const handleStartCall = async () => {
-    setIsLoading(true);
     await startMedia();
     setScreen('call');
-    setIsLoading(false);
-    if(isMicOn) startSpeechRecognition();
+    const welcomeMessage = { role: 'model', text: `Hello! I'm Aura. What's on your mind today?` } as Message;
+    setMessages([welcomeMessage]);
+    speak(welcomeMessage.text);
   };
 
   const handleEndCall = () => {
@@ -224,28 +196,12 @@ export default function AIFriendPage() {
       localStreamRef.current.getTracks().forEach(track => track.stop());
       localStreamRef.current = null;
     }
-    stopSpeechRecognition();
+    window.speechSynthesis?.cancel();
     setScreen('welcome');
-    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    setMessages([]);
   };
-  
-  const toggleMic = () => {
-      const newMicState = !isMicOn;
-      setIsMicOn(newMicState);
-      if (localStreamRef.current && localStreamRef.current.getAudioTracks().length > 0) {
-        localStreamRef.current.getAudioTracks()[0].enabled = newMicState;
-      }
-      if(newMicState) startSpeechRecognition(); else stopSpeechRecognition();
-  }
-  
-  const toggleCamera = () => {
-      const newCameraState = !isCameraOn;
-      setIsCameraOn(newCameraState);
-      if (localStreamRef.current && localStreamRef.current.getVideoTracks().length > 0) {
-          localStreamRef.current.getVideoTracks()[0].enabled = newCameraState;
-      }
-  }
-  
+
+  const latestBotMessage = messages.slice().reverse().find(m => m.role === 'model')?.text;
 
   return (
     <>
@@ -255,16 +211,16 @@ export default function AIFriendPage() {
              <h1 className="text-5xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-600 animate-pulse">Welcome to AI Video Call</h1>
              <p className="text-xl text-gray-600 mb-8">Your professional AI companion for mental wellness.</p>
             <p className="max-w-2xl mx-auto text-gray-600 mb-8">
-              This is a safe space to talk about whatever&apos;s on your mind. <strong>Aura</strong> is here to listen without judgment. Ready to chat?
+              This is a safe space to talk about whatever's on your mind. <strong>Aura</strong> is here to listen without judgment. Ready to chat?
             </p>
-            <button id="start-call-btn" onClick={handleStartCall} disabled={isLoading} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-full text-lg transition-transform transform hover:scale-105 disabled:bg-blue-400">
-              {isLoading ? 'Initializing...' : 'Start Conversation'}
-            </button>
+            <Button id="start-call-btn" onClick={handleStartCall} size="lg">
+              Start Conversation
+            </Button>
           </div>
         )}
 
         {screen === 'call' && (
-          <div id="call-screen" className="h-full w-full flex flex-col items-center justify-center relative">
+          <div id="call-screen" className="h-full w-full flex flex-col items-center justify-center relative p-4">
             <div className="w-full flex-grow flex items-center justify-center flex-col overflow-hidden relative">
               <div id="ai-character-container" dangerouslySetInnerHTML={{ __html: character.svg }} style={{ width: '300px', height: '300px' }} ref={() => {
                   if (typeof window !== "undefined") {
@@ -272,31 +228,34 @@ export default function AIFriendPage() {
                   }
               }}></div>
               <div id="ai-status" className="absolute bottom-40 glass-card">
-                  {aiStatusMode === 'thinking' && <div className="dot-flashing"></div>}
-                  {aiStatusMode !== 'thinking' && <p id="ai-status-text">{aiStatus}</p>}
+                  {isAIResponding && <div className="dot-flashing"></div>}
+                  {!isAIResponding && <p id="ai-status-text">{latestBotMessage || "..."}</p>}
               </div>
             </div>
             
             <div id="user-video-container" className="glass-card">
-              <video id="user-video" ref={videoRef} autoPlay muted playsInline style={{ display: isCameraOn ? 'block' : 'none' }}></video>
-              <div id="camera-off-placeholder" className="icon-placeholder" style={{ display: isCameraOn ? 'none' : 'flex' }}>
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-full h-full"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
-              </div>
+              <video id="user-video" ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover transform -scale-x-100"></video>
             </div>
 
-            <div className="w-full p-4 absolute bottom-0">
-              <div className="max-w-sm mx-auto flex justify-center items-center space-x-4 glass-card rounded-full p-2">
-                <button id="mic-btn" onClick={toggleMic} className={`control-btn ${isMicOn ? 'active' : ''}`} title="Mute/Unmute Mic">
-                    <svg id="mic-on-icon" xmlns="http://www.w3.org/2000/svg" className={`h-6 w-6 ${isMicOn ? '' : 'hidden'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-14 0m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
-                    <svg id="mic-off-icon" xmlns="http://www.w3.org/2000/svg" className={`h-6 w-6 ${isMicOn ? 'hidden' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.586 15.586a7 7 0 01-9.172-9.172l9.172 9.172zM12 18.75a.75.75 0 01-.75-.75V15a3 3 0 013-3h.75a.75.75 0 010 1.5h-.75a1.5 1.5 0 00-1.5 1.5v3a.75.75 0 01-.75-.75zM19 11a7 7 0 01-14 0m12.414 4.414a7.001 7.001 0 00-9.172-9.172"/></svg>
-                </button>
-                <button id="camera-btn" onClick={toggleCamera} className={`control-btn ${isCameraOn ? 'active' : ''}`} title="Camera On/Off">
-                    <svg id="camera-on-icon" xmlns="http://www.w3.org/2000/svg" className={`h-6 w-6 ${isCameraOn ? '' : 'hidden'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                    <svg id="camera-off-icon" xmlns="http://www.w3.org/2000/svg" className={`h-6 w-6 ${isCameraOn ? 'hidden' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.586 15.586a7 7 0 01-9.172-9.172l9.172 9.172zM15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                </button>
-                <button id="end-call-btn" onClick={handleEndCall} className="control-btn hang-up" title="End Conversation">
+            <div className="w-full max-w-2xl p-4 absolute bottom-0 space-y-2">
+               <div className="flex w-full items-center gap-2">
+                  <Input
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                    placeholder="Type your message to Aura..."
+                    disabled={isAIResponding}
+                    className="h-12 text-base"
+                  />
+                  <Button onClick={handleSend} disabled={isAIResponding || !input.trim()} size="icon" className="h-12 w-12">
+                    {isAIResponding ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+                    <span className="sr-only">Send</span>
+                  </Button>
+                </div>
+              <div className="max-w-sm mx-auto flex justify-center items-center">
+                <Button id="end-call-btn" onClick={handleEndCall} className="control-btn hang-up" title="End Conversation">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 8l6-6M2 2l20 20" /></svg>
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -329,7 +288,7 @@ export default function AIFriendPage() {
 
         #user-video-container {
             position: absolute;
-            bottom: 7rem;
+            bottom: 12rem;
             right: 2rem;
             width: 200px;
             height: 150px;
@@ -341,19 +300,14 @@ export default function AIFriendPage() {
         }
 
         #user-video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
-        .icon-placeholder { width: 50%; height: 50%; color: #4b5563; }
 
-        .control-btn {
-            background-color: rgba(255, 255, 255, 0.3);
-            border-radius: 9999px;
-            width: 52px; height: 52px;
-            display: flex; align-items: center; justify-content: center;
-            transition: all 0.2s ease-in-out;
-            color: #374151; /* text-gray-700 */
+        .control-btn.hang-up { 
+          background-color: #ef4444; color: white; 
+          border-radius: 9999px;
+          width: 52px; height: 52px;
+          display: flex; align-items: center; justify-content: center;
+          transition: all 0.2s ease-in-out;
         }
-        .control-btn:hover { background-color: rgba(255, 255, 255, 0.5); transform: translateY(-2px); }
-        .control-btn.active { background-color: #3B82F6; color: white; }
-        .control-btn.hang-up { background-color: #ef4444; color: white; }
         .control-btn.hang-up:hover { background-color: #dc2626; }
 
         #ai-status {
@@ -393,5 +347,3 @@ export default function AIFriendPage() {
     </>
   );
 }
-
-    
