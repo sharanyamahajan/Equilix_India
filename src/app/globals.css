@@ -32,7 +32,7 @@
   }
 
   .dark {
-    --background: 220 15% 5%;
+    --background: 0 0% 0%;
     --foreground: 210 20% 95%;
     --card: 220 15% 12%;
     --card-foreground: 210 20% 95%;
@@ -65,5 +65,8 @@
   }
   body {
     @apply bg-background text-foreground;
+     background-image:
+        radial-gradient(circle at 25% 30%, hsl(var(--primary) / 0.1), transparent 30%),
+        radial-gradient(circle at 75% 70%, hsl(var(--accent) / 0.1), transparent 30%);
   }
 }

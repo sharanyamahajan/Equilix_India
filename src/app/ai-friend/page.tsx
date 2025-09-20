@@ -374,11 +374,6 @@ export default function AiFriendPage() {
                 body {
                   font-family: 'Inter', sans-serif;
                 }
-                #app-wrapper {
-                    background-image:
-                        radial-gradient(circle at 25% 30%, hsl(var(--primary) / 0.05), transparent 40%),
-                        radial-gradient(circle at 75% 70%, hsl(var(--accent) / 0.05), transparent 40%);
-                }
                 .glass-card {
                     background: hsl(var(--card) / 0.5) !important;
                     backdrop-filter: blur(12px) saturate(150%);

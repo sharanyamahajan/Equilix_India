@@ -1,25 +1,12 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 
 export default function Home() {
   return (
-    <div className="relative flex flex-col min-h-screen bg-background font-body text-foreground">
-      <div className="absolute inset-0 w-full h-full z-0">
-        <Image
-          src="https://picsum.photos/seed/wellness-future/1920/1080"
-          alt="Abstract background representing wellness and technology"
-          fill
-          className="object-cover"
-          data-ai-hint="abstract background"
-          priority
-        />
-        <div className="absolute inset-0 bg-black/70" />
-      </div>
-
+    <div className="relative flex flex-col min-h-screen bg-transparent font-body text-foreground">
       <main className="relative z-10 flex-grow flex flex-col items-center justify-center text-center px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
