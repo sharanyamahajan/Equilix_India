@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -61,28 +62,34 @@ export default function MantraChantingPage() {
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (recognitionRef.current) {
+            recognitionRef.current.onresult = null;
+            recognitionRef.current.onerror = null;
+            recognitionRef.current.onend = null;
             recognitionRef.current.stop();
         }
-        recognitionRef.current = new SpeechRecognition();
-        const recognition = recognitionRef.current;
+        
+        const recognition = new SpeechRecognition();
+        recognitionRef.current = recognition;
         
         recognition.continuous = true;
-        recognition.interimResults = true;
+        recognition.interimResults = false; // Only get final results
         recognition.lang = 'en-US';
 
         let lastChantTime = 0;
+        let finalTranscript = '';
 
         recognition.onresult = (event) => {
-            const transcript = Array.from(event.results)
-                .map(result => result[0])
-                .map(result => result.transcript)
-                .join('')
-                .toLowerCase();
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    finalTranscript += event.results[i][0].transcript;
+                }
+            }
 
             const now = Date.now();
-            if (transcript.includes(selectedMantra.keyword) && (now - lastChantTime > 1500)) { // Increased delay
+            if (finalTranscript.toLowerCase().includes(selectedMantra.keyword) && (now - lastChantTime > 1000)) {
                 lastChantTime = now;
                 handleMantraRecognized();
+                finalTranscript = ''; // Reset transcript after recognition
             }
         };
 
@@ -99,7 +106,11 @@ export default function MantraChantingPage() {
         
         recognition.onend = () => {
            if (isListening) {
-             setTimeout(() => recognition.start(), 100);
+             try {
+                recognition.start()
+             } catch(e) {
+                // Already started
+             }
            }
         };
 
@@ -115,14 +126,19 @@ export default function MantraChantingPage() {
     const stopListening = useCallback(() => {
         if (recognitionRef.current) {
             recognitionRef.current.stop();
+            recognitionRef.current = null;
         }
         setIsListening(false);
     }, []);
     
     useEffect(() => {
+        // Cleanup on component unmount
         return () => {
             if (recognitionRef.current) {
                recognitionRef.current.stop();
+            }
+            if (animationTimeoutRef.current) {
+                clearTimeout(animationTimeoutRef.current);
             }
         }
     }, []);
@@ -156,7 +172,7 @@ export default function MantraChantingPage() {
             <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-accent/5 -z-10" />
 
             <div className="absolute top-4 right-4 z-20 flex gap-2">
-                 <Link href="/games" passHref>
+                 <Link href="/" passHref>
                     <Button variant="ghost" size="icon" className="text-muted-foreground hover:bg-background/50 hover:text-foreground">
                         <X size={24} />
                         <span className="sr-only">Close</span>
