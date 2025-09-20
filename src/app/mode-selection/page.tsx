@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { BookText, Wind, ScanFace, Mic, BrainCircuit, HeartPulse } from 'lucide-react';
+import { BookText, Wind, ScanFace, Mic, BrainCircuit, HeartPulse, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const primaryFeature = {
@@ -43,6 +43,12 @@ const secondaryModes = [
     title: 'My AI Twin',
     description: 'Craft and interact with your personalized AI companion.',
     icon: BrainCircuit,
+  },
+  {
+    href: '/community',
+    title: 'Community Hub',
+    description: 'Connect with others, share stories, and find support.',
+    icon: Users,
   },
 ];
 
