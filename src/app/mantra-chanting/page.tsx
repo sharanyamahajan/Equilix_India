@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback, useTransition } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Zap, ZapOff, X, Mic, MicOff, Music, Settings, ChevronsRight, Wind, Waves, Bell } from 'lucide-react';
+import { Zap, ZapOff, X, Mic, MicOff, Bell, Waves, Wind } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import {
@@ -15,7 +15,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
-
 
 const mantras = [
     { text: 'Om', keyword: 'om' },
@@ -63,81 +62,101 @@ export default function MantraChantingPage() {
     }, [hapticsEnabled, triggerAnimation]);
 
     const startListening = useCallback(() => {
-        if (!recognitionRef.current || isListening) return;
-        try {
-            recognitionRef.current.start();
-            setIsListening(true);
-        } catch (e) {
-            console.error("Could not start recognition:", e);
+        if (recognitionRef.current) {
+            try {
+                recognitionRef.current.start();
+                setIsListening(true);
+            } catch (e) {
+                console.error("Could not start recognition:", e);
+                // It might already be started.
+                setIsListening(true);
+            }
         }
-    }, [isListening]);
-
+    }, []);
+    
     const stopListening = useCallback(() => {
-        if (!recognitionRef.current || !isListening) return;
-        recognitionRef.current.stop();
-        setIsListening(false);
-    }, [isListening]);
+        if (recognitionRef.current) {
+            recognitionRef.current.stop();
+            setIsListening(false);
+        }
+    }, []);
 
     useEffect(() => {
         if (!isClient) return;
+
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
-            alert("Speech recognition is not supported in this browser.");
+            if (isClient) alert("Speech recognition is not supported in this browser.");
             return;
         }
 
         const recognition = new SpeechRecognition();
         recognition.continuous = true;
-        recognition.interimResults = false;
+        recognition.interimResults = true; // Use interim results for faster feedback
         recognition.lang = 'en-US';
 
         recognition.onresult = (event) => {
-            const transcript = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
-            if (transcript.includes(selectedMantra.keyword)) {
-                handleMantraRecognized();
+            const transcript = Array.from(event.results)
+                .map(result => result[0])
+                .map(result => result.transcript)
+                .join('')
+                .trim()
+                .toLowerCase();
+
+            if (event.results[event.results.length - 1].isFinal) {
+                 if (transcript.includes(selectedMantra.keyword)) {
+                    handleMantraRecognized();
+                 }
+                 // Once final result is processed, you could restart or just let it continue
             }
         };
 
         recognition.onerror = (event) => {
             console.error('Speech recognition error:', event.error);
-             if (event.error === 'not-allowed') {
-                alert("Microphone access was denied. Please allow microphone access to count chants.")
+            if (event.error === 'not-allowed') {
+                alert("Microphone access was denied. Please allow microphone access to count chants.");
                 setIsListening(false);
             }
         };
         
         recognition.onend = () => {
            if (isListening) {
-             // Keep it listening
-             recognition.start();
+             // If it stops for any reason and we still want to listen, restart it.
+             startListening();
+           } else {
+             setIsListening(false);
            }
         };
 
         recognitionRef.current = recognition;
-        
+
         return () => {
             if (recognitionRef.current) {
+                recognitionRef.current.onresult = null;
+                recognitionRef.current.onerror = null;
+                recognitionRef.current.onend = null;
                 recognitionRef.current.stop();
             }
-             if (timeoutRef.current) clearTimeout(timeoutRef.current);
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
         }
 
-    }, [isClient, selectedMantra.keyword, handleMantraRecognized, isListening]);
+    }, [isClient, selectedMantra.keyword, handleMantraRecognized, isListening, startListening]);
     
-     useEffect(() => {
+    useEffect(() => {
         if (audioRef.current) {
-            if (selectedBackground.sound) {
-                // audioRef.current.src = selectedBackground.sound;
-                // audioRef.current.loop = true;
-                // audioRef.current.play().catch(e => console.error("Audio play failed:", e));
-                 console.log(`Audio source would be: ${selectedBackground.sound}`);
+            if (selectedBackground.sound && isListening) {
+                 // The audio files don't exist, so this will throw an error.
+                 // Commenting out to prevent crashes.
+                 // audioRef.current.src = selectedBackground.sound;
+                 // audioRef.current.loop = true;
+                 // audioRef.current.play().catch(e => console.error("Audio play failed:", e));
+                 console.log(`Audio playback for ${selectedBackground.name} is disabled as sound files are not present.`);
             } else {
                 audioRef.current.pause();
                 audioRef.current.src = '';
             }
         }
-    }, [selectedBackground]);
-
+    }, [selectedBackground, isListening]);
 
     const toggleHaptics = () => {
         if ('vibrate' in navigator) {
@@ -149,6 +168,14 @@ export default function MantraChantingPage() {
             alert("Haptic feedback is not supported on your device.");
         }
     };
+    
+    const toggleListening = () => {
+        if (isListening) {
+            stopListening();
+        } else {
+            startListening();
+        }
+    }
 
     return (
         <div className="fixed inset-0 bg-background flex flex-col items-center justify-center font-body overflow-hidden">
@@ -164,7 +191,6 @@ export default function MantraChantingPage() {
                  </Link>
             </div>
            
-
             <AnimatePresence>
                 <motion.div
                     key="main-content"
@@ -199,7 +225,7 @@ export default function MantraChantingPage() {
 
                     <div className="w-full p-4 absolute bottom-0">
                         <div className="max-w-md mx-auto flex justify-center items-center space-x-4 glass-card rounded-full p-2">
-                             <button onClick={isListening ? stopListening : startListening} className={cn("control-btn", { 'active': isListening })} title={isListening ? "Stop Listening" : "Start Listening"}>
+                             <button onClick={toggleListening} className={cn("control-btn", { 'active': isListening })} title={isListening ? "Stop Listening" : "Start Listening"}>
                                 {isListening ? <Mic className="h-6 w-6" /> : <MicOff className="h-6 w-6" />}
                             </button>
                              {isClient && 'vibrate' in navigator && (
