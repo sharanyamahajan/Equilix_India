@@ -11,7 +11,7 @@ export function AppFooter() {
                 </p>
                 <div className="mt-8 flex flex-col sm:flex-row justify-center items-center gap-4">
                     <Button asChild size="lg">
-                        <a href="https://mail.google.com/mail/?view=cm&fs=1&to=sharanyamahajan9@gmail.com" target="_blank">
+                        <a href="https://mail.google.com/mail/?view=cm&fs=1&to=equilix.india@gmail.com" target="_blank">
                             Contact Us
                         </a>
                     </Button>
