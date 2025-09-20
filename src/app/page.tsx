@@ -40,7 +40,7 @@ const experts = [
 export default function Home() {
   return (
     <div className="relative flex flex-col min-h-screen bg-transparent font-body text-foreground">
-      <main className="relative z-10 flex-grow flex flex-col items-center justify-center text-center px-4 pt-20">
+      <main className="relative z-10 flex-grow flex flex-col items-center justify-center text-center px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
