@@ -1,229 +1,380 @@
 'use client';
 
-import { useState, useRef, useEffect, useTransition } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Bot, Loader2, Mic, MicOff, PhoneOff, Send, User, Video, VideoOff, MessageSquare } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { getAIFriendResponse } from '@/app/actions';
+import { useState, useRef, useEffect, useTransition, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent } from '@/components/ui/card';
-import { motion } from 'framer-motion';
-
-type Message = {
-  role: 'user' | 'model';
-  text: string;
-};
-
-const initialMessages: Message[] = [
-    {
-        role: 'model',
-        text: "Hello! It's wonderful to connect with you. How are you feeling today?"
-    }
-];
+import { getAIFriendResponse } from '@/app/actions';
+import { type AIFriendInput } from '@/ai/schemas/ai-friend';
 
 export default function AIFriendPage() {
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
-  const [input, setInput] = useState('');
-  const [isPending, startTransition] = useTransition();
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
-  const [aiSystemPrompt, setAiSystemPrompt] = useState<string | undefined>(undefined);
-  const [isMuted, setIsMuted] = useState(false);
-  const [isVideoOff, setIsVideoOff] = useState(false);
 
-  useEffect(() => {
-    const customPrompt = localStorage.getItem('aiTwinSystemPrompt');
-    if (customPrompt) {
-        setAiSystemPrompt(customPrompt);
+  // --- DOM Elements & State ---
+  const [screen, setScreen] = useState<'welcome' | 'call'>('welcome');
+  const [isMicOn, setIsMicOn] = useState(true);
+  const [isCameraOn, setIsCameraOn] = useState(true);
+  const [aiStatus, setAIStatus] = useState('Hi there! What\'s on your mind today?');
+  const [aiStatusMode, setAIStatusMode] = useState<'speaking' | 'thinking' | 'listening'>('speaking');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isAIThinking, setIsAIThinking] = useState(false);
+  
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const localStreamRef = useRef<MediaStream | null>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const lipSyncIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const mouthRef = useRef<SVGPathElement | null>(null);
+
+  const character = {
+    name: 'Aura',
+    prompt: `You are Aura, a professional and empathetic AI companion. Your purpose is to provide a safe, supportive space for users. Listen carefully, offer thoughtful perspectives, and gently guide them to reflect on their feelings. Do not give medical advice. Keep your responses concise, clear, and calm.`,
+    svg: `<svg viewBox="0 0 200 200" id="aura-svg" class="w-full h-full">
+            <defs>
+                <radialGradient id="auraGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                    <stop offset="0%" style="stop-color:#93c5fd; stop-opacity:0.8" />
+                    <stop offset="100%" style="stop-color:#3b82f6; stop-opacity:0.9" />
+                </radialGradient>
+            </defs>
+            <circle cx="100" cy="100" r="90" fill="url(#auraGradient)" />
+            <circle cx="100" cy="100" r="70" fill="none" stroke="#ffffff" stroke-width="2" stroke-opacity="0.5" />
+            <g id="eyes" style="transition: transform 0.2s ease-out;">
+                <path class="eye-line" d="M 70 90 L 90 90" stroke="#ffffff" stroke-width="3" stroke-linecap="round" />
+                <path class="eye-line" d="M 110 90 L 130 90" stroke="#ffffff" stroke-width="3" stroke-linecap="round" />
+            </g>
+            <path id="mouth" d="M 80 130 Q 100 130 120 130" stroke="#ffffff" stroke-width="3" fill="none" stroke-linecap="round"/>
+        </svg>`,
+    mouthShapes: {
+      neutral: 'M 80 130 Q 100 130 120 130',
+      a: 'M 80 130 Q 100 145 120 130', // Open mouth for 'aah' sounds
+      b: 'M 80 135 Q 100 135 120 135', // Flat line for 'm', 'b' sounds
+      c: 'M 80 125 Q 100 140 120 125', // Wider shape for 'ooh' sounds
+    },
+  };
+
+  const startLipSync = useCallback(() => {
+    if (lipSyncIntervalRef.current || !mouthRef.current) return;
+    const shapes = Object.values(character.mouthShapes);
+    lipSyncIntervalRef.current = setInterval(() => {
+      if (mouthRef.current) {
+        mouthRef.current.setAttribute('d', shapes[Math.floor(Math.random() * shapes.length)]);
+      }
+    }, 120);
+  }, [character.mouthShapes]);
+
+  const stopLipSync = useCallback(() => {
+    if (lipSyncIntervalRef.current) {
+      clearInterval(lipSyncIntervalRef.current);
+      lipSyncIntervalRef.current = null;
+    }
+    if (mouthRef.current) {
+      mouthRef.current.setAttribute('d', character.mouthShapes.neutral);
+    }
+  }, [character.mouthShapes.neutral]);
+
+  const startSpeechRecognition = useCallback(() => {
+    if (recognitionRef.current && !isAIThinking) {
+      try {
+        recognitionRef.current.start();
+      } catch (e) {
+        // May already be started
+      }
+    }
+  }, [isAIThinking]);
+
+  const stopSpeechRecognition = useCallback(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
     }
   }, []);
 
-  const handleSend = async () => {
-    if (!input.trim()) return;
+  const speak = useCallback((text: string) => {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.onstart = () => {
+      setIsAIThinking(true);
+      stopSpeechRecognition();
+      setAIStatusMode('speaking');
+      setAIStatus(text);
+      startLipSync();
+    };
+    utterance.onend = () => {
+      stopLipSync();
+      setAIStatusMode('listening');
+      setAIStatus("I'm listening...");
+      setIsAIThinking(false);
+      if (isMicOn) startSpeechRecognition();
+    };
+    utterance.onerror = (e) => {
+      console.error('Speech synthesis error', e);
+      setAIStatusMode('listening');
+      setIsAIThinking(false);
+    };
+    window.speechSynthesis.speak(utterance);
+  }, [startLipSync, stopLipSync, isMicOn, startSpeechRecognition, stopSpeechRecognition]);
 
-    const userMessage: Message = { role: 'user', text: input };
-    setMessages((prev) => [...prev, userMessage]);
-    const currentInput = input;
-    setInput('');
-    
-    startTransition(async () => {
-        const response = await getAIFriendResponse({
-          history: messages,
-          message: currentInput,
-          systemPrompt: aiSystemPrompt,
-        });
-        
-        if (response.success && response.data) {
-          const modelMessage: Message = { role: 'model', text: response.data.reply };
-          setMessages((prev) => [...prev, modelMessage]);
 
-          if (response.data.toolCalls) {
-            for (const toolCall of response.data.toolCalls) {
-              if (toolCall.toolName === 'navigation' && toolCall.args.path) {
-                router.push(toolCall.args.path as string);
-              }
-            }
-          }
+  const getAIResponse = useCallback(async (userText: string) => {
+    setIsAIThinking(true);
+    setAIStatusMode('thinking');
 
-        } else {
-            console.error('AI Friend error:', response.error);
-            const errorMessage: Message = {
-              role: 'model',
-              text: response.error || 'Sorry, I encountered an error. Please try again.',
-            };
-            setMessages((prev) => [...prev, errorMessage]);
-        }
-    });
-  };
+    const result = await getAIFriendResponse({ message: userText, systemPrompt: character.prompt } as AIFriendInput);
+    if(result.success && result.data?.reply) {
+      speak(result.data.reply);
+    } else {
+      console.error("Error calling AI Friend:", result.error);
+      speak("I'm having a little trouble connecting right now. Please try again in a moment.");
+    }
+  }, [character.prompt, speak]);
+
 
   useEffect(() => {
-    if (scrollAreaRef.current) {
-        const scrollContainer = scrollAreaRef.current.querySelector('div:first-child');
-        if (scrollContainer) {
-            scrollContainer.scrollTop = scrollContainer.scrollHeight;
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognitionRef.current = recognition;
+
+      recognition.onresult = (event) => {
+        let finalTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript;
+          }
         }
+        if (finalTranscript.trim()) {
+          stopSpeechRecognition();
+          getAIResponse(finalTranscript.trim());
+        }
+      };
+
+      recognition.onerror = (event) => {
+        if (event.error !== 'no-speech' && event.error !== 'aborted') {
+          console.error('Speech recognition error:', event.error);
+        }
+      };
+
+      recognition.onend = () => {
+        if (isMicOn && !isAIThinking) {
+          startSpeechRecognition();
+        }
+      };
     }
-  }, [messages]);
+
+    return () => {
+        stopSpeechRecognition();
+    }
+  }, [getAIResponse, isMicOn, isAIThinking, startSpeechRecognition, stopSpeechRecognition]);
+
+  useEffect(() => {
+      const eyeBlinkInterval = setInterval(() => {
+        const eyes = document.getElementById('eyes');
+        if (document.hidden || !eyes) return;
+        eyes.style.transform = 'scaleY(0.1)';
+        setTimeout(() => {
+          eyes.style.transform = 'scaleY(1)';
+        }, 200);
+      }, 4000);
+
+      return () => {
+        clearInterval(eyeBlinkInterval);
+        if (lipSyncIntervalRef.current) clearInterval(lipSyncIntervalRef.current);
+      }
+  }, []);
+
+  const startMedia = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      localStreamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+      setIsCameraOn(true);
+      setIsMicOn(true);
+    } catch (err) {
+      console.error("Error accessing media devices.", err);
+      alert("Could not access camera or microphone. Please check permissions and ensure you are using a secure (HTTPS) connection.");
+      setIsCameraOn(false);
+      setIsMicOn(false);
+    }
+  };
+
+  const handleStartCall = async () => {
+    setIsLoading(true);
+    await startMedia();
+    setScreen('call');
+    setIsLoading(false);
+    if(isMicOn) startSpeechRecognition();
+  };
+
+  const handleEndCall = () => {
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach(track => track.stop());
+      localStreamRef.current = null;
+    }
+    stopSpeechRecognition();
+    setScreen('welcome');
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+  };
+  
+  const toggleMic = () => {
+      const newMicState = !isMicOn;
+      setIsMicOn(newMicState);
+      if (localStreamRef.current && localStreamRef.current.getAudioTracks().length > 0) {
+        localStreamRef.current.getAudioTracks()[0].enabled = newMicState;
+      }
+      if(newMicState) startSpeechRecognition(); else stopSpeechRecognition();
+  }
+  
+  const toggleCamera = () => {
+      const newCameraState = !isCameraOn;
+      setIsCameraOn(newCameraState);
+      if (localStreamRef.current && localStreamRef.current.getVideoTracks().length > 0) {
+          localStreamRef.current.getVideoTracks()[0].enabled = newCameraState;
+      }
+  }
+  
 
   return (
-    <div className="flex flex-col min-h-screen bg-background font-body">
-      <main className="flex-grow container mx-auto px-4 pt-24 md:pt-32">
-        <div className="max-w-4xl mx-auto space-y-4">
-            <div className="text-center mb-8">
-                 <h1 className="text-4xl md:text-5xl font-headline font-bold tracking-tight text-foreground">
-                    AI Friend
-                </h1>
-                <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mt-4 font-light tracking-wide">
-                    A friendly, face-to-face chat with Aura.
-                </p>
+    <>
+      <div id="app-wrapper" className="h-screen w-screen flex flex-col items-center justify-center transition-opacity duration-500 font-body">
+        {screen === 'welcome' && (
+          <div id="welcome-screen" className="text-center p-8">
+            <h1 className="text-5xl font-bold mb-2 text-gray-800">Welcome to AI Video Call</h1>
+            <p className="text-xl text-gray-600 mb-8">Your professional AI companion for mental wellness.</p>
+            <p className="max-w-2xl mx-auto text-gray-600 mb-8">
+              This is a safe space to talk about whatever&apos;s on your mind. <strong>Aura</strong> is here to listen without judgment. Ready to chat?
+            </p>
+            <button id="start-call-btn" onClick={handleStartCall} disabled={isLoading} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-full text-lg transition-transform transform hover:scale-105 disabled:bg-blue-400">
+              {isLoading ? 'Initializing...' : 'Start Conversation'}
+            </button>
+          </div>
+        )}
+
+        {screen === 'call' && (
+          <div id="call-screen" className="h-full w-full flex flex-col items-center justify-center relative">
+            <div className="w-full flex-grow flex items-center justify-center flex-col overflow-hidden relative">
+              <div id="ai-character-container" dangerouslySetInnerHTML={{ __html: character.svg }} style={{ width: '300px', height: '300px' }} ref={() => {
+                  if (typeof window !== "undefined") {
+                    mouthRef.current = document.getElementById('mouth') as SVGPathElement | null
+                  }
+              }}></div>
+              <div id="ai-status" className="absolute bottom-40 glass-card">
+                  {aiStatusMode === 'thinking' && <div className="dot-flashing"></div>}
+                  {aiStatusMode !== 'thinking' && <p id="ai-status-text">{aiStatus}</p>}
+              </div>
+            </div>
+            
+            <div id="user-video-container" className="glass-card">
+              <video id="user-video" ref={videoRef} autoPlay muted playsInline style={{ display: isCameraOn ? 'block' : 'none' }}></video>
+              <div id="camera-off-placeholder" className="icon-placeholder" style={{ display: isCameraOn ? 'none' : 'flex' }}>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-full h-full"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
+              </div>
             </div>
 
-            <Card className="h-[70vh] flex flex-col md:flex-row overflow-hidden shadow-2xl shadow-primary/10">
-              {/* "Video Call" Section */}
-              <div className="md:w-3/5 bg-secondary/40 flex flex-col items-center justify-center p-8 relative overflow-hidden">
-                   <motion.div 
-                        className="absolute w-64 h-64 bg-primary/20 rounded-full"
-                        animate={{
-                            scale: [1, 1.05, 1],
-                            opacity: [0.7, 0.9, 0.7],
-                        }}
-                        transition={{
-                            duration: 4,
-                            repeat: Infinity,
-                            ease: "easeInOut"
-                        }}
-                    />
-                     <motion.div 
-                        className="absolute w-80 h-80 bg-accent/10 rounded-full"
-                        animate={{
-                            scale: [1, 0.98, 1],
-                            opacity: [0.5, 0.8, 0.5],
-                        }}
-                        transition={{
-                            duration: 5,
-                            repeat: Infinity,
-                            ease: "easeInOut",
-                            delay: 1,
-                        }}
-                    />
-
-                   <Avatar className="w-48 h-48 mb-4 ring-4 ring-primary/20 relative z-10">
-                        <AvatarFallback className="text-6xl bg-primary/10 text-primary">
-                            <Bot />
-                        </AvatarFallback>
-                    </Avatar>
-                    <h2 className="text-2xl font-bold z-10">Aura</h2>
-                    <p className="text-muted-foreground z-10">Connecting...</p>
-
-                    {/* User's "Video" Preview */}
-                     <Card className="absolute bottom-4 right-4 w-32 h-24 bg-background/80 backdrop-blur-sm z-20 flex flex-col items-center justify-center">
-                        <User className="h-8 w-8 text-muted-foreground"/>
-                        <p className="text-xs text-muted-foreground mt-1">You</p>
-                    </Card>
+            <div className="w-full p-4 absolute bottom-0">
+              <div className="max-w-sm mx-auto flex justify-center items-center space-x-4 glass-card rounded-full p-2">
+                <button id="mic-btn" onClick={toggleMic} className={`control-btn ${isMicOn ? 'active' : ''}`} title="Mute/Unmute Mic">
+                    <svg id="mic-on-icon" xmlns="http://www.w3.org/2000/svg" className={`h-6 w-6 ${isMicOn ? '' : 'hidden'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-14 0m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
+                    <svg id="mic-off-icon" xmlns="http://www.w3.org/2000/svg" className={`h-6 w-6 ${isMicOn ? 'hidden' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.586 15.586a7 7 0 01-9.172-9.172l9.172 9.172zM12 18.75a.75.75 0 01-.75-.75V15a3 3 0 013-3h.75a.75.75 0 010 1.5h-.75a1.5 1.5 0 00-1.5 1.5v3a.75.75 0 01-.75-.75zM19 11a7 7 0 01-14 0m12.414 4.414a7.001 7.001 0 00-9.172-9.172"/></svg>
+                </button>
+                <button id="camera-btn" onClick={toggleCamera} className={`control-btn ${isCameraOn ? 'active' : ''}`} title="Camera On/Off">
+                    <svg id="camera-on-icon" xmlns="http://www.w3.org/2000/svg" className={`h-6 w-6 ${isCameraOn ? '' : 'hidden'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                    <svg id="camera-off-icon" xmlns="http://www.w3.org/2000/svg" className={`h-6 w-6 ${isCameraOn ? 'hidden' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.586 15.586a7 7 0 01-9.172-9.172l9.172 9.172zM15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                </button>
+                <button id="end-call-btn" onClick={handleEndCall} className="control-btn hang-up" title="End Conversation">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 8l6-6M2 2l20 20" /></svg>
+                </button>
               </div>
-              
-              {/* Chat Section */}
-              <div className="md:w-2/5 flex flex-col bg-secondary/20">
-                <CardContent className="p-0 flex-grow flex flex-col">
-                    <div className="p-4 border-b flex items-center gap-2">
-                        <MessageSquare className="h-5 w-5 text-muted-foreground" />
-                        <h3 className="font-semibold">Conversation</h3>
-                    </div>
-                    <ScrollArea className="flex-1 my-2 px-4" ref={scrollAreaRef}>
-                    <div className="space-y-4 pr-4">
-                        {messages.map((message, index) => (
-                        <div
-                            key={index}
-                            className={cn(
-                            'flex items-start gap-2 text-xs',
-                            message.role === 'user' ? 'justify-end' : 'justify-start'
-                            )}
-                        >
-                            {message.role === 'model' && (
-                            <Avatar className="h-6 w-6">
-                                <AvatarFallback className="text-xs"><Bot className="h-3 w-3" /></AvatarFallback>
-                            </Avatar>
-                            )}
-                            <div
-                            className={cn(
-                                'max-w-md rounded-lg p-2',
-                                message.role === 'user'
-                                ? 'bg-primary text-primary-foreground'
-                                : 'bg-background'
-                            )}
-                            >
-                            {message.text}
-                            </div>
-                        </div>
-                        ))}
-                        {isPending && (
-                        <div className="flex items-start gap-2 justify-start">
-                            <Avatar className="h-6 w-6">
-                                <AvatarFallback className="text-xs"><Bot className="h-3 w-3" /></AvatarFallback>
-                            </Avatar>
-                            <div className="bg-background rounded-lg p-2 flex items-center">
-                                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground"/>
-                            </div>
-                        </div>
-                        )}
-                    </div>
-                    </ScrollArea>
-
-                    <div className="border-t p-2">
-                    <div className="flex w-full items-center gap-2">
-                        <Input
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                        placeholder="Type a message..."
-                        disabled={isPending}
-                        className="text-xs"
-                        />
-                        <Button onClick={handleSend} disabled={isPending || !input.trim()} size="sm">
-                        <Send className="h-3 w-3" />
-                        </Button>
-                    </div>
-                    </div>
-                </CardContent>
-              </div>
-            </Card>
-
-            <div className="flex justify-center items-center gap-4 mt-4">
-                <Button variant={isMuted ? "secondary" : "outline"} size="icon" onClick={() => setIsMuted(!isMuted)}>
-                   {isMuted ? <MicOff /> : <Mic />}
-                </Button>
-                 <Button variant={isVideoOff ? "secondary" : "outline"} size="icon" onClick={() => setIsVideoOff(!isVideoOff)}>
-                    {isVideoOff ? <VideoOff /> : <Video />}
-                </Button>
-                <Button variant="destructive" size="lg" className="rounded-full px-8" onClick={() => router.push('/mode-selection')}>
-                    <PhoneOff className="mr-2" /> End Call
-                </Button>
             </div>
-        </div>
-      </main>
-    </div>
+          </div>
+        )}
+      </div>
+      
+      <style jsx global>{`
+        body {
+            background-color: #ccd8f1;
+            background-image:
+                radial-gradient(circle 50px at 20% 20%, rgba(255, 255, 255, 0.3), transparent 70%),
+                radial-gradient(circle 40px at 80% 30%, rgba(255, 255, 255, 0.25), transparent 70%),
+                radial-gradient(circle 60px at 50% 80%, rgba(255, 255, 255, 0.2), transparent 70%);
+            background-repeat: no-repeat;
+            background-size: cover;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        
+        ::-webkit-scrollbar { display: none; }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.25) !important;
+            backdrop-filter: blur(14px) saturate(150%);
+            -webkit-backdrop-filter: blur(14px) saturate(150%);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+        }
+
+        #user-video-container {
+            position: absolute;
+            bottom: 7rem;
+            right: 2rem;
+            width: 200px;
+            height: 150px;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #user-video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+        .icon-placeholder { width: 50%; height: 50%; color: #4b5563; }
+
+        .control-btn {
+            background-color: rgba(255, 255, 255, 0.3);
+            border-radius: 9999px;
+            width: 52px; height: 52px;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s ease-in-out;
+            color: #374151; /* text-gray-700 */
+        }
+        .control-btn:hover { background-color: rgba(255, 255, 255, 0.5); transform: translateY(-2px); }
+        .control-btn.active { background-color: #3B82F6; color: white; }
+        .control-btn.hang-up { background-color: #ef4444; color: white; }
+        .control-btn.hang-up:hover { background-color: #dc2626; }
+
+        #ai-status {
+            min-height: 5rem;
+            max-width: 80%;
+            margin: 0 auto;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem;
+            text-align: center;
+            color: #1f2937; /* text-gray-800 */
+            transition: all 0.3s ease;
+        }
+
+        .dot-flashing {
+            position: relative; width: 10px; height: 10px; border-radius: 5px;
+            background-color: #3B82F6; color: #3B82F6;
+            animation: dotFlashing 1s infinite linear alternate;
+            animation-delay: .5s;
+            display: inline-block; margin: 0 5px;
+        }
+        .dot-flashing::before, .dot-flashing::after {
+            content: ''; display: inline-block; position: absolute; top: 0;
+        }
+        .dot-flashing::before {
+            left: -15px; width: 10px; height: 10px; border-radius: 5px; background-color: #3B82F6; color: #3B82F6;
+            animation: dotFlashing 1s infinite alternate; animation-delay: 0s;
+        }
+        .dot-flashing::after {
+            left: 15px; width: 10px; height: 10px; border-radius: 5px; background-color: #3B82F6; color: #3B82F6;
+            animation: dotFlashing 1s infinite alternate; animation-delay: 1s;
+        }
+        @keyframes dotFlashing {
+            0% { background-color: #3B82F6; }
+            50%, 100% { background-color: #93c5fd; }
+        }
+      `}</style>
+    </>
   );
 }
