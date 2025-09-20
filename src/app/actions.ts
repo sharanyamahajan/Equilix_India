@@ -5,6 +5,7 @@ import { analyzeWellness } from '@/ai/flows/analyze-wellness';
 import type { WellnessSurveyInput } from '@/ai/schemas/wellness';
 import { detectEmotion } from '@/ai/flows/detect-emotion';
 import { aiFriend } from '@/ai/flows/ai-friend';
+import { createAITwin as createAITwinFlow, type CreateAITwinInput } from '@/ai/flows/create-ai-twin';
 
 export async function getHtmlImprovements(htmlContent: string) {
   if (!htmlContent) {
@@ -44,16 +45,26 @@ export async function getEmotionDetection(imageDataUri: string) {
   }
 }
 
-export async function getAIFriendResponse(message: string) {
+export async function getAIFriendResponse(message: string, systemPrompt?: string) {
   if (!message) {
     return { success: false, error: 'Message cannot be empty.' };
   }
 
   try {
-    const result = await aiFriend({ message });
+    const result = await aiFriend({ message, systemPrompt });
     return { success: true, data: result };
   } catch (error) {
     console.error('AI Error:', error);
     return { success: false, error: 'Failed to get response from AI friend.' };
+  }
+}
+
+export async function createAITwin(input: CreateAITwinInput) {
+  try {
+    const result = await createAITwinFlow(input);
+    return { success: true, data: result };
+  } catch (error) {
+    console.error('AI Error:', error);
+    return { success: false, error: 'Failed to create AI twin from the AI model.' };
   }
 }

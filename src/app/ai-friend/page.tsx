@@ -113,6 +113,7 @@ export default function AiFriendPage() {
     const [isCameraOn, setIsCameraOn] = useState(true);
     const [aiStatus, setAiStatus] = useState<'listening' | 'thinking' | 'speaking'>('speaking');
     const [aiStatusText, setAiStatusText] = useState("Hi there! What's on your mind today?");
+    const [aiSystemPrompt, setAiSystemPrompt] = useState<string | undefined>(undefined);
     
     const localStreamRef = useRef<MediaStream | null>(null);
     const userVideoRef = useRef<HTMLVideoElement>(null);
@@ -120,6 +121,14 @@ export default function AiFriendPage() {
     const isAIThinkingRef = useRef(false);
 
     const [isPending, startTransition] = useTransition();
+
+    useEffect(() => {
+        // On component mount, check for a custom AI twin prompt in localStorage
+        const customPrompt = localStorage.getItem('aiTwinSystemPrompt');
+        if (customPrompt) {
+            setAiSystemPrompt(customPrompt);
+        }
+    }, []);
 
     const startSpeechRecognition = useCallback(() => {
         if (recognitionRef.current && !isAIThinkingRef.current) {
@@ -189,7 +198,7 @@ export default function AiFriendPage() {
                     setAiStatusText(''); // Clear text while thinking
                     
                     startTransition(async () => {
-                        const response = await getAIFriendResponse(finalTranscript.trim());
+                        const response = await getAIFriendResponse(finalTranscript.trim(), aiSystemPrompt);
                         if (response.success && response.data) {
                             speak(response.data.reply);
                         } else {
@@ -223,7 +232,7 @@ export default function AiFriendPage() {
             }
             window.speechSynthesis.cancel();
         };
-    }, [isMicOn, speak, startSpeechRecognition, stopSpeechRecognition]);
+    }, [isMicOn, speak, startSpeechRecognition, stopSpeechRecognition, aiSystemPrompt]);
 
     const startMedia = async () => {
         try {

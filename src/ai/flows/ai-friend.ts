@@ -6,10 +6,11 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { z } from 'zod';
 
 const AIFriendInputSchema = z.object({
   message: z.string().describe("The user's message to the AI friend."),
+  systemPrompt: z.string().optional().describe("An optional system prompt to define the AI's personality. If not provided, a default persona will be used."),
 });
 export type AIFriendInput = z.infer<typeof AIFriendInputSchema>;
 
@@ -22,15 +23,7 @@ export async function aiFriend(input: AIFriendInput): Promise<AIFriendOutput> {
   return aiFriendFlow(input);
 }
 
-const prompt = ai.definePrompt({
-  name: 'aiFriendPrompt',
-  input: { schema: AIFriendInputSchema },
-  output: { schema: AIFriendOutputSchema },
-  prompt: `You are Aura, a professional and empathetic AI companion. Your purpose is to provide a safe, supportive space for users. Listen carefully, offer thoughtful perspectives, and gently guide them to reflect on their feelings. Do not give medical advice. Keep your responses concise, clear, and calm.
-
-User's message: "{{{message}}}"
-`,
-});
+const defaultSystemPrompt = `You are Aura, a professional and empathetic AI companion. Your purpose is to provide a safe, supportive space for users. Listen carefully, offer thoughtful perspectives, and gently guide them to reflect on their feelings. Do not give medical advice. Keep your responses concise, clear, and calm.`;
 
 const aiFriendFlow = ai.defineFlow(
   {
@@ -38,8 +31,23 @@ const aiFriendFlow = ai.defineFlow(
     inputSchema: AIFriendInputSchema,
     outputSchema: AIFriendOutputSchema,
   },
-  async input => {
-    const { output } = await prompt(input);
+  async ({ message, systemPrompt }) => {
+    const finalSystemPrompt = systemPrompt || defaultSystemPrompt;
+
+    const prompt = ai.definePrompt({
+      name: 'aiFriendPrompt',
+      prompt: `${finalSystemPrompt}
+
+User's message: "{{{message}}}"`,
+      input: {
+        schema: z.object({ message: z.string() })
+      },
+      output: {
+        schema: AIFriendOutputSchema
+      }
+    });
+
+    const { output } = await prompt({ message });
     return output!;
   }
 );
