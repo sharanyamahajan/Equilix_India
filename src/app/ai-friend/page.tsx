@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useRef, useEffect, useCallback, useTransition } from 'react';
@@ -47,7 +48,7 @@ const AuraAvatar = ({ aiStatus }: { aiStatus: 'listening' | 'thinking' | 'speaki
                 clearInterval(lipSyncInterval);
             }
         };
-    }, [aiStatus]);
+    }, [aiStatus, mouthShapes.a, mouthShapes.b, mouthShapes.c, mouthShapes.d]);
     
      useEffect(() => {
         const eyes = eyesRef.current;
@@ -217,7 +218,7 @@ export default function AiFriendPage() {
             };
             
             recognition.onerror = (event) => {
-                if (event.error !== 'no-speech') console.error('Speech recognition error:', event.error);
+                if (event.error !== 'no-speech' && event.error !== 'aborted') console.error('Speech recognition error:', event.error);
                  if (event.error === 'not-allowed') {
                     alert("Microphone access was denied. Please allow microphone access to talk to the AI friend.")
                     setIsMicOn(false);
@@ -418,3 +419,5 @@ export default function AiFriendPage() {
         </div>
     );
 }
+
+    
