@@ -1,7 +1,6 @@
 import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
-import { AppFooter } from '@/components/app/app-footer';
 import { NavBar } from '@/components/app/nav-bar';
 
 
@@ -16,7 +15,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className="dark">
       <head>
         <link rel="icon" href="/logo.svg" type="image/svg+xml" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -28,7 +27,6 @@ export default function RootLayout({
         <div className="flex-grow">
           {children}
         </div>
-        <AppFooter />
         <Toaster />
       </body>
     </html>
