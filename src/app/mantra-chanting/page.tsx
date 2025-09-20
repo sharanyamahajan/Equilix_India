@@ -19,7 +19,7 @@ import { Label } from '@/components/ui/label';
 const mantras = [
     { text: 'Om', keyword: 'om' },
     { text: 'Om Shanti Om', keyword: 'shanti' },
-    { text: 'So Hum', keyword: 'hum' },
+    { text: 'So Hum', keyword: 'soham' }, // More phonetic
     { text: 'Aham Prema', keyword: 'prema' },
 ];
 
@@ -41,45 +41,57 @@ export default function MantraChantingPage() {
     
     const recognitionRef = useRef<SpeechRecognition | null>(null);
     const audioRef = useRef<HTMLAudioElement | null>(null);
-    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-    
+    const animationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const isCountingRef = useRef(true);
+
     useEffect(() => {
         setIsClient(true);
     }, []);
 
-    const triggerAnimation = useCallback(() => {
+    const triggerAnimationAndHaptics = useCallback(() => {
         setIsAnimating(true);
-        if (timeoutRef.current) clearTimeout(timeoutRef.current);
-        timeoutRef.current = setTimeout(() => setIsAnimating(false), 1000);
-    }, []);
-
-    const handleMantraRecognized = useCallback(() => {
-        setChantCount(prev => prev + 1);
-        triggerAnimation();
         if (hapticsEnabled && 'vibrate' in navigator) {
             navigator.vibrate(100);
         }
-    }, [hapticsEnabled, triggerAnimation]);
+        if (animationTimeoutRef.current) clearTimeout(animationTimeoutRef.current);
+        animationTimeoutRef.current = setTimeout(() => setIsAnimating(false), 1000);
+    }, [hapticsEnabled]);
 
+
+    const handleMantraRecognized = useCallback(() => {
+        if (!isCountingRef.current) return;
+
+        setChantCount(prev => prev + 1);
+        triggerAnimationAndHaptics();
+
+        isCountingRef.current = false;
+        if (debounceTimeoutRef.current) clearTimeout(debounceTimeoutRef.current);
+        debounceTimeoutRef.current = setTimeout(() => {
+            isCountingRef.current = true;
+        }, 1000); // 1-second cooldown
+    }, [triggerAnimationAndHaptics]);
+
+    
     const startListening = useCallback(() => {
-        if (recognitionRef.current) {
+        if (recognitionRef.current && !isListening) {
             try {
                 recognitionRef.current.start();
                 setIsListening(true);
             } catch (e) {
                 console.error("Could not start recognition:", e);
-                // It might already be started.
+                // It might already be listening
                 setIsListening(true);
             }
         }
-    }, []);
+    }, [isListening]);
     
     const stopListening = useCallback(() => {
-        if (recognitionRef.current) {
+        if (recognitionRef.current && isListening) {
             recognitionRef.current.stop();
             setIsListening(false);
         }
-    }, []);
+    }, [isListening]);
 
     useEffect(() => {
         if (!isClient) return;
@@ -92,22 +104,16 @@ export default function MantraChantingPage() {
 
         const recognition = new SpeechRecognition();
         recognition.continuous = true;
-        recognition.interimResults = true; // Use interim results for faster feedback
+        recognition.interimResults = true;
         recognition.lang = 'en-US';
 
         recognition.onresult = (event) => {
-            const transcript = Array.from(event.results)
-                .map(result => result[0])
-                .map(result => result.transcript)
-                .join('')
-                .trim()
-                .toLowerCase();
+            const last = event.results[event.results.length - 1];
+            const transcript = last[0].transcript.trim().toLowerCase();
 
-            if (event.results[event.results.length - 1].isFinal) {
-                 if (transcript.includes(selectedMantra.keyword)) {
-                    handleMantraRecognized();
-                 }
-                 // Once final result is processed, you could restart or just let it continue
+            if (transcript.includes(selectedMantra.keyword)) {
+                handleMantraRecognized();
+                // We don't need to do anything with the final result, interim is enough for this use case
             }
         };
 
@@ -116,15 +122,18 @@ export default function MantraChantingPage() {
             if (event.error === 'not-allowed') {
                 alert("Microphone access was denied. Please allow microphone access to count chants.");
                 setIsListening(false);
+            } else if (event.error !== 'no-speech' && event.error !== 'aborted'){
+                // Try to restart on other errors
+                 if (isListening) {
+                    setTimeout(() => startListening(), 100);
+                }
             }
         };
         
         recognition.onend = () => {
            if (isListening) {
-             // If it stops for any reason and we still want to listen, restart it.
-             startListening();
-           } else {
-             setIsListening(false);
+             // If it stops for any reason (like silence) and we still want to listen, restart it.
+             setTimeout(() => startListening(), 50);
            }
         };
 
@@ -137,7 +146,8 @@ export default function MantraChantingPage() {
                 recognitionRef.current.onend = null;
                 recognitionRef.current.stop();
             }
-            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+            if (animationTimeoutRef.current) clearTimeout(animationTimeoutRef.current);
+            if (debounceTimeoutRef.current) clearTimeout(debounceTimeoutRef.current);
         }
 
     }, [isClient, selectedMantra.keyword, handleMantraRecognized, isListening, startListening]);
@@ -145,11 +155,6 @@ export default function MantraChantingPage() {
     useEffect(() => {
         if (audioRef.current) {
             if (selectedBackground.sound && isListening) {
-                 // The audio files don't exist, so this will throw an error.
-                 // Commenting out to prevent crashes.
-                 // audioRef.current.src = selectedBackground.sound;
-                 // audioRef.current.loop = true;
-                 // audioRef.current.play().catch(e => console.error("Audio play failed:", e));
                  console.log(`Audio playback for ${selectedBackground.name} is disabled as sound files are not present.`);
             } else {
                 audioRef.current.pause();
@@ -175,6 +180,12 @@ export default function MantraChantingPage() {
         } else {
             startListening();
         }
+    }
+    
+     const resetCounter = () => {
+        setChantCount(0);
+        isCountingRef.current = true;
+        if (debounceTimeoutRef.current) clearTimeout(debounceTimeoutRef.current);
     }
 
     return (
@@ -233,7 +244,7 @@ export default function MantraChantingPage() {
                                     {hapticsEnabled ? <ZapOff className="h-6 w-6" /> : <Zap className="h-6 w-6" />}
                                 </button>
                             )}
-                             <Button variant="ghost" size="icon" onClick={() => setChantCount(0)} className="control-btn" title="Reset Count">
+                             <Button variant="ghost" size="icon" onClick={resetCounter} className="control-btn" title="Reset Count">
                                 <X size={20} />
                             </Button>
                         </div>
@@ -254,7 +265,7 @@ export default function MantraChantingPage() {
                                 const newMantra = mantras.find(m => m.text === value);
                                 if (newMantra) {
                                     setSelectedMantra(newMantra);
-                                    setChantCount(0);
+                                    resetCounter();
                                 }
                             }}
                         >
