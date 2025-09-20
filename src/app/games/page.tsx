@@ -31,8 +31,8 @@ export default function GamesPage() {
                         <Card className="bg-secondary/50 p-6 flex flex-col justify-between">
                         <div className="flex justify-between items-start">
                             <div>
-                            <h3 className="font-semibold text-lg mb-2">Mantra Chanting</h3>
-                            <p className="text-sm text-muted-foreground mb-4">Focus your mind with meditative chanting.</p>
+                            <h3 className="font-semibold text-lg mb-2">Mantra Counter</h3>
+                            <p className="text-sm text-muted-foreground mb-4">Focus your mind with a voice-activated chant counter.</p>
                             </div>
                             <Wind className="w-8 h-8 text-accent hidden sm:block" />
                         </div>
