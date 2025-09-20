@@ -47,17 +47,19 @@ const aiFriendFlow = ai.defineFlow(
     });
 
     const choice = response.candidates[0];
-    const part = choice.message.content[0];
+    
+    const toolCalls = choice.message.content.filter(part => part.type === 'toolRequest').map(part => {
+        if(part.type !== 'toolRequest') throw new Error(); // Should not happen
+        return { toolName: part.toolRequest.name, args: part.toolRequest.input };
+    });
 
-    if (part.type === 'toolRequest') {
-      return {
-        reply: '', // No direct reply when a tool is called
-        toolCalls: [{ toolName: part.toolRequest.name, args: part.toolRequest.input }],
-      };
-    }
-
-    const reply = part.text ?? "I'm not sure what to say. Could you try rephrasing?";
-
-    return { reply };
+    const textReply = choice.message.content.filter(part => part.type === 'text').map(part => part.type === 'text' ? part.text : '').join('').trim();
+    
+    const reply = textReply.length > 0 ? textReply : "I'm not sure what to say. Could you try rephrasing?";
+    
+    return { 
+        reply: reply,
+        toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+    };
   }
 );
