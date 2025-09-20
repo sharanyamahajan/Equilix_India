@@ -1,13 +1,11 @@
-import { EquilixLogo } from '@/components/icons/equilix-logo';
-
 export function AppHeader() {
   return (
     <header className="py-8 bg-transparent">
       <div className="container mx-auto px-4 text-center">
-        <div className="flex items-center justify-center gap-3 mb-4">
-          <EquilixLogo className="w-auto h-12 text-primary" />
-        </div>
-        <p className="text-md md:text-lg text-muted-foreground max-w-2xl mx-auto font-light">
+         <h1 className="text-4xl md:text-5xl font-headline font-bold tracking-tight text-foreground">
+            Good Morning
+         </h1>
+        <p className="text-md md:text-lg text-muted-foreground max-w-2xl mx-auto mt-2 font-light">
           Your personal space for daily reflection, gratitude, and mental clarity.
         </p>
       </div>

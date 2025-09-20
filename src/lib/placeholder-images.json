@@ -1,3 +1,28 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "ai-companion",
+      "description": "Abstract network of glowing nodes representing artificial intelligence.",
+      "imageUrl": "https://picsum.photos/seed/ai-companion/800/600",
+      "imageHint": "glowing abstract"
+    },
+    {
+      "id": "breathing-exercise",
+      "description": "A calm, serene landscape with misty mountains at sunrise.",
+      "imageUrl": "https://picsum.photos/seed/breathing/800/600",
+      "imageHint": "serene landscape"
+    },
+    {
+      "id": "emotion-check-in",
+      "description": "A close-up of a human eye with digital overlays, symbolizing analysis.",
+      "imageUrl": "https://picsum.photos/seed/emotion-scan/800/600",
+      "imageHint": "human eye"
+    },
+    {
+      "id": "wellness-journal",
+      "description": "An open journal and a pen sitting on a rustic wooden table next to a cup of tea.",
+      "imageUrl": "https://picsum.photos/seed/journaling/800/600",
+      "imageHint": "open journal"
+    }
+  ]
 }

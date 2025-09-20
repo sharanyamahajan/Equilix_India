@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Camera, HeartPulse, User, Bot, Wind, Menu, X, Info, BrainCircuit, ChevronDown, Gamepad2 } from 'lucide-react';
+import { Camera, HeartPulse, User, Bot, Wind, Menu, X, Info, BrainCircuit, ChevronDown, Gamepad2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { EquilixLogo } from '@/components/icons/equilix-logo';
 import { useState, useEffect } from 'react';
@@ -16,7 +16,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 
 const navLinks = [
-  { href: '/', label: 'Home', icon: Home },
   { 
     label: 'Relaxation', 
     icon: Wind,
