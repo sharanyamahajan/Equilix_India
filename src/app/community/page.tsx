@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Users, MessageSquare, Heart, Shield } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
 
 const forumCategories = [
     { title: 'General Discussion', description: 'Talk about anything on your mind.', icon: MessageSquare },
@@ -17,6 +18,8 @@ const supportGroups = [
     { title: 'Student & Academic Stress', imageHint: 'books library' },
     { title: 'Workplace Burnout', imageHint: 'office stress' },
 ];
+
+const whatsAppGroupLink = "https://chat.whatsapp.com/BUwjfL9ee6g7rWQ3h5hSen?mode=ems_wa_t";
 
 export default function CommunityPage() {
     return (
@@ -38,17 +41,19 @@ export default function CommunityPage() {
                     </CardHeader>
                     <CardContent className="grid md:grid-cols-3 gap-4">
                         {forumCategories.map(cat => (
-                            <Card key={cat.title} className="hover:bg-secondary/50 transition-colors">
-                                <CardHeader>
-                                    <div className="flex items-center gap-3">
-                                        <cat.icon className="w-6 h-6 text-primary"/>
-                                        <CardTitle className="text-lg">{cat.title}</CardTitle>
-                                    </div>
-                                </CardHeader>
-                                <CardContent>
-                                    <p className="text-sm text-muted-foreground">{cat.description}</p>
-                                </CardContent>
-                            </Card>
+                            <Link key={cat.title} href={whatsAppGroupLink} target="_blank" rel="noopener noreferrer">
+                                <Card className="hover:bg-secondary/50 transition-colors h-full">
+                                    <CardHeader>
+                                        <div className="flex items-center gap-3">
+                                            <cat.icon className="w-6 h-6 text-primary"/>
+                                            <CardTitle className="text-lg">{cat.title}</CardTitle>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <p className="text-sm text-muted-foreground">{cat.description}</p>
+                                    </CardContent>
+                                </Card>
+                            </Link>
                         ))}
                     </CardContent>
                 </Card>
@@ -72,7 +77,9 @@ export default function CommunityPage() {
                                 <div className="absolute inset-0 bg-black/50 flex items-end p-4">
                                     <h3 className="text-white font-bold text-lg">{group.title}</h3>
                                 </div>
-                                <Button className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity" size="sm">Join</Button>
+                                <Button asChild className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity" size="sm">
+                                    <Link href={whatsAppGroupLink} target="_blank" rel="noopener noreferrer">Join</Link>
+                                </Button>
                             </div>
                         ))}
                     </CardContent>
