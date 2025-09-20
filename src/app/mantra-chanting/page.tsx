@@ -5,7 +5,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Zap, ZapOff, X, Mic, MicOff } from 'lucide-react';
+import { Zap, ZapOff, X, Mic, MicOff, Play, CheckCircle, Repeat } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import {
@@ -24,7 +24,10 @@ const mantras = [
     { text: 'Aham Prema', keyword: 'prema' },
 ];
 
+type Screen = 'selection' | 'learning' | 'chanting' | 'completion';
+
 export default function MantraChantingPage() {
+    const [screen, setScreen] = useState<Screen>('selection');
     const [isClient, setIsClient] = useState(false);
     const [isListening, setIsListening] = useState(false);
     const [chantCount, setChantCount] = useState(0);
@@ -37,8 +40,17 @@ export default function MantraChantingPage() {
 
     useEffect(() => {
         setIsClient(true);
+        // Cleanup on component unmount
+        return () => {
+            if (recognitionRef.current) {
+               recognitionRef.current.stop();
+            }
+            if (animationTimeoutRef.current) {
+                clearTimeout(animationTimeoutRef.current);
+            }
+        }
     }, []);
-
+    
     const triggerAnimationAndHaptics = useCallback(() => {
         setIsAnimating(true);
         if (hapticsEnabled && 'vibrate' in navigator) {
@@ -61,6 +73,8 @@ export default function MantraChantingPage() {
         }
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        
+        // Stop any existing recognition instance
         if (recognitionRef.current) {
             recognitionRef.current.onresult = null;
             recognitionRef.current.onerror = null;
@@ -75,21 +89,19 @@ export default function MantraChantingPage() {
         recognition.interimResults = false; // Only get final results
         recognition.lang = 'en-US';
 
-        let lastChantTime = 0;
         let finalTranscript = '';
-
+        
         recognition.onresult = (event) => {
+            let currentTranscript = '';
             for (let i = event.resultIndex; i < event.results.length; ++i) {
                 if (event.results[i].isFinal) {
-                    finalTranscript += event.results[i][0].transcript;
+                    currentTranscript += event.results[i][0].transcript;
                 }
             }
 
-            const now = Date.now();
-            if (finalTranscript.toLowerCase().includes(selectedMantra.keyword) && (now - lastChantTime > 1000)) {
-                lastChantTime = now;
+            if (currentTranscript.toLowerCase().includes(selectedMantra.keyword)) {
                 handleMantraRecognized();
-                finalTranscript = ''; // Reset transcript after recognition
+                // We don't reset the transcript here as continuous recognition handles it.
             }
         };
 
@@ -107,9 +119,9 @@ export default function MantraChantingPage() {
         recognition.onend = () => {
            if (isListening) {
              try {
-                recognition.start()
+                if(recognitionRef.current) recognitionRef.current.start()
              } catch(e) {
-                // Already started
+                // Already started or other error
              }
            }
         };
@@ -124,47 +136,173 @@ export default function MantraChantingPage() {
     }, [isClient, selectedMantra.keyword, handleMantraRecognized, isListening]);
     
     const stopListening = useCallback(() => {
+        setIsListening(false);
         if (recognitionRef.current) {
             recognitionRef.current.stop();
             recognitionRef.current = null;
         }
-        setIsListening(false);
-    }, []);
-    
-    useEffect(() => {
-        // Cleanup on component unmount
-        return () => {
-            if (recognitionRef.current) {
-               recognitionRef.current.stop();
-            }
-            if (animationTimeoutRef.current) {
-                clearTimeout(animationTimeoutRef.current);
-            }
-        }
     }, []);
 
-
-    const toggleHaptics = () => {
-        if ('vibrate' in navigator) {
-            setHapticsEnabled(prev => {
-                if (!prev) navigator.vibrate(50);
-                return !prev;
-            });
-        } else if (isClient) {
-            alert("Haptic feedback is not supported on your device.");
+    const handleSelectMantra = (value: string) => {
+        const newMantra = mantras.find(m => m.text === value);
+        if (newMantra) {
+            setSelectedMantra(newMantra);
+            setChantCount(0);
         }
     };
     
-    const toggleListening = () => {
-       if (isListening) {
-           stopListening();
-       } else {
-           startListening();
-       }
+    const speakMantra = () => {
+        if (!isClient) return;
+        const utterance = new SpeechSynthesisUtterance(selectedMantra.text);
+        window.speechSynthesis.speak(utterance);
     }
-    
-     const resetCounter = () => {
+
+    const resetState = () => {
+        stopListening();
         setChantCount(0);
+        setScreen('selection');
+    }
+
+    const MainContent = () => {
+        switch (screen) {
+            case 'selection':
+                return (
+                    <motion.div 
+                        key="selection"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                    >
+                        <Card className="w-80 shadow-xl bg-background/80 backdrop-blur-sm">
+                            <CardHeader>
+                                <CardTitle className="text-xl">Choose Your Mantra</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                <div className="grid w-full items-center gap-1.5">
+                                    <Label htmlFor="mantra-select">Mantra</Label>
+                                    <Select value={selectedMantra.text} onValueChange={handleSelectMantra}>
+                                        <SelectTrigger id="mantra-select"><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            {mantras.map(m => <SelectItem key={m.text} value={m.text}>{m.text}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <Button onClick={() => setScreen('learning')} className="w-full">Start Learning</Button>
+                            </CardContent>
+                        </Card>
+                    </motion.div>
+                );
+            
+            case 'learning':
+                 return (
+                    <motion.div 
+                        key="learning"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        className="text-center"
+                    >
+                        <Card className="w-80 shadow-xl bg-background/80 backdrop-blur-sm">
+                            <CardHeader>
+                                <CardTitle className="text-xl">Learn the Mantra</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                <p className="text-4xl font-bold text-primary font-headline">{selectedMantra.text}</p>
+                                <p className="text-muted-foreground">Listen to the pronunciation, then practice repeating it.</p>
+                                <Button onClick={speakMantra} variant="outline" size="lg" className="w-full">
+                                    <Play className="mr-2 h-5 w-5" /> Listen
+                                </Button>
+                                <Button onClick={() => { setChantCount(0); setScreen('chanting'); }} size="lg" className="w-full">
+                                    Begin Chanting <CheckCircle className="ml-2 h-5 w-5" />
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    </motion.div>
+                );
+
+            case 'chanting':
+                return (
+                     <motion.div
+                        key="chanting"
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        className="w-full h-full flex flex-col items-center justify-center p-4 text-center"
+                    >
+                        <div className="relative w-64 h-64 md:w-96 md:h-96 flex items-center justify-center mb-8">
+                            <motion.div
+                                className="absolute w-full h-full rounded-full bg-primary/10"
+                                animate={{ scale: isAnimating ? 1.1 : 1, opacity: isAnimating ? 0.8 : 0.4 }}
+                                transition={{ duration: 1, ease: 'easeOut' }}
+                            />
+                            <motion.div
+                                className="absolute w-2/3 h-2/3 rounded-full bg-primary/20"
+                                animate={{ scale: isAnimating ? 1.2 : 1, opacity: isAnimating ? 1 : 0.6 }}
+                                transition={{ duration: 1, ease: 'easeOut' }}
+                            />
+
+                            <div className="z-10 text-center">
+                                <p className="text-7xl md:text-8xl font-bold text-foreground tracking-tighter">
+                                    {chantCount}
+                                </p>
+                            </div>
+                        </div>
+
+                        <p className="text-3xl md:text-4xl font-headline text-primary mb-12 h-12 text-center">
+                            {selectedMantra.text}
+                        </p>
+                        
+                        <div className="absolute bottom-4 w-full p-4">
+                             <div className="max-w-xs mx-auto flex justify-center items-center space-x-4 glass-card rounded-full p-2">
+                                 <button onClick={toggleListening} className={cn("control-btn", { 'active': isListening })} title={isListening ? "Stop Listening" : "Start Listening"}>
+                                    {isListening ? <Mic className="h-6 w-6" /> : <MicOff className="h-6 w-6" />}
+                                </button>
+                                 {isClient && 'vibrate' in navigator && (
+                                    <button onClick={() => setHapticsEnabled(!hapticsEnabled)} className={cn("control-btn", { 'active': hapticsEnabled })} title={hapticsEnabled ? "Disable Haptics" : "Enable Haptics"}>
+                                        {hapticsEnabled ? <ZapOff className="h-6 w-6" /> : <Zap className="h-6 w-6" />}
+                                    </button>
+                                )}
+                                 <button onClick={() => { stopListening(); setScreen('completion'); }} className="control-btn hang-up" title="Finish Session">
+                                    <CheckCircle size={24} />
+                                </button>
+                            </div>
+                        </div>
+
+                    </motion.div>
+                );
+
+            case 'completion':
+                 return (
+                    <motion.div 
+                        key="completion"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        className="text-center"
+                    >
+                        <Card className="w-80 shadow-xl bg-background/80 backdrop-blur-sm">
+                            <CardHeader>
+                                <CardTitle className="text-xl">Session Complete!</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                               <p className="text-muted-foreground">You completed</p>
+                                <p className="text-6xl font-bold text-primary">{chantCount}</p>
+                                <p className="text-muted-foreground">repetitions of "{selectedMantra.text}".</p>
+
+                                <div className="flex gap-2">
+                                <Button onClick={() => { setChantCount(0); setScreen('chanting'); }} variant="outline" size="lg" className="w-full">
+                                    <Repeat className="mr-2 h-5 w-5" /> Again
+                                </Button>
+                                <Button onClick={resetState} size="lg" className="w-full">
+                                    Done
+                                </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </motion.div>
+                );
+
+        }
     }
 
     return (
@@ -179,97 +317,9 @@ export default function MantraChantingPage() {
                     </Button>
                  </Link>
             </div>
-           
-            <AnimatePresence>
-                <motion.div
-                    key="main-content"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="w-full h-full flex flex-col items-center justify-center p-4"
-                >
-                    <div className="relative w-64 h-64 md:w-96 md:h-96 flex items-center justify-center mb-8">
-                        <motion.div
-                            className="absolute w-full h-full rounded-full bg-primary/10"
-                            animate={{ scale: isAnimating ? 1.1 : 1, opacity: isAnimating ? 0.8 : 0.4 }}
-                            transition={{ duration: 1, ease: 'easeOut' }}
-                        />
-                        <motion.div
-                            className="absolute w-2/3 h-2/3 rounded-full bg-primary/20"
-                            animate={{ scale: isAnimating ? 1.2 : 1, opacity: isAnimating ? 1 : 0.6 }}
-                            transition={{ duration: 1, ease: 'easeOut' }}
-                        />
 
-                        <div className="z-10 text-center">
-                            <p className="text-5xl md:text-7xl font-bold text-foreground tracking-tighter">
-                                {chantCount}
-                            </p>
-                            <p className="text-sm text-muted-foreground">REPETITIONS</p>
-                        </div>
-                    </div>
-
-                    <p className="text-3xl md:text-4xl font-headline text-primary mb-12 h-12 text-center">
-                        {selectedMantra.text}
-                    </p>
-
-                    <div className="w-full p-4 absolute bottom-0">
-                        <div className="max-w-xs mx-auto flex justify-center items-center space-x-4 glass-card rounded-full p-2">
-                             <button onClick={toggleListening} className={cn("control-btn", { 'active': isListening })} title={isListening ? "Stop Listening" : "Start Listening"}>
-                                {isListening ? <Mic className="h-6 w-6" /> : <MicOff className="h-6 w-6" />}
-                            </button>
-                             {isClient && 'vibrate' in navigator && (
-                                <button onClick={toggleHaptics} className={cn("control-btn", { 'active': hapticsEnabled })} title={hapticsEnabled ? "Disable Haptics" : "Enable Haptics"}>
-                                    {hapticsEnabled ? <ZapOff className="h-6 w-6" /> : <Zap className="h-6 w-6" />}
-                                </button>
-                            )}
-                             <Button variant="ghost" size="icon" onClick={resetCounter} className="control-btn" title="Reset Count">
-                                <X size={20} />
-                            </Button>
-                        </div>
-                    </div>
-                </motion.div>
-            </AnimatePresence>
-            
-             <AnimatePresence>
-                {!isListening && (
-                    <motion.div 
-                        initial={{ y: 100, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        exit={{ y: 100, opacity: 0 }}
-                        transition={{ ease: 'easeInOut' }}
-                        className="absolute bottom-[calc(theme(spacing.4)_+_80px)] z-10"
-                    >
-                        <Card className="w-80 shadow-xl">
-                            <CardHeader>
-                                <CardTitle className="text-lg">Mantra Settings</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="grid w-full items-center gap-1.5">
-                                    <Label htmlFor="mantra-select">Mantra</Label>
-                                    <Select
-                                        value={selectedMantra.text}
-                                        onValueChange={(value) => {
-                                            const newMantra = mantras.find(m => m.text === value);
-                                            if (newMantra) {
-                                                setSelectedMantra(newMantra);
-                                                resetCounter();
-                                            }
-                                        }}
-                                    >
-                                        <SelectTrigger id="mantra-select">
-                                            <SelectValue placeholder="Select a mantra" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {mantras.map(m => (
-                                                <SelectItem key={m.text} value={m.text}>{m.text}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </motion.div>
-                )}
+             <AnimatePresence mode="wait">
+                {MainContent()}
             </AnimatePresence>
 
             <style jsx global>{`
@@ -289,6 +339,7 @@ export default function MantraChantingPage() {
                 }
                 .control-btn:hover { background-color: hsl(var(--secondary)); transform: translateY(-2px); }
                 .control-btn.active { background-color: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
+                .control-btn.hang-up { background-color: hsl(var(--accent)); color: hsl(var(--accent-foreground)); }
             `}</style>
         </div>
     );
