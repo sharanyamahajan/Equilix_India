@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { X, Play, CheckCircle, Repeat, Camera, CameraOff, Video, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import { cn } from '@/lib/utils';
 import {
   Select,
   SelectContent,
@@ -21,7 +20,8 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const mantras = [
     { text: 'Om', keyword: 'om', pronunciation: 'Ohm' },
-    // Add other mantras if they can be visually distinct, otherwise it's best to keep it simple
+    { text: 'So-ham', keyword: 'soham', pronunciation: 'So-Hum' },
+    { text: 'Aham Prema', keyword: 'prema', pronunciation: 'Ah-hum Pray-ma' },
 ];
 
 type Screen = 'selection' | 'learning' | 'chanting' | 'completion';
@@ -34,9 +34,7 @@ export default function MantraChantingPage() {
     // Camera and AI states
     const videoRef = useRef<HTMLVideoElement>(null);
     const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
-    const [isDetecting, setIsDetecting] = useState(false);
     const [isSessionActive, setIsSessionActive] = useState(false);
-    const lastDetectionTime = useRef(0);
     const wasChanting = useRef(false);
     const detectionIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -89,24 +87,23 @@ export default function MantraChantingPage() {
         if (!context) return;
 
         context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-        const imageDataUri = canvas.toDataURL('image/jpeg', 0.5); // Use lower quality for performance
+        const imageDataUri = canvas.toDataURL('image/jpeg', 0.5);
 
-        const response = await getOmChantDetection(imageDataUri);
+        const response = await getOmChantDetection({ imageDataUri, mantra: selectedMantra.text });
 
         if (response.success && response.data) {
-            const isCurrentlyChanting = response.data.isChantingOm;
-            // Detect the "start" of a chant: transition from not chanting to chanting
+            const isCurrentlyChanting = response.data.isChanting;
             if (isCurrentlyChanting && !wasChanting.current) {
                 setChantCount(prev => prev + 1);
             }
             wasChanting.current = isCurrentlyChanting;
         }
-    }, []);
+    }, [selectedMantra]);
 
     // Start/Stop Detection Loop
     useEffect(() => {
         if (isSessionActive && hasCameraPermission) {
-            detectionIntervalRef.current = setInterval(handleAnalysis, 1200); // Analyze roughly every second
+            detectionIntervalRef.current = setInterval(handleAnalysis, 1200); 
         } else {
             if (detectionIntervalRef.current) {
                 clearInterval(detectionIntervalRef.current);
@@ -169,7 +166,7 @@ export default function MantraChantingPage() {
                                             {mantras.map(m => <SelectItem key={m.text} value={m.text}>{m.text}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
-                                    <p className="text-xs text-muted-foreground pt-1">Visual detection works best for "Om".</p>
+                                    <p className="text-xs text-muted-foreground pt-1">Visual detection works best for simple, distinct lip movements.</p>
                                 </div>
                                 <Button onClick={() => setScreen('learning')} className="w-full">Start Learning</Button>
                             </CardContent>
@@ -222,7 +219,6 @@ export default function MantraChantingPage() {
                             </div>
                         </div>
 
-                        {/* Video Feed in the background */}
                         <video ref={videoRef} className="absolute inset-0 w-full h-full object-cover -z-10 opacity-10" autoPlay muted playsInline />
 
                         {hasCameraPermission === false && (
@@ -294,7 +290,7 @@ export default function MantraChantingPage() {
                  </Link>
             </div>
 
-             <AnimatePresence mode="wait">
+            <AnimatePresence mode="wait">
                 {MainContent()}
             </AnimatePresence>
 

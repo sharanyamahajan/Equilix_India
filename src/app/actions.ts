@@ -11,7 +11,7 @@ import { chat as chatFlow } from '@/ai/flows/chat-flow';
 import type { ChatInput } from '@/ai/schemas/chat';
 import type { AIFriendInput, AIFriendOutput } from '@/ai/schemas/aura';
 import { detectStress as detectStressFlow, type DetectStressInput } from '@/ai/flows/detect-stress-flow';
-import { detectOmChant as detectOmChantFlow } from '@/ai/flows/detect-om-chant';
+import { detectOmChant as detectOmChantFlow, type DetectOmChantInput } from '@/ai/flows/detect-om-chant';
 
 
 export async function getHtmlImprovements(htmlContent: string) {
@@ -107,13 +107,13 @@ export async function chat(input: ChatInput) {
     }
 }
 
-export async function getOmChantDetection(imageDataUri: string) {
-  if (!imageDataUri) {
+export async function getOmChantDetection(input: DetectOmChantInput) {
+  if (!input.imageDataUri) {
     return { success: false, error: 'Image data cannot be empty.' };
   }
 
   try {
-    const result = await detectOmChantFlow({ imageDataUri });
+    const result = await detectOmChantFlow(input);
     return { success: true, data: result };
   } catch (error) {
     // Suppress noisy logs for this specific flow, as it runs frequently
