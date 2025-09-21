@@ -22,8 +22,8 @@ export async function POST(req: NextRequest) {
 
     const geminiResponse = await fetch(geminiUrl, {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ sdp }),
+      headers: {'Content-Type': 'application/sdp'},
+      body: sdp,
     });
 
     if (!geminiResponse.ok) {
@@ -36,10 +36,9 @@ export async function POST(req: NextRequest) {
     }
 
     const answerSdp = await geminiResponse.text();
-    const sdpResponse = JSON.parse(answerSdp.replace("data: ", ""));
 
-
-    return NextResponse.json({ sdp: sdpResponse.sdp });
+    // The Gemini API returns a raw SDP string. We wrap it in a JSON object for the client.
+    return NextResponse.json({ sdp: answerSdp });
     
   } catch (error: any) {
     console.error('Proxy API Error:', error);
