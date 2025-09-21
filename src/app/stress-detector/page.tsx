@@ -19,7 +19,7 @@ type StressResult = {
 
 export default function StressDetectorPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean>(true);
   const [isAnalyzing, startTransition] = useTransition();
   const [result, setResult] = useState<StressResult | null>(null);
   const [textInput, setTextInput] = useState('');
@@ -110,10 +110,16 @@ export default function StressDetectorPage() {
           <CardContent className="space-y-4">
             <div className="relative w-full aspect-video bg-secondary rounded-md overflow-hidden flex items-center justify-center">
               <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
-              {hasCameraPermission === false && (
+              {!hasCameraPermission && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-secondary/80 text-center p-4">
                     <Camera className="w-10 h-10 text-muted-foreground mb-2" />
                     <p className="font-semibold">Camera access is required</p>
+                    <Alert variant="destructive" className="mt-4">
+                        <AlertTitle>Camera Access Denied</AlertTitle>
+                        <AlertDescription>
+                            Please allow camera access to use this feature.
+                        </AlertDescription>
+                    </Alert>
                 </div>
               )}
             </div>
