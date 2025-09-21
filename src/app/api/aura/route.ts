@@ -23,9 +23,15 @@ export async function POST(req: NextRequest) {
     const geminiResponse = await fetch(geminiUrl, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/sdp',
+        'Content-Type': 'application/json',
       },
-      body: sdp,
+      body: JSON.stringify({
+        contents: [{
+            parts: [{
+                text: sdp
+            }]
+        }]
+      }),
     });
 
     if (!geminiResponse.ok) {
@@ -37,7 +43,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const answerSdp = await geminiResponse.text();
+    const answerData = await geminiResponse.json();
+    const answerSdp = answerData.answer.text;
     
     return new Response(answerSdp, {
         headers: { 'Content-Type': 'application/sdp' }
@@ -51,3 +58,4 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
