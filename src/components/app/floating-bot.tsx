@@ -1,154 +1,138 @@
-
 'use client';
 
-import { useState, useRef, useEffect, useTransition, Fragment } from 'react';
-import { getAIFriendResponse } from '@/app/actions';
-import { useRouter } from 'next/navigation';
-import { Bot, Loader2, Send, User, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils';
-import { useToast } from '@/hooks/use-toast';
+import React, { useState, useRef, useEffect, useTransition } from "react";
+import { cn } from "@/lib/utils";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Bot, User, CornerDownLeft, Loader2 } from 'lucide-react';
+import { getAIFriendResponse } from "@/app/actions";
+import type { AIFriendInput } from "@/ai/schemas/ai-friend";
 
-type Message = {
-  role: 'user' | 'model';
-  text: string;
-};
-
-const novaSystemPrompt = `You are Nova, a friendly and efficient AI assistant for the Equilix app. Your primary role is to help users navigate the application and understand its features. You are knowledgeable, concise, and slightly more direct than Aura. Your goal is to provide clear, helpful answers. You can navigate users to different pages if they ask. Do not give medical advice.`;
-
-const initialMessages: Message[] = [
-    {
-        role: 'model',
-        text: "Hello! I'm Nova, your guide to the Equilix app. How can I help you today?"
-    }
-];
-
-export function FloatingBot() {
+function FloatingBot() {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
-  const [input, setInput] = useState('');
+  const [messages, setMessages] = useState<{ text: string; sender: "user" | "nova" }[]>([]);
+  const [input, setInput] = useState("");
   const [isPending, startTransition] = useTransition();
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const router = useRouter();
-  const { toast } = useToast();
+  
+  const welcomeMessage = { text: "Hello! I'm Nova, your friendly AI assistant. How can I help you today?", sender: "nova" } as const;
+
+  useEffect(() => {
+    if (isOpen) {
+        setMessages([welcomeMessage]);
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-  
-  const toggleChat = () => {
-    setIsOpen(!isOpen);
-    if(isOpen) { // If was open, now closing
-      setMessages(initialMessages);
-      setInput('');
-    }
-  };
 
+  const toggleChat = () => setIsOpen(!isOpen);
 
-  const handleSend = () => {
+  const sendMessage = () => {
     if (!input.trim() || isPending) return;
 
-    const userMessage: Message = { role: 'user', text: input };
-    setMessages((prev) => [...prev, userMessage]);
+    const userMsg = { text: input, sender: "user" } as const;
+    setMessages((prev) => [...prev, userMsg]);
     const currentInput = input;
-    setInput('');
-    
-    startTransition(async () => {
-        const response = await getAIFriendResponse({
-          history: messages,
-          message: currentInput,
-          systemPrompt: novaSystemPrompt,
-        });
-        
-        if (response.success && response.data) {
-          const modelMessage: Message = { role: 'model', text: response.data.reply };
-          setMessages((prev) => [...prev, modelMessage]);
+    setInput("");
 
-          if (response.data.toolCalls) {
-            for (const toolCall of response.data.toolCalls) {
-              if (toolCall.toolName === 'navigation' && toolCall.args.path) {
-                router.push(toolCall.args.path as string);
-                setIsOpen(false);
-              }
-            }
-          }
-        } else {
-            const errorMessage: Message = {
-              role: 'model',
-              text: response.error || 'Sorry, I encountered an error. Please try again.',
-            };
-            setMessages((prev) => [...prev, errorMessage]);
-            toast({
-                title: 'Error',
-                description: response.error,
-                variant: 'destructive',
-            })
-        }
+    startTransition(async () => {
+      const result = await getAIFriendResponse({
+        message: currentInput,
+        history: messages.slice(1).map(m => ({ role: m.sender === 'user' ? 'user' : 'model', text: m.text })),
+      } as AIFriendInput);
+
+      if (result.success && result.data?.reply) {
+        setMessages((prev) => [...prev, { text: result.data.reply, sender: "nova" }]);
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          { text: "⚠️ I couldn’t reach AI servers, but I’m still here to help!", sender: "nova" },
+        ]);
+      }
     });
   };
 
   return (
     <>
-      <Button
+      <button
         onClick={toggleChat}
-        className="fixed bottom-5 right-5 w-16 h-16 rounded-full shadow-lg flex items-center justify-center text-3xl z-[1000] transition-transform transform hover:scale-110"
-        aria-label={isOpen ? "Close Chat" : "Open Chat"}
+        aria-label={isOpen ? "Close chat" : "Open chat"}
+        className={cn(
+            "fixed bottom-5 right-5 bg-primary text-primary-foreground rounded-full w-14 h-14 shadow-lg flex items-center justify-center text-3xl hover:bg-primary/90 transition-all duration-300 z-50",
+            isOpen && "scale-0 animate-out"
+        )}
       >
-        {isOpen ? <X/> : '💬'}
-      </Button>
+       <Bot />
+      </button>
 
       {isOpen && (
-        <div className="fixed bottom-24 right-5 w-[350px] max-w-[90vw] h-[500px] max-h-[80vh] bg-card rounded-2xl shadow-xl flex flex-col z-[1000] overflow-hidden animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-4 duration-300">
-          <header className="bg-primary text-primary-foreground font-semibold p-3 text-center">
-            Nova - Your Assistant
-          </header>
-
-          <div className="flex-1 p-4 overflow-y-auto space-y-4">
+        <div className="fixed bottom-5 right-5 w-80 sm:w-96 max-w-[calc(100vw-2.5rem)] bg-card rounded-2xl shadow-xl flex flex-col z-50 overflow-hidden animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-4 duration-300">
+          <div className="flex justify-between items-center bg-primary text-primary-foreground font-semibold p-3">
+             <div className="flex items-center gap-2">
+                <Avatar className="w-8 h-8 border-2 border-primary-foreground/50">
+                    <AvatarFallback className="bg-transparent"><Bot /></AvatarFallback>
+                </Avatar>
+                <span>Nova</span>
+            </div>
+            <button onClick={toggleChat} className="text-primary-foreground/80 hover:text-primary-foreground">&times;</button>
+          </div>
+          
+          <div className="flex-1 p-3 overflow-y-auto text-sm space-y-4 h-96">
             {messages.map((msg, i) => (
-               <div key={i} className={cn("flex items-end gap-2", msg.role === 'user' ? "justify-end" : "justify-start")}>
-                 {msg.role === 'model' && <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center shrink-0"><Bot size={20}/></div>}
-                 <div className={cn(
-                    "max-w-[80%] px-3 py-2 rounded-xl text-sm",
-                    msg.role === "user" ? "bg-primary text-primary-foreground rounded-br-none" : "bg-secondary text-secondary-foreground rounded-bl-none"
-                  )}>
-                    {msg.text}
-                 </div>
-                 {msg.role === 'user' && <div className="w-8 h-8 rounded-full bg-secondary/80 text-secondary-foreground flex items-center justify-center shrink-0"><User size={20}/></div>}
+              <div
+                key={i}
+                className={cn("flex items-end gap-2",
+                  msg.sender === "user" ? "justify-end" : "justify-start"
+                )}
+              >
+                {msg.sender === 'nova' && <Avatar className="w-6 h-6"><AvatarFallback className="bg-secondary text-secondary-foreground"><Bot size={16}/></AvatarFallback></Avatar>}
+                <div
+                  className={cn("max-w-[85%] px-3 py-2 rounded-xl",
+                    msg.sender === "user"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-secondary text-secondary-foreground"
+                  )}
+                >
+                  {msg.text}
+                </div>
+                 {msg.sender === 'user' && <Avatar className="w-6 h-6"><AvatarFallback className="bg-muted text-muted-foreground"><User size={16}/></AvatarFallback></Avatar>}
               </div>
             ))}
-             {isPending && (
-                <div className="flex items-end gap-2 justify-start">
-                     <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center shrink-0"><Bot size={20}/></div>
-                     <div className="max-w-[80%] px-3 py-2 rounded-xl text-sm bg-secondary text-secondary-foreground rounded-bl-none flex items-center">
+            {isPending && (
+              <div className="flex items-end gap-2 justify-start">
+                  <Avatar className="w-6 h-6"><AvatarFallback className="bg-secondary text-secondary-foreground"><Bot size={16}/></AvatarFallback></Avatar>
+                   <div className="bg-secondary text-secondary-foreground px-3 py-2 rounded-xl self-start flex items-center gap-2">
                         <Loader2 className="w-4 h-4 animate-spin"/>
-                     </div>
-                </div>
-             )}
+                        <span>Thinking...</span>
+                   </div>
+              </div>
+            )}
             <div ref={messagesEndRef} />
           </div>
 
-          <div className="flex border-t p-2 gap-2">
-            <Input
+          <div className="flex items-center p-2 border-t">
+            <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
               placeholder="Type a message..."
-              className="flex-1 p-2 outline-none text-sm bg-background"
-              disabled={isPending}
+              className="flex-1 px-2 py-1 outline-none text-sm bg-transparent"
             />
-            <Button
-              onClick={handleSend}
-              className="px-4 transition-colors"
+            <button
+              onClick={sendMessage}
               disabled={isPending || !input.trim()}
-              aria-label="Send Message"
+              className="bg-primary text-primary-foreground p-2 rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label="Send message"
             >
-              {isPending ? <Loader2 className="h-4 w-4 animate-spin"/> : <Send className="h-4 w-4" />}
-            </Button>
+              <CornerDownLeft size={16} />
+            </button>
           </div>
         </div>
       )}
     </>
   );
-}
+};
+
+export { FloatingBot };
