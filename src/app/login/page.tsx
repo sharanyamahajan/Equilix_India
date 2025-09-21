@@ -48,7 +48,7 @@ export default function LoginPage() {
           title: 'Login Successful!',
           description: "Welcome back! You're being redirected.",
         });
-        router.push('/mode-selection');
+        router.push('/');
       } else {
         toast({
           title: 'Incorrect Password',
