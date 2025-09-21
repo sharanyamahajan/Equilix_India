@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { Mic, MicOff, PhoneOff, Video, VideoOff } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 
-const AURA_API_ENDPOINT = '/api/aura';
+const AURA_API_ENDPOINT = '/api/aura'; 
 
 type Expression = {
   mouthOpen: number; // 0..1
@@ -35,6 +35,7 @@ export default function AdvancedAuraCall(): JSX.Element {
   const analyserLocalRef = useRef<AnalyserNode | null>(null);
   const analyserRemoteRef = useRef<AnalyserNode | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
+  const wsRef = useRef<WebSocket | null>(null);
   const animFrameRef = useRef<number | null>(null);
 
   function makePeerConnection(): RTCPeerConnection {
@@ -98,9 +99,12 @@ export default function AdvancedAuraCall(): JSX.Element {
       throw new Error('SDP exchange failed: ' + text);
     }
 
-    const data = await resp.json();
-    const answerSdp: string = data.sdp;
+    const answerSdp = await resp.text();
     await pc.setRemoteDescription({ type: 'answer', sdp: answerSdp });
+  }
+
+  function connectEventsWebSocket(): void {
+    // Note: WebSocket functionality is not implemented in the backend for this version.
   }
 
   function startExpressionLoop(): void {
@@ -165,6 +169,7 @@ export default function AdvancedAuraCall(): JSX.Element {
       await startLocalMedia();
       await createConnectionAndExchangeSDP();
       attachRemoteAnalyser();
+      // connectEventsWebSocket(); // Disabled for now
       startExpressionLoop();
       setInCall(true);
     } catch (e) {
@@ -180,6 +185,9 @@ export default function AdvancedAuraCall(): JSX.Element {
 
     pcRef.current?.close();
     pcRef.current = null;
+
+    wsRef.current?.close();
+    wsRef.current = null;
 
     try {
       analyserLocalRef.current = null;
@@ -203,7 +211,7 @@ export default function AdvancedAuraCall(): JSX.Element {
     }
 
     setInCall(false);
-    setAiText('Session ended');
+    setAiText("Session ended");
   }
 
   function toggleMic() {

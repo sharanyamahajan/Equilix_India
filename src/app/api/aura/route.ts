@@ -18,22 +18,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-preview-0514:streamGenerateContent`;
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-exp:generateAnswer?key=${process.env.GEMINI_API_KEY}&alt=sdp`;
 
     const geminiResponse = await fetch(geminiUrl, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': process.env.GEMINI_API_KEY,
+        'Content-Type': 'application/sdp',
       },
-      body: JSON.stringify({
-        contents: [
-          {
-            role: "user",
-            parts: [{ text: sdp }]
-          }
-        ]
-      })
+      body: sdp,
     });
 
     if (!geminiResponse.ok) {
@@ -45,10 +37,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const sdpResponse = await geminiResponse.json();
-    const answerSdp = sdpResponse.candidates[0].content.parts[0].text;
+    const answerSdp = await geminiResponse.text();
     
-    return NextResponse.json({ sdp: answerSdp });
+    return new Response(answerSdp, {
+        headers: { 'Content-Type': 'application/sdp' }
+    });
     
   } catch (error: any) {
     console.error('Proxy API Error:', error);
