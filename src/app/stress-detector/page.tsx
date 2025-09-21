@@ -9,6 +9,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { getEmotionDetection } from '@/app/actions';
 import { Loader2, Camera, HelpCircle, ArrowLeft } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { Label } from '@/components/ui/label';
 
 type EmotionResult = {
   emotion: string;
