@@ -8,57 +8,19 @@ export function EquilixLogo(props: SVGProps<SVGSVGElement>) {
       viewBox="0 0 24 24"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
       {...props}
     >
-      <path
-        d="M17.5 10.5C17.5 12.9853 15.4853 15 13 15C11.5 15 10.5 14.5 9 13.5"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M6.5 10.5C6.5 12.9853 8.51472 15 11 15C12.5 15 13.5 14.5 15 13.5"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M12 15V19C12 20.1046 12.8954 21 14 21H15"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M12 15V19C12 20.1046 11.1046 21 10 21H9"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M12 11C12 9.34315 10.6569 8 9 8C7.34315 8 6 9.34315 6 11"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M13 11C13 9.34315 14.3431 8 16 8C17.6569 8 19 9.34315 19 11"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M12 11V3C12 2.44772 12.4477 2 13 2C13.5523 2 14 2.44772 14 3V6.34146C14 6.34146 16.5 5.5 17 8"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <path d="M12 10v4" />
+      <path d="M12 18v-2" />
+      <path d="M12 8V7" />
+      <path d="M7 15a5 5 0 0 1 10 0" />
+      <path d="M5 18a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2" />
+      <path d="M5 11.8A7.9 7.9 0 0 1 12 4a7.9 7.9 0 0 1 7 7.8" />
+      <path d="M2.5 12.5a9.8 9.8 0 0 1 19 0" />
     </svg>
   );
 }
