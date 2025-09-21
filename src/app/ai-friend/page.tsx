@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { PhoneOff } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 
 
@@ -46,12 +46,12 @@ const AuraPal: React.FC = () => {
       });
       
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to get answer from server.');
+        const errorText = await response.text();
+        throw new Error(`Failed to get answer from server. Status: ${response.status}. Message: ${errorText}`);
       }
 
-      const answerData = await response.json();
-      const answer = { type: 'answer' as const, sdp: answerData.sdp };
+      const answerSdp = await response.text();
+      const answer = { type: 'answer' as const, sdp: answerSdp };
       await pc.setRemoteDescription(answer);
 
       setInCall(true);
