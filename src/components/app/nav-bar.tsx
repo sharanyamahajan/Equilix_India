@@ -68,7 +68,6 @@ export function NavBar() {
       <div className="container flex h-20 items-center">
         <div className="mr-auto flex items-center">
           <Link href="/" className="flex items-center gap-2">
-             <EquilixLogo className="w-8 h-8 text-primary" />
             <span className="font-signature text-3xl text-white">Equilix</span>
           </Link>
         </div>
@@ -103,7 +102,6 @@ export function NavBar() {
             <SheetContent side="left">
               <div className="flex flex-col gap-4 py-4">
                  <Link href="/" className="flex items-center gap-2 px-3 mb-4">
-                    <EquilixLogo className="w-10 h-10 text-primary" />
                     <span className="font-signature text-4xl text-white">Equilix</span>
                   </Link>
                 <div className="flex flex-col gap-2 px-2">
