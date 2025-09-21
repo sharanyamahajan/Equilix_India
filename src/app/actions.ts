@@ -4,10 +4,10 @@ import { suggestHtmlImprovements } from '@/ai/flows/suggest-html-improvements';
 import { analyzeWellness } from '@/ai/flows/analyze-wellness';
 import type { WellnessSurveyInput } from '@/ai/schemas/wellness';
 import { detectEmotion } from '@/ai/flows/detect-emotion';
-import { aiFriend } from '@/ai/flows/ai-friend';
-import type { AIFriendInput } from '@/ai/schemas/ai-friend';
+import { aiFriend, type AIFriendInput } from '@/ai/flows/ai-friend';
 import { createAITwin as createAITwinFlow, type CreateAITwinInput } from '@/ai/flows/create-ai-twin';
 import { learnFromHistory as learnFromHistoryFlow, type LearnFromHistoryInput } from '@/ai/flows/learn-from-history';
+import { chat as chatFlow, type ChatInput } from '@/ai/flows/chat-flow';
 
 
 export async function getHtmlImprovements(htmlContent: string) {
@@ -76,5 +76,15 @@ export async function learnFromJournal(input: LearnFromHistoryInput) {
     } catch (error) {
         console.error('AI Error:', error);
         return { success: false, error: 'Failed to learn from journal entries.' };
+    }
+}
+
+export async function chat(input: ChatInput) {
+    try {
+        const result = await chatFlow(input);
+        return { success: true, data: result };
+    } catch (error) {
+        console.error('AI Error:', error);
+        return { success: false, error: 'Failed to get chat response.' };
     }
 }

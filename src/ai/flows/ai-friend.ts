@@ -1,35 +1,38 @@
 
 'use server';
 /**
- * @fileOverview A conversational AI friend with memory.
+ * @fileOverview A conversational AI friend with memory, now repurposed for video calls.
  *
  * - aiFriend - A function that provides conversational responses based on history.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { AIFriendInputSchema, AIFriendOutputSchema, type AIFriendInput, type AIFriendOutput } from '@/ai/schemas/ai-friend';
 
-export { type AIFriendInput, type AIFriendOutput };
+const MessageSchema = z.object({
+  role: z.enum(['user', 'model']),
+  text: z.string(),
+});
 
-const navigationTool = ai.defineTool(
-  {
-    name: 'navigation',
-    description: 'Navigate to a specific page in the application. Available pages are: Home, Dashboard, AI Friend, Marketplace, Community, About, Journal, Breathing Exercise, Emotion Scan, Mantra Chanting, My AI Twin.',
-    inputSchema: z.object({
-      path: z.string().describe('The path to navigate to, e.g., /journal'),
-    }),
-    outputSchema: z.string(),
-  },
-  async ({ path }) => `Navigating to ${path}`
-);
+const AIFriendInputSchema = z.object({
+  history: z.array(MessageSchema).optional().describe('The conversation history.'),
+  message: z.string().describe("The user's latest message to the AI friend."),
+  systemPrompt: z.string().optional().describe("An optional system prompt to define the AI's personality. If not provided, a default persona will be used."),
+});
+export type AIFriendInput = z.infer<typeof AIFriendInputSchema>;
+
+
+const AIFriendOutputSchema = z.object({
+  reply: z.string().describe("The AI friend's conversational reply."),
+});
+export type AIFriendOutput = z.infer<typeof AIFriendOutputSchema>;
 
 
 export async function aiFriend(input: AIFriendInput): Promise<AIFriendOutput> {
   return aiFriendFlow(input);
 }
 
-const defaultSystemPrompt = `You are Aura, a professional and empathetic AI companion. Your purpose is to provide a safe, supportive space for users. Listen carefully, offer thoughtful perspectives, and gently guide them to reflect on their feelings. Do not give medical advice. Keep your responses concise, clear, and calm.`;
+const defaultSystemPrompt = `You are Aura, a professional and empathetic AI companion for a voice call. Your purpose is to provide a safe, supportive space for users. Listen carefully, offer thoughtful perspectives, and gently guide them to reflect on their feelings. Do not give medical advice. Keep your responses concise, clear, and calm, suitable for being spoken aloud.`;
 
 const aiFriendFlow = ai.defineFlow(
   {
@@ -40,32 +43,26 @@ const aiFriendFlow = ai.defineFlow(
   async ({ history, message, systemPrompt }) => {
     const finalSystemPrompt = systemPrompt || defaultSystemPrompt;
 
+    const fullHistory = [
+        { role: 'system', content: [{ text: finalSystemPrompt }] },
+        ...(history?.map(msg => ({ role: msg.role, content: [{ text: msg.text }] })) || []),
+    ];
+
     const response = await ai.generate({
-      system: finalSystemPrompt,
-      history: history?.map(msg => ({ role: msg.role, content: [{ text: msg.text }] })) || [],
+      history: fullHistory,
       prompt: message,
-      tools: [navigationTool],
     });
 
     const choice = response.candidates?.[0];
     
-    // Check for valid response and handle errors gracefully
-    if (!choice || !choice.message || !choice.message.content || choice.message.content.length === 0) {
+    const reply = choice?.message?.content?.map(part => part.text || "").join("").trim();
+
+    if (!reply) {
         return { 
             reply: "I'm not sure how to respond to that. Could you please rephrase?",
         };
     }
-
-    const toolCalls = choice.message.content.filter(part => part.type === 'toolRequest').map(part => {
-        if(part.type !== 'toolRequest') throw new Error(); // Should not happen
-        return { toolName: part.toolRequest.name, args: part.toolRequest.input };
-    });
-
-    const reply = choice.message.content.filter(part => part.type === 'text').map(part => part.type === 'text' ? part.text : '').join('').trim();
-
-    return { 
-        reply: reply || "I'm not sure how to respond to that. Can you try rephrasing?",
-        toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
-    };
+    
+    return { reply };
   }
 );

@@ -1,151 +1,205 @@
 'use client';
+import { useState, useRef, useEffect, useTransition } from 'react';
+import { Button } from '@/components/ui/button';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetFooter,
+} from '@/components/ui/sheet';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Bot, Loader2, Send, User, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { chat } from '@/app/actions';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
-import React, { useState, useRef, useEffect, useTransition } from "react";
-import { cn } from "@/lib/utils";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Bot, User, CornerDownLeft, Loader2 } from 'lucide-react';
 
-type Message = { text: string; sender: "user" | "nova" };
+type Message = {
+  role: 'user' | 'model';
+  content: string;
+};
 
-function FloatingBot() {
+const initialMessages: Message[] = [
+  {
+    role: 'model',
+    content:
+      "Hello! 👋 I am **Nova**, your smart AI companion. How can I assist you today?",
+  },
+];
+
+export function FloatingBot() {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState("");
-  const [isPending, startTransition] = useTransition();
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  
-  const welcomeMessage = { text: "Hello! I'm Nova, your friendly AI assistant. How can I help you today?", sender: "nova" } as const;
+  const [messages, setMessages] = useState<Message[]>(initialMessages);
+  const [input, setInput] = useState('');
+  const [isLoading, startTransition] = useTransition();
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (isOpen && messages.length === 0) {
-        setMessages([welcomeMessage]);
-    }
-  }, [isOpen, messages]);
+  const handleSend = async () => {
+    if (!input.trim() || isLoading) return;
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  const toggleChat = () => {
-    setIsOpen(!isOpen);
-    if (!isOpen) {
-        // Reset chat when opening
-        setMessages([welcomeMessage]);
-    }
-  };
-
-  const sendMessage = () => {
-    if (!input.trim() || isPending) return;
-
-    const userMsg: Message = { text: input, sender: "user" };
-    setMessages((prev) => [...prev, userMsg]);
+    const userMessage: Message = { role: 'user', content: input };
+    setMessages((prev) => [...prev, userMessage]);
     const currentInput = input;
-    setInput("");
-
+    setInput('');
+    
     startTransition(async () => {
-      try {
-        const res = await fetch("/api/nova", {
-          method: "POST",
-          body: JSON.stringify({ message: currentInput }),
-        });
-
-        const data = await res.json();
-        if (!res.ok) {
-          throw new Error(data.reply || "API request failed");
+        try {
+            const chatHistory = messages.map((msg) => ({
+                role: msg.role,
+                parts: [{ text: msg.content }],
+            }));
+    
+            const result = await chat({ history: chatHistory, message: currentInput });
+    
+            if (result.success && result.data) {
+                const modelMessage: Message = {
+                role: 'model',
+                content: result.data.response,
+                };
+                setMessages((prev) => [...prev, modelMessage]);
+            } else {
+                 throw new Error(result.error || "Unknown AI error");
+            }
+        } catch (error) {
+            console.error('Nova error:', error);
+            const errorMessage: Message = {
+                role: 'model',
+                content:
+                '⚠️ Sorry, I ran into a problem. Please try again in a moment.',
+            };
+            setMessages((prev) => [...prev, errorMessage]);
         }
-
-        setMessages((prev) => [...prev, { text: data.reply, sender: "nova" }]);
-      } catch (error) {
-        console.error("Chatbot fetch error:", error);
-        setMessages((prev) => [
-          ...prev,
-          { text: "⚠️ I couldn’t reach AI servers, but I’m still here to help!", sender: "nova" },
-        ]);
-      }
     });
   };
 
+  const handleSheetOpenChange = (open: boolean) => {
+    setIsOpen(open);
+    if (open) {
+      setMessages(initialMessages);
+    }
+  };
+
+  useEffect(() => {
+    if (scrollAreaRef.current) {
+        const scrollViewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
+        if (scrollViewport) {
+          scrollViewport.scrollTop = scrollViewport.scrollHeight;
+        }
+    }
+  }, [messages, isLoading]);
+
   return (
     <>
-      <button
-        onClick={toggleChat}
-        aria-label={isOpen ? "Close chat" : "Open chat"}
-        className={cn(
-            "fixed bottom-5 right-5 bg-primary text-primary-foreground rounded-full w-14 h-14 shadow-lg flex items-center justify-center text-3xl hover:bg-primary/90 transition-all duration-300 z-50",
-            isOpen && "scale-0 animate-out"
-        )}
+      {/* Floating Button */}
+      <Button
+        onClick={() => setIsOpen(true)}
+        className="fixed bottom-6 right-6 h-16 w-16 rounded-full shadow-lg"
+        size="icon"
       >
-       <Bot />
-      </button>
+        <Bot className="h-8 w-8" />
+        <span className="sr-only">Open Nova Bot</span>
+      </Button>
 
-      {isOpen && (
-        <div className="fixed bottom-20 right-5 w-80 sm:w-96 max-w-[calc(100vw-2.5rem)] bg-card rounded-2xl shadow-xl flex flex-col z-50 overflow-hidden animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-4 duration-300">
-          <div className="flex justify-between items-center bg-primary text-primary-foreground font-semibold p-3">
-             <div className="flex items-center gap-2">
-                <Avatar className="w-8 h-8 border-2 border-primary-foreground/50">
-                    <AvatarFallback className="bg-transparent"><Bot /></AvatarFallback>
-                </Avatar>
-                <span>Nova</span>
-            </div>
-            <button onClick={toggleChat} className="text-primary-foreground/80 hover:text-primary-foreground text-2xl leading-none">&times;</button>
-          </div>
-          
-          <div className="flex-1 p-3 overflow-y-auto text-sm space-y-4 h-96">
-            {messages.map((msg, i) => (
-              <div
-                key={i}
-                className={cn("flex items-end gap-2",
-                  msg.sender === "user" ? "justify-end" : "justify-start"
-                )}
-              >
-                {msg.sender === 'nova' && <Avatar className="w-6 h-6"><AvatarFallback className="bg-secondary text-secondary-foreground"><Bot size={16}/></AvatarFallback></Avatar>}
+      {/* Sliding Chat Window */}
+      <Sheet open={isOpen} onOpenChange={handleSheetOpenChange}>
+        <SheetContent className="flex flex-col w-full sm:max-w-md">
+          <SheetHeader>
+            <SheetTitle>Nova - Your AI Friend</SheetTitle>
+            <SheetDescription>
+              Ask me anything! I can help with information, guidance,
+              or just chat with you.
+            </SheetDescription>
+          </SheetHeader>
+
+          {/* Messages */}
+          <ScrollArea className="flex-1 my-4 pr-4" ref={scrollAreaRef}>
+            <div className="space-y-4">
+              {messages.map((message, index) => (
                 <div
-                  className={cn("max-w-[85%] px-3 py-2 rounded-xl",
-                    msg.sender === "user"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-secondary text-secondary-foreground"
+                  key={index}
+                  className={cn(
+                    'flex items-start gap-3',
+                    message.role === 'user'
+                      ? 'justify-end'
+                      : 'justify-start'
                   )}
                 >
-                  {msg.text}
+                  {message.role === 'model' && (
+                    <Avatar className="h-8 w-8 border">
+                      <AvatarFallback className="bg-secondary">
+                        <Bot className="h-5 w-5 text-secondary-foreground" />
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
+                  <div
+                    className={cn(
+                      'max-w-xs rounded-lg p-3 text-sm',
+                      message.role === 'user'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted text-muted-foreground'
+                    )}
+                  >
+                    <ReactMarkdown className="prose prose-sm dark:prose-invert max-w-full" remarkPlugins={[remarkGfm]}>
+                      {message.content}
+                    </ReactMarkdown>
+                  </div>
+                  {message.role === 'user' && (
+                    <Avatar className="h-8 w-8 border">
+                      <AvatarFallback className="bg-muted">
+                        <User className="h-5 w-5 text-muted-foreground" />
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
                 </div>
-                 {msg.sender === 'user' && <Avatar className="w-6 h-6"><AvatarFallback className="bg-muted text-muted-foreground"><User size={16}/></AvatarFallback></Avatar>}
-              </div>
-            ))}
-            {isPending && (
-              <div className="flex items-end gap-2 justify-start">
-                  <Avatar className="w-6 h-6"><AvatarFallback className="bg-secondary text-secondary-foreground"><Bot size={16}/></AvatarFallback></Avatar>
-                   <div className="bg-secondary text-secondary-foreground px-3 py-2 rounded-xl self-start flex items-center gap-2">
-                        <Loader2 className="w-4 h-4 animate-spin"/>
-                        <span>Thinking...</span>
-                   </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
+              ))}
 
-          <div className="flex items-center p-2 border-t">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-              placeholder="Type a message..."
-              className="flex-1 px-2 py-1 outline-none text-sm bg-transparent"
-              disabled={isPending}
-            />
-            <button
-              onClick={sendMessage}
-              disabled={isPending || !input.trim()}
-              className="bg-primary text-primary-foreground p-2 rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              aria-label="Send message"
-            >
-              <CornerDownLeft size={16} />
-            </button>
-          </div>
-        </div>
-      )}
+              {/* Loading State */}
+              {isLoading && (
+                <div className="flex items-start gap-3 justify-start">
+                  <Avatar className="h-8 w-8 border">
+                    <AvatarFallback className="bg-secondary">
+                      <Bot className="h-5 w-5 text-secondary-foreground" />
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="bg-muted rounded-lg p-3 flex items-center">
+                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                  </div>
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+
+          {/* Input Box */}
+          <SheetFooter>
+            <div className="flex w-full items-center gap-2">
+              <Input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) =>
+                  e.key === 'Enter' && handleSend()
+                }
+                placeholder="Type your message..."
+                disabled={isLoading}
+              />
+              <Button
+                size="icon"
+                onClick={handleSend}
+                disabled={isLoading || !input.trim()}
+              >
+                <Send className="h-4 w-4" />
+                <span className="sr-only">Send</span>
+              </Button>
+            </div>
+          </SheetFooter>
+
+          {/* Close Button is part of SheetContent now */}
+        </SheetContent>
+      </Sheet>
     </>
   );
-};
-
-export { FloatingBot };
+}
