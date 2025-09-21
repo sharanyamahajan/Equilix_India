@@ -8,3 +8,4 @@ import '@/ai/flows/aura-flow.ts';
 import '@/ai/flows/create-ai-twin.ts';
 import '@/ai/flows/learn-from-history.ts';
 import '@/ai/flows/chat-flow.ts';
+import '@/ai/flows/detect-stress-flow.ts';

@@ -10,6 +10,7 @@ import { learnFromHistory as learnFromHistoryFlow, type LearnFromHistoryInput } 
 import { chat as chatFlow } from '@/ai/flows/chat-flow';
 import type { ChatInput } from '@/ai/schemas/chat';
 import type { AIFriendInput, AIFriendOutput } from '@/ai/schemas/aura';
+import { detectStress as detectStressFlow, type DetectStressInput } from '@/ai/flows/detect-stress-flow';
 
 
 export async function getHtmlImprovements(htmlContent: string) {
@@ -47,6 +48,20 @@ export async function getEmotionDetection(imageDataUri: string) {
   } catch (error) {
     console.error('AI Error:', error);
     return { success: false, error: 'Failed to detect emotion from the AI model.' };
+  }
+}
+
+export async function detectStress(input: DetectStressInput) {
+  if (!input.imageDataUri || !input.text) {
+    return { success: false, error: 'Image and text are required.' };
+  }
+
+  try {
+    const result = await detectStressFlow(input);
+    return { success: true, data: result };
+  } catch (error) {
+    console.error('AI Error:', error);
+    return { success: false, error: 'Failed to detect stress from the AI model.' };
   }
 }
 
