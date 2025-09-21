@@ -4,12 +4,12 @@ import React, { useState, useRef, useEffect, useTransition } from "react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Bot, User, CornerDownLeft, Loader2 } from 'lucide-react';
-import { getAIFriendResponse } from "@/app/actions";
-import type { AIFriendInput } from "@/ai/schemas/ai-friend";
+
+type Message = { text: string; sender: "user" | "nova" };
 
 function FloatingBot() {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<{ text: string; sender: "user" | "nova" }[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isPending, startTransition] = useTransition();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -17,34 +17,46 @@ function FloatingBot() {
   const welcomeMessage = { text: "Hello! I'm Nova, your friendly AI assistant. How can I help you today?", sender: "nova" } as const;
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && messages.length === 0) {
         setMessages([welcomeMessage]);
     }
-  }, [isOpen]);
+  }, [isOpen, messages]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const toggleChat = () => setIsOpen(!isOpen);
+  const toggleChat = () => {
+    setIsOpen(!isOpen);
+    if (!isOpen) {
+        // Reset chat when opening
+        setMessages([welcomeMessage]);
+    }
+  };
 
   const sendMessage = () => {
     if (!input.trim() || isPending) return;
 
-    const userMsg = { text: input, sender: "user" } as const;
+    const userMsg: Message = { text: input, sender: "user" };
     setMessages((prev) => [...prev, userMsg]);
     const currentInput = input;
     setInput("");
 
     startTransition(async () => {
-      const result = await getAIFriendResponse({
-        message: currentInput,
-        history: messages.slice(1).map(m => ({ role: m.sender === 'user' ? 'user' : 'model', text: m.text })),
-      } as AIFriendInput);
+      try {
+        const res = await fetch("/api/nova", {
+          method: "POST",
+          body: JSON.stringify({ message: currentInput }),
+        });
 
-      if (result.success && result.data?.reply) {
-        setMessages((prev) => [...prev, { text: result.data.reply, sender: "nova" }]);
-      } else {
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.reply || "API request failed");
+        }
+
+        setMessages((prev) => [...prev, { text: data.reply, sender: "nova" }]);
+      } catch (error) {
+        console.error("Chatbot fetch error:", error);
         setMessages((prev) => [
           ...prev,
           { text: "⚠️ I couldn’t reach AI servers, but I’m still here to help!", sender: "nova" },
@@ -67,7 +79,7 @@ function FloatingBot() {
       </button>
 
       {isOpen && (
-        <div className="fixed bottom-5 right-5 w-80 sm:w-96 max-w-[calc(100vw-2.5rem)] bg-card rounded-2xl shadow-xl flex flex-col z-50 overflow-hidden animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-4 duration-300">
+        <div className="fixed bottom-20 right-5 w-80 sm:w-96 max-w-[calc(100vw-2.5rem)] bg-card rounded-2xl shadow-xl flex flex-col z-50 overflow-hidden animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-4 duration-300">
           <div className="flex justify-between items-center bg-primary text-primary-foreground font-semibold p-3">
              <div className="flex items-center gap-2">
                 <Avatar className="w-8 h-8 border-2 border-primary-foreground/50">
@@ -75,7 +87,7 @@ function FloatingBot() {
                 </Avatar>
                 <span>Nova</span>
             </div>
-            <button onClick={toggleChat} className="text-primary-foreground/80 hover:text-primary-foreground">&times;</button>
+            <button onClick={toggleChat} className="text-primary-foreground/80 hover:text-primary-foreground text-2xl leading-none">&times;</button>
           </div>
           
           <div className="flex-1 p-3 overflow-y-auto text-sm space-y-4 h-96">
@@ -119,6 +131,7 @@ function FloatingBot() {
               onKeyDown={(e) => e.key === "Enter" && sendMessage()}
               placeholder="Type a message..."
               className="flex-1 px-2 py-1 outline-none text-sm bg-transparent"
+              disabled={isPending}
             />
             <button
               onClick={sendMessage}
