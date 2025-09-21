@@ -68,7 +68,7 @@ export function NavBar() {
       <div className="container flex h-20 items-center">
         <div className="mr-auto flex items-center">
           <Link href="/" className="flex items-center gap-2">
-            <EquilixLogo className="w-8 h-8 text-primary" />
+             <EquilixLogo className="w-8 h-8 text-primary" />
             <span className="font-signature text-3xl text-white">Equilix</span>
           </Link>
         </div>
