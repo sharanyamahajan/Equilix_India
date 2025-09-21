@@ -8,6 +8,7 @@ import { JournalingStreak } from '@/components/app/journaling-streak';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 type UserData = {
   firstName: string;
@@ -19,6 +20,7 @@ export default function ProfilePage() {
   const [user, setUser] = useState<UserData | null>(null);
   const [isClient, setIsClient] = useState(false);
   const router = useRouter();
+  const { toast } = useToast();
 
   useEffect(() => {
     setIsClient(true);
@@ -38,6 +40,7 @@ export default function ProfilePage() {
 
   const handleLogout = () => {
     localStorage.removeItem('loggedInUserEmail');
+    toast({ title: 'Logged Out', description: 'You have been successfully logged out.' });
     router.push('/login');
   };
   

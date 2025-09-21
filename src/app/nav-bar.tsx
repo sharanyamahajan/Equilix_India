@@ -11,7 +11,6 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 const navLinks = [
   { href: '/', label: 'Home', icon: Home },
   { href: '/mode-selection', label: 'Dashboard', icon: LayoutGrid },
-  { href: '/profile', label: 'Profile', icon: User },
   { href: '/ai-friend', label: 'AI Friend', icon: Bot },
   { href: '/marketplace', label: 'Marketplace', icon: Store },
   { href: '/community', label: 'Community', icon: Users },
@@ -22,6 +21,27 @@ export function NavBar() {
   const pathname = usePathname();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+  
+  useEffect(() => {
+    if (isClient) {
+        const checkLoginStatus = () => {
+            const user = localStorage.getItem('loggedInUserEmail');
+            setIsLoggedIn(!!user);
+        };
+        checkLoginStatus();
+
+        window.addEventListener('storage', checkLoginStatus);
+        return () => {
+            window.removeEventListener('storage', checkLoginStatus);
+        };
+    }
+  }, [isClient, pathname]);
 
   useEffect(() => {
     setMobileNavOpen(false);
@@ -57,6 +77,22 @@ export function NavBar() {
           </Link>
         );
       })}
+       {isLoggedIn && (
+         <Link
+            href="/profile"
+            className={cn(
+              'flex items-center gap-2 rounded-full text-sm font-medium transition-colors',
+              isMobile ? 'px-4 py-3 text-base' : 'px-4 py-2',
+              pathname.startsWith('/profile')
+                ? 'bg-primary/10 text-primary'
+                : 'text-foreground/70 hover:text-foreground hover:bg-muted/50'
+            )}
+          >
+            <User className="h-5 w-5" />
+            <span className={cn({ 'hidden lg:inline': !isMobile })}>Profile</span>
+            {isMobile && <span className="text-lg">Profile</span>}
+          </Link>
+        )}
     </>
   );
 
@@ -81,12 +117,16 @@ export function NavBar() {
 
         {/* Desktop Auth Buttons */}
         <div className="hidden md:flex items-center justify-end gap-2 ml-auto">
-            <Button variant="ghost" asChild>
-              <Link href="/login">Login</Link>
-            </Button>
-            <Button asChild>
-              <Link href="/signup">Sign Up</Link>
-            </Button>
+            {isClient && !isLoggedIn && (
+              <>
+                <Button variant="ghost" asChild>
+                  <Link href="/login">Login</Link>
+                </Button>
+                <Button asChild>
+                  <Link href="/signup">Sign Up</Link>
+                </Button>
+              </>
+            )}
         </div>
 
 
@@ -100,7 +140,7 @@ export function NavBar() {
               </Button>
             </SheetTrigger>
             <SheetContent side="left">
-              <div className="flex flex-col gap-4 py-4">
+              <div className="flex flex-col gap-4 py-4 h-full">
                  <Link href="/" className="flex items-center gap-2 px-3 mb-4">
                     <span className="font-signature text-4xl text-white">Equilix</span>
                   </Link>
@@ -108,12 +148,16 @@ export function NavBar() {
                   <NavLinksContent isMobile={true} />
                 </div>
                  <div className="mt-auto flex flex-col gap-2 px-2">
-                    <Button variant="ghost" className="justify-start text-lg" asChild>
-                        <Link href="/login">Login</Link>
-                    </Button>
-                     <Button className="justify-center text-lg" asChild>
-                        <Link href="/signup">Sign Up</Link>
-                    </Button>
+                    {isClient && !isLoggedIn && (
+                        <>
+                            <Button variant="ghost" className="justify-start text-lg" asChild>
+                                <Link href="/login">Login</Link>
+                            </Button>
+                            <Button className="justify-center text-lg" asChild>
+                                <Link href="/signup">Sign Up</Link>
+                            </Button>
+                        </>
+                    )}
                 </div>
               </div>
             </SheetContent>
