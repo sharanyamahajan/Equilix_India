@@ -129,9 +129,13 @@ export default function AIFriendPage() {
       }
     };
     utterance.onerror = (e) => {
-      // This error often fires harmlessly on rapid state changes (e.g., ending call while speaking).
-      // We log it but primarily ensure the UI resets correctly.
-      console.error('Speech synthesis error', e);
+      if (e.error === 'canceled' || e.error === 'interrupted') {
+        // These are expected when we call window.speechSynthesis.cancel() or start a new utterance.
+        // We can safely ignore them.
+      } else {
+        console.error('Speech synthesis error:', e);
+      }
+      // Ensure UI resets correctly even if there was an error.
       stopLipSync();
       setAIStatus("listening");
       setIsAIThinking(false);
@@ -430,5 +434,3 @@ export default function AIFriendPage() {
     </>
   );
 }
-
-    
