@@ -26,6 +26,22 @@ const mantras = [
 
 type Screen = 'selection' | 'learning' | 'chanting' | 'completion';
 
+// Debounce function
+function debounce<F extends (...args: any[]) => any>(func: F, waitFor: number) {
+    let timeout: NodeJS.Timeout | null = null;
+
+    const debounced = (...args: Parameters<F>) => {
+        if (timeout !== null) {
+            clearTimeout(timeout);
+            timeout = null;
+        }
+        timeout = setTimeout(() => func(...args), waitFor);
+    };
+
+    return debounced as (...args: Parameters<F>) => void;
+}
+
+
 export default function MantraChantingPage() {
     const [screen, setScreen] = useState<Screen>('selection');
     const [isClient, setIsClient] = useState(false);
@@ -37,6 +53,7 @@ export default function MantraChantingPage() {
     
     const recognitionRef = useRef<SpeechRecognition | null>(null);
     const animationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const lastChantTimeRef = useRef(0);
 
     useEffect(() => {
         setIsClient(true);
@@ -62,8 +79,13 @@ export default function MantraChantingPage() {
 
 
     const handleMantraRecognized = useCallback(() => {
-        setChantCount(prev => prev + 1);
-        triggerAnimationAndHaptics();
+       const now = Date.now();
+        // Simple debounce: only count if it's been > 1 second since last count
+        if (now - lastChantTimeRef.current > 1000) {
+            lastChantTimeRef.current = now;
+            setChantCount(prev => prev + 1);
+            triggerAnimationAndHaptics();
+        }
     }, [triggerAnimationAndHaptics]);
     
     const startListening = useCallback(() => {
@@ -85,17 +107,17 @@ export default function MantraChantingPage() {
         recognitionRef.current = recognition;
         
         recognition.continuous = true;
-        recognition.interimResults = false;
+        recognition.interimResults = true; // Process results as they come
         recognition.lang = 'en-US';
         
-        let lastTranscript = '';
         recognition.onresult = (event) => {
             const transcript = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
-            if (event.results[event.results.length - 1].isFinal && transcript !== lastTranscript) {
-                if (transcript.includes(selectedMantra.keyword)) {
-                    lastTranscript = transcript;
-                    handleMantraRecognized();
-                }
+            
+            // Use regex to match whole word to avoid partial matches
+            const mantraRegex = new RegExp(`\\b${selectedMantra.keyword}\\b`);
+
+            if (mantraRegex.test(transcript)) {
+                 handleMantraRecognized();
             }
         };
 
