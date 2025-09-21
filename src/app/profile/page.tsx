@@ -77,7 +77,7 @@ export default function ProfilePage() {
           <div>
             <h1 className="text-3xl font-bold">{user.firstName} {user.lastName}</h1>
             <p className="text-muted-foreground">
-                Born on {format(new Date(user.dob), 'MMMM d, yyyy')}
+                {user.dob ? `Born on ${format(new Date(user.dob), 'MMMM d, yyyy')}` : ''}
             </p>
           </div>
         </section>
