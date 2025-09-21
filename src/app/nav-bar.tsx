@@ -30,20 +30,10 @@ export function NavBar() {
   
   useEffect(() => {
     if (isClient) {
-      const checkLoginStatus = () => {
-        const user = localStorage.getItem('loggedInUserEmail');
-        setIsLoggedIn(!!user);
-      };
-      
-      checkLoginStatus();
-
-      const intervalId = setInterval(checkLoginStatus, 500); // Check every half-second
-
-      return () => {
-        clearInterval(intervalId);
-      };
+      const user = localStorage.getItem('loggedInUserEmail');
+      setIsLoggedIn(!!user);
     }
-  }, [isClient, pathname]);
+  }, [isClient, pathname]); // Re-check login status on every navigation
 
   useEffect(() => {
     if (mobileNavOpen) {
@@ -81,22 +71,6 @@ export function NavBar() {
           </Link>
         );
       })}
-       {isLoggedIn && (
-         <Link
-            href="/profile"
-            className={cn(
-              'flex items-center gap-2 rounded-full text-sm font-medium transition-colors',
-              isMobile ? 'px-4 py-3 text-base' : 'px-4 py-2',
-              pathname.startsWith('/profile')
-                ? 'bg-primary/10 text-primary'
-                : 'text-foreground/70 hover:text-foreground hover:bg-muted/50'
-            )}
-          >
-            <User className="h-5 w-5" />
-            <span className={cn({ 'hidden lg:inline': !isMobile })}>Profile</span>
-            {isMobile && <span className="text-lg">Profile</span>}
-          </Link>
-        )}
     </>
   );
 
