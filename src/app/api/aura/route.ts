@@ -1,8 +1,9 @@
+
 import {NextRequest, NextResponse} from 'next/server';
 
 export async function POST(req: NextRequest) {
   try {
-    const sdp = await req.text();
+    const { sdp } = await req.json();
 
     if (!sdp) {
       return NextResponse.json(
@@ -36,9 +37,8 @@ export async function POST(req: NextRequest) {
 
     const answerSdp = await geminiResponse.text();
 
-    return new Response(answerSdp, {
-        headers: { 'Content-Type': 'application/sdp' },
-    });
+    return NextResponse.json({ sdp: answerSdp });
+    
   } catch (error: any) {
     console.error('Proxy API Error:', error);
     return NextResponse.json(
