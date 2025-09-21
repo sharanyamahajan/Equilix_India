@@ -14,6 +14,11 @@ import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CalendarIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -22,13 +27,15 @@ export default function SignupPage() {
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [dob, setDob] = useState<Date>();
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!firstName || !email || !password) {
+    if (!firstName || !email || !password || !dob) {
       toast({
         title: 'Missing Information',
-        description: 'Please fill out all required fields.',
+        description: 'Please fill out all required fields, including date of birth.',
         variant: 'destructive',
       });
       return;
@@ -48,14 +55,17 @@ export default function SignupPage() {
       firstName,
       lastName,
       password, // In a real app, NEVER store plain text passwords
+      dob: dob.toISOString(),
     };
 
     localStorage.setItem(email, JSON.stringify(newUser));
+    localStorage.setItem('loggedInUserEmail', email);
+
     toast({
       title: 'Sign Up Successful!',
       description: 'Your account has been created. You can now log in.',
     });
-    router.push('/login');
+    router.push('/profile');
   };
 
   return (
@@ -101,6 +111,34 @@ export default function SignupPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
+              </div>
+               <div className="grid gap-2">
+                <Label htmlFor="dob">Date of birth</Label>
+                 <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !dob && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dob ? format(dob, "PPP") : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={dob}
+                      onSelect={setDob}
+                      initialFocus
+                      captionLayout="dropdown-buttons"
+                      fromYear={1920}
+                      toYear={new Date().getFullYear() - 13}
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="password">Password</Label>

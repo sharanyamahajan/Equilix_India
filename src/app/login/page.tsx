@@ -44,11 +44,12 @@ export default function LoginPage() {
     } else {
       const user = JSON.parse(storedUser);
       if (user.password === password) {
+        localStorage.setItem('loggedInUserEmail', email);
         toast({
           title: 'Login Successful!',
-          description: "Welcome back! You're being redirected.",
+          description: "Welcome back! You're being redirected to your profile.",
         });
-        router.push('/');
+        router.push('/profile');
       } else {
         toast({
           title: 'Incorrect Password',
