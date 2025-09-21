@@ -1,10 +1,21 @@
 'use client';
 
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
+import { Mail, Phone, MapPin } from 'lucide-react';
 
 const experts = [
   {
@@ -16,6 +27,9 @@ const experts = [
     rating: 4.9,
     reviews: 350,
     imageHint: 'man professional',
+    email: 'n.desai@ihbas.org',
+    phone: '+91 11 2211 4021',
+    address: 'Institute of Human Behaviour & Allied Sciences, Delhi, India',
   },
   {
     id: 'expert-2',
@@ -26,6 +40,9 @@ const experts = [
     rating: 5.0,
     reviews: 1200,
     imageHint: 'man yoga',
+    email: 'feedback@patanjaliayurved.org',
+    phone: '1800-180-4108',
+    address: 'Patanjali Yogpeeth, Haridwar, Uttarakhand, India',
   },
   {
     id: 'expert-3',
@@ -36,6 +53,9 @@ const experts = [
     rating: 5.0,
     reviews: 980,
     imageHint: 'man smiling',
+    email: 'connect@gaurgopaldas.com',
+    phone: 'N/A',
+    address: 'ISKCON Chowpatty, Mumbai, Maharashtra, India',
   },
    {
     id: 'expert-4',
@@ -46,6 +66,9 @@ const experts = [
     rating: 4.9,
     reviews: 280,
     imageHint: 'man corporate',
+    email: 's.malhotra@maxhealthcare.com',
+    phone: '+91 11 2651 5050',
+    address: 'Max Super Speciality Hospital, Saket, New Delhi, India',
   },
   {
     id: 'expert-5',
@@ -56,6 +79,9 @@ const experts = [
     rating: 5.0,
     reviews: 410,
     imageHint: 'woman meditation',
+    email: 'info@deepikachopra.com',
+    phone: 'N/A',
+    address: 'Los Angeles, California, USA',
   },
   {
     id: 'expert-6',
@@ -66,11 +92,19 @@ const experts = [
     rating: 4.9,
     reviews: 750,
     imageHint: 'man professional',
+    email: 'info@lukecoutinho.com',
+    phone: '+91 22 6625 2000',
+    address: 'Mumbai, Maharashtra, India',
   }
 ];
 
+type Expert = typeof experts[0];
+
 export default function MarketplacePage() {
+    const [selectedExpert, setSelectedExpert] = useState<Expert | null>(null);
+
     return (
+        <>
         <main className="flex-grow container mx-auto px-4 pt-28 pb-12">
              <div className="max-w-6xl mx-auto space-y-12">
                 <section className="text-center">
@@ -117,7 +151,7 @@ export default function MarketplacePage() {
                                     </div>
                                 </CardContent>
                                 <CardFooter>
-                                    <Button className="w-full">Book a Session</Button>
+                                    <Button className="w-full" onClick={() => setSelectedExpert(expert)}>Book a Session</Button>
                                 </CardFooter>
                             </Card>
                         );
@@ -125,5 +159,45 @@ export default function MarketplacePage() {
                 </div>
             </div>
         </main>
+        
+        {selectedExpert && (
+            <AlertDialog open={!!selectedExpert} onOpenChange={(open) => !open && setSelectedExpert(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Contact {selectedExpert.name}</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            You can reach out to {selectedExpert.name} using the details below to schedule your session.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <div className="py-4 space-y-4">
+                        <div className="flex items-start gap-4">
+                            <Mail className="w-5 h-5 mt-1 text-primary shrink-0"/>
+                            <div>
+                                <h4 className="font-semibold">Email</h4>
+                                <a href={`mailto:${selectedExpert.email}`} className="text-muted-foreground underline hover:text-primary transition-colors">{selectedExpert.email}</a>
+                            </div>
+                        </div>
+                         <div className="flex items-start gap-4">
+                            <Phone className="w-5 h-5 mt-1 text-primary shrink-0"/>
+                            <div>
+                                <h4 className="font-semibold">Phone</h4>
+                                <p className="text-muted-foreground">{selectedExpert.phone}</p>
+                            </div>
+                        </div>
+                         <div className="flex items-start gap-4">
+                            <MapPin className="w-5 h-5 mt-1 text-primary shrink-0"/>
+                            <div>
+                                <h4 className="font-semibold">Address</h4>
+                                <p className="text-muted-foreground">{selectedExpert.address}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Close</AlertDialogCancel>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        )}
+        </>
     );
 }
