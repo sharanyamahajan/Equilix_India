@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils';
 import { chat } from '@/app/actions';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import type { ChatInput } from '@/ai/schemas/chat';
 
 
 type Message = {
@@ -50,11 +51,11 @@ export function FloatingBot() {
     startTransition(async () => {
         try {
             const chatHistory = messages.map((msg) => ({
-                role: msg.role,
+                role: msg.role as 'user' | 'model',
                 parts: [{ text: msg.content }],
             }));
     
-            const result = await chat({ history: chatHistory, message: currentInput });
+            const result = await chat({ history: chatHistory, message: currentInput } as ChatInput);
     
             if (result && result.data) {
                 const modelMessage: Message = {
@@ -98,7 +99,7 @@ export function FloatingBot() {
       {/* Floating Button */}
       <Button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 h-16 w-16 rounded-full shadow-lg"
+        className="fixed bottom-6 right-6 h-16 w-16 rounded-full shadow-lg z-50"
         size="icon"
       >
         <Bot className="h-8 w-8" />
