@@ -1,19 +1,5 @@
 'use client';
 import { useState, useRef, useEffect, useTransition } from 'react';
-import { Button } from '@/components/ui/button';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-  SheetFooter,
-} from '@/components/ui/sheet';
-import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Bot, Loader2, Send, User } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { getAIFriendResponse } from '@/app/actions';
 import { useRouter } from 'next/navigation';
 
@@ -27,7 +13,7 @@ const novaSystemPrompt = `You are Nova, a friendly and efficient AI assistant fo
 const initialMessages: Message[] = [
     {
         role: 'model',
-        text: "Hello! I am Nova, your guide to the Equilix app. How can I help you explore today?"
+        text: "Hello! I'm Nova, your guide to the Equilix app. How can I help you today?"
     }
 ];
 
@@ -36,11 +22,19 @@ export function FloatingBot() {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState('');
   const [isPending, startTransition] = useTransition();
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isOpen]);
+
   const handleSend = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || isPending) return;
 
     const userMessage: Message = { role: 'user', text: input };
     setMessages((prev) => [...prev, userMessage]);
@@ -66,9 +60,7 @@ export function FloatingBot() {
               }
             }
           }
-
         } else {
-            console.error('AI Friend error:', response.error);
             const errorMessage: Message = {
               role: 'model',
               text: response.error || 'Sorry, I encountered an error. Please try again.',
@@ -77,110 +69,146 @@ export function FloatingBot() {
         }
     });
   };
-  
-  const handleSheetOpenChange = (open: boolean) => {
-    setIsOpen(open);
-    if (open && messages.length <= 1) { // Reset if only initial message is there
-        setMessages(initialMessages);
-    }
-  }
-
-
-  useEffect(() => {
-    if (scrollAreaRef.current) {
-        const scrollContainer = scrollAreaRef.current.querySelector('div:first-child');
-        if (scrollContainer) {
-            scrollContainer.scrollTop = scrollContainer.scrollHeight;
-        }
-    }
-  }, [messages]);
 
   return (
     <>
-      <Button
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 h-16 w-16 rounded-full shadow-lg z-20"
-        size="icon"
-      >
-        <Bot className="h-8 w-8" />
-        <span className="sr-only">Open Chatbot</span>
-      </Button>
+      <style jsx global>{`
+        #nova-btn {
+          position: fixed;
+          bottom: 20px;
+          right: 20px;
+          background: #4a90e2;
+          color: white;
+          border: none;
+          border-radius: 50%;
+          width: 60px;
+          height: 60px;
+          font-size: 22px;
+          cursor: pointer;
+          box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+          z-index: 1000;
+          transition: 0.3s;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        #nova-btn:hover {
+          background: #357abd;
+        }
+        #nova-chat {
+          position: fixed;
+          bottom: 90px;
+          right: 20px;
+          width: 320px;
+          max-height: 450px;
+          background: #fff;
+          border-radius: 12px;
+          box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+          overflow: hidden;
+          flex-direction: column;
+          z-index: 1000;
+        }
+        #nova-header {
+          background: #4a90e2;
+          color: white;
+          padding: 12px;
+          font-weight: bold;
+          text-align: center;
+        }
+        #nova-messages {
+          flex: 1;
+          padding: 10px;
+          overflow-y: auto;
+          font-size: 14px;
+          color: #333;
+        }
+        .msg-container {
+            display: flex;
+            flex-direction: column;
+            margin: 6px 0;
+            clear: both;
+        }
+        .msg {
+          padding: 8px 12px;
+          border-radius: 10px;
+          max-width: 80%;
+        }
+        .user .msg {
+          background: #e1f5fe;
+          align-self: flex-end;
+        }
+        .model .msg {
+          background: #f1f1f1;
+          align-self: flex-start;
+        }
+        #nova-input {
+          display: flex;
+          border-top: 1px solid #ccc;
+        }
+        #nova-input input {
+          flex: 1;
+          border: none;
+          padding: 10px;
+          font-size: 14px;
+          outline: none;
+        }
+        #nova-input button {
+          background: #4a90e2;
+          color: white;
+          border: none;
+          padding: 10px 15px;
+          cursor: pointer;
+        }
+        #nova-input button:hover {
+          background: #357abd;
+        }
+        #nova-input button:disabled {
+          background: #a0c7e4;
+          cursor: not-allowed;
+        }
 
-      <Sheet open={isOpen} onOpenChange={handleSheetOpenChange}>
-        <SheetContent className="flex flex-col">
-          <SheetHeader>
-            <SheetTitle>Nova - Your AI Companion</SheetTitle>
-            <SheetDescription>
-              I'm here to listen and help you navigate the app.
-            </SheetDescription>
-          </SheetHeader>
-          <ScrollArea className="flex-1 my-4 pr-4" ref={scrollAreaRef}>
-            <div className="space-y-4">
-              {messages.map((message, index) => (
-                <div
-                  key={index}
-                  className={cn(
-                    'flex items-start gap-3',
-                    message.role === 'user' ? 'justify-end' : 'justify-start'
-                  )}
-                >
-                  {message.role === 'model' && (
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback>
-                        <Bot className="h-5 w-5" />
-                      </AvatarFallback>
-                    </Avatar>
-                  )}
-                  <div
-                    className={cn(
-                      'max-w-xs rounded-lg p-3 text-sm',
-                      message.role === 'user'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted'
-                    )}
-                  >
-                    {message.text}
-                  </div>
-                   {message.role === 'user' && (
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback>
-                        <User className="h-5 w-5" />
-                      </AvatarFallback>
-                    </Avatar>
-                  )}
+        @media (max-width: 480px) {
+          #nova-chat {
+            width: 90%;
+            right: 5%;
+            bottom: 80px;
+            max-height: 70vh;
+          }
+        }
+      `}</style>
+
+      <button id="nova-btn" onClick={() => setIsOpen(!isOpen)}>💬</button>
+
+      {isOpen && (
+        <div id="nova-chat" style={{ display: 'flex' }}>
+          <div id="nova-header">Nova - Your Assistant</div>
+          <div id="nova-messages">
+            {messages.map((message, index) => (
+              <div key={index} className={`msg-container ${message.role}`}>
+                <div className="msg">{message.text}</div>
+              </div>
+            ))}
+            {isPending && (
+                <div className="msg-container model">
+                    <div className="msg">...</div>
                 </div>
-              ))}
-               {isPending && (
-                 <div className="flex items-start gap-3 justify-start">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback>
-                        <Bot className="h-5 w-5" />
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="bg-muted rounded-lg p-3 flex items-center">
-                        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground"/>
-                    </div>
-                 </div>
-                )}
-            </div>
-          </ScrollArea>
-          <SheetFooter>
-            <div className="flex w-full items-center gap-2">
-              <Input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                placeholder="Type your message..."
-                disabled={isPending}
-              />
-              <Button onClick={handleSend} disabled={isPending || !input.trim()}>
-                <Send className="h-4 w-4" />
-                <span className="sr-only">Send</span>
-              </Button>
-            </div>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+          <div id="nova-input">
+            <input
+              type="text"
+              id="nova-text"
+              placeholder="Type a message..."
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+              disabled={isPending}
+            />
+            <button onClick={handleSend} disabled={isPending || !input.trim()}>➤</button>
+          </div>
+        </div>
+      )}
     </>
   );
 }
