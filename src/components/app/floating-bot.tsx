@@ -1,7 +1,14 @@
+
 'use client';
-import { useState, useRef, useEffect, useTransition } from 'react';
+
+import { useState, useRef, useEffect, useTransition, Fragment } from 'react';
 import { getAIFriendResponse } from '@/app/actions';
 import { useRouter } from 'next/navigation';
+import { Bot, Loader2, Send, User, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 type Message = {
   role: 'user' | 'model';
@@ -24,16 +31,22 @@ export function FloatingBot() {
   const [isPending, startTransition] = useTransition();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  const { toast } = useToast();
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, isOpen]);
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+  
+  const toggleChat = () => {
+    setIsOpen(!isOpen);
+    if(isOpen) { // If was open, now closing
+      setMessages(initialMessages);
+      setInput('');
+    }
+  };
 
-  const handleSend = async () => {
+
+  const handleSend = () => {
     if (!input.trim() || isPending) return;
 
     const userMessage: Message = { role: 'user', text: input };
@@ -66,146 +79,73 @@ export function FloatingBot() {
               text: response.error || 'Sorry, I encountered an error. Please try again.',
             };
             setMessages((prev) => [...prev, errorMessage]);
+            toast({
+                title: 'Error',
+                description: response.error,
+                variant: 'destructive',
+            })
         }
     });
   };
 
   return (
     <>
-      <style jsx global>{`
-        #nova-btn {
-          position: fixed;
-          bottom: 20px;
-          right: 20px;
-          background: #4a90e2;
-          color: white;
-          border: none;
-          border-radius: 50%;
-          width: 60px;
-          height: 60px;
-          font-size: 22px;
-          cursor: pointer;
-          box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-          z-index: 1000;
-          transition: 0.3s;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        #nova-btn:hover {
-          background: #357abd;
-        }
-        #nova-chat {
-          position: fixed;
-          bottom: 90px;
-          right: 20px;
-          width: 320px;
-          max-height: 450px;
-          background: #fff;
-          border-radius: 12px;
-          box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-          overflow: hidden;
-          flex-direction: column;
-          z-index: 1000;
-        }
-        #nova-header {
-          background: #4a90e2;
-          color: white;
-          padding: 12px;
-          font-weight: bold;
-          text-align: center;
-        }
-        #nova-messages {
-          flex: 1;
-          padding: 10px;
-          overflow-y: auto;
-          font-size: 14px;
-          color: #333;
-        }
-        .msg-container {
-            display: flex;
-            flex-direction: column;
-            margin: 6px 0;
-            clear: both;
-        }
-        .msg {
-          padding: 8px 12px;
-          border-radius: 10px;
-          max-width: 80%;
-        }
-        .user .msg {
-          background: #e1f5fe;
-          align-self: flex-end;
-        }
-        .model .msg {
-          background: #f1f1f1;
-          align-self: flex-start;
-        }
-        #nova-input {
-          display: flex;
-          border-top: 1px solid #ccc;
-        }
-        #nova-input input {
-          flex: 1;
-          border: none;
-          padding: 10px;
-          font-size: 14px;
-          outline: none;
-        }
-        #nova-input button {
-          background: #4a90e2;
-          color: white;
-          border: none;
-          padding: 10px 15px;
-          cursor: pointer;
-        }
-        #nova-input button:hover {
-          background: #357abd;
-        }
-        #nova-input button:disabled {
-          background: #a0c7e4;
-          cursor: not-allowed;
-        }
-
-        @media (max-width: 480px) {
-          #nova-chat {
-            width: 90%;
-            right: 5%;
-            bottom: 80px;
-            max-height: 70vh;
-          }
-        }
-      `}</style>
-
-      <button id="nova-btn" onClick={() => setIsOpen(!isOpen)}>💬</button>
+      <Button
+        onClick={toggleChat}
+        className="fixed bottom-5 right-5 w-16 h-16 rounded-full shadow-lg flex items-center justify-center text-3xl z-[1000] transition-transform transform hover:scale-110"
+        aria-label={isOpen ? "Close Chat" : "Open Chat"}
+      >
+        {isOpen ? <X/> : '💬'}
+      </Button>
 
       {isOpen && (
-        <div id="nova-chat" style={{ display: 'flex' }}>
-          <div id="nova-header">Nova - Your Assistant</div>
-          <div id="nova-messages">
-            {messages.map((message, index) => (
-              <div key={index} className={`msg-container ${message.role}`}>
-                <div className="msg">{message.text}</div>
+        <div className="fixed bottom-24 right-5 w-[350px] max-w-[90vw] h-[500px] max-h-[80vh] bg-card rounded-2xl shadow-xl flex flex-col z-[1000] overflow-hidden animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-4 duration-300">
+          <header className="bg-primary text-primary-foreground font-semibold p-3 text-center">
+            Nova - Your Assistant
+          </header>
+
+          <div className="flex-1 p-4 overflow-y-auto space-y-4">
+            {messages.map((msg, i) => (
+               <div key={i} className={cn("flex items-end gap-2", msg.role === 'user' ? "justify-end" : "justify-start")}>
+                 {msg.role === 'model' && <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center shrink-0"><Bot size={20}/></div>}
+                 <div className={cn(
+                    "max-w-[80%] px-3 py-2 rounded-xl text-sm",
+                    msg.role === "user" ? "bg-primary text-primary-foreground rounded-br-none" : "bg-secondary text-secondary-foreground rounded-bl-none"
+                  )}>
+                    {msg.text}
+                 </div>
+                 {msg.role === 'user' && <div className="w-8 h-8 rounded-full bg-secondary/80 text-secondary-foreground flex items-center justify-center shrink-0"><User size={20}/></div>}
               </div>
             ))}
-            {isPending && (
-                <div className="msg-container model">
-                    <div className="msg">...</div>
+             {isPending && (
+                <div className="flex items-end gap-2 justify-start">
+                     <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center shrink-0"><Bot size={20}/></div>
+                     <div className="max-w-[80%] px-3 py-2 rounded-xl text-sm bg-secondary text-secondary-foreground rounded-bl-none flex items-center">
+                        <Loader2 className="w-4 h-4 animate-spin"/>
+                     </div>
                 </div>
-            )}
+             )}
             <div ref={messagesEndRef} />
           </div>
-          <div id="nova-input">
-            <input
+
+          <div className="flex border-t p-2 gap-2">
+            <Input
               type="text"
-              id="nova-text"
-              placeholder="Type a message..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+              placeholder="Type a message..."
+              className="flex-1 p-2 outline-none text-sm bg-background"
               disabled={isPending}
             />
-            <button onClick={handleSend} disabled={isPending || !input.trim()}>➤</button>
+            <Button
+              onClick={handleSend}
+              className="px-4 transition-colors"
+              disabled={isPending || !input.trim()}
+              aria-label="Send Message"
+            >
+              {isPending ? <Loader2 className="h-4 w-4 animate-spin"/> : <Send className="h-4 w-4" />}
+            </Button>
           </div>
         </div>
       )}
