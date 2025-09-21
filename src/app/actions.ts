@@ -7,7 +7,8 @@ import { detectEmotion } from '@/ai/flows/detect-emotion';
 import { aiFriend, type AIFriendInput } from '@/ai/flows/ai-friend';
 import { createAITwin as createAITwinFlow, type CreateAITwinInput } from '@/ai/flows/create-ai-twin';
 import { learnFromHistory as learnFromHistoryFlow, type LearnFromHistoryInput } from '@/ai/flows/learn-from-history';
-import { chat as chatFlow, type ChatInput } from '@/ai/flows/chat-flow';
+import { chat as chatFlow } from '@/ai/flows/chat-flow';
+import type { ChatInput } from '@/ai/schemas/chat';
 
 
 export async function getHtmlImprovements(htmlContent: string) {
