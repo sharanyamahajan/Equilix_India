@@ -10,35 +10,51 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      alert('Please enter both email and password.');
+      toast({
+        title: 'Missing Information',
+        description: 'Please enter both email and password.',
+        variant: 'destructive',
+      });
       return;
     }
 
     const storedUser = localStorage.getItem(email);
 
     if (!storedUser) {
-      alert('No account found with this email. Please sign up first.');
+      toast({
+        title: 'Login Failed',
+        description: 'No account found with this email. Please sign up first.',
+        variant: 'destructive',
+      });
       router.push('/signup');
     } else {
       const user = JSON.parse(storedUser);
       if (user.password === password) {
-        alert('Login successful!');
-        // Here you would typically redirect to a dashboard or home page
+        toast({
+          title: 'Login Successful!',
+          description: "Welcome back! You're being redirected.",
+        });
         router.push('/mode-selection');
       } else {
-        alert('Incorrect password. Please try again.');
+        toast({
+          title: 'Incorrect Password',
+          description: 'The password you entered is incorrect. Please try again.',
+          variant: 'destructive',
+        });
       }
     }
   };

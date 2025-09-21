@@ -10,12 +10,14 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 export default function SignupPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -24,12 +26,20 @@ export default function SignupPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!firstName || !email || !password) {
-      alert('Please fill out all required fields.');
+      toast({
+        title: 'Missing Information',
+        description: 'Please fill out all required fields.',
+        variant: 'destructive',
+      });
       return;
     }
 
     if (localStorage.getItem(email)) {
-      alert('An account with this email already exists. Please login.');
+      toast({
+        title: 'Account Exists',
+        description: 'An account with this email already exists. Please login.',
+        variant: 'destructive',
+      });
       router.push('/login');
       return;
     }
@@ -41,7 +51,10 @@ export default function SignupPage() {
     };
 
     localStorage.setItem(email, JSON.stringify(newUser));
-    alert('Sign up successful! You can now log in.');
+    toast({
+      title: 'Sign Up Successful!',
+      description: 'Your account has been created. You can now log in.',
+    });
     router.push('/login');
   };
 
