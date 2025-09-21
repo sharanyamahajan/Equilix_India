@@ -37,15 +37,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(sessionData);
 
     } else if (action === 'exchange_sdp') {
-      if (!sessionName || !sdp) {
+      if (!sessionName || !sdp || !model) {
         return NextResponse.json(
-          { error: 'Session name and SDP are required for exchange.' },
+          { error: 'Session name, SDP, and model are required for exchange.' },
           { status: 400 }
         );
       }
 
       const sdpResponse = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}/sessions/${sessionName}:exchange?key=${API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}/sessions/${sessionName}:exchange?key=${API_KEY}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
