@@ -124,7 +124,7 @@ export default function SignupPage() {
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {dob ? format(dob, "PPP") : <span>Pick a date</span>}
+                      {dob ? format(dob, "MM/dd/yyyy") : <span>Pick a date</span>}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
@@ -133,7 +133,6 @@ export default function SignupPage() {
                       selected={dob}
                       onSelect={setDob}
                       initialFocus
-                      captionLayout="dropdown-buttons"
                       fromYear={1920}
                       toYear={new Date().getFullYear() - 13}
                     />
