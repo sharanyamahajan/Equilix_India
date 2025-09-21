@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -7,25 +6,20 @@ import { cn } from '@/lib/utils';
 import { Mic, MicOff, PhoneOff, Video, VideoOff } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 
-const AURA_API_ENDPOINT = '/api/aura'; 
+const AURA_API_ENDPOINT = '/api/aura';
+const MODEL = 'gemini-1.5-pro-exp'; 
 
 type Expression = {
   mouthOpen: number; // 0..1
-  eyebrowRaise: number; // 0..1
-  pupilX: number; // -1..1
-  pupilY: number; // -1..1
 };
 
-export default function AdvancedAuraCall(): JSX.Element {
+export default function AuraVideoCall(): JSX.Element {
   const [inCall, setInCall] = useState(false);
   const [isMicOn, setIsMicOn] = useState(true);
   const [isCamOn, setIsCamOn] = useState(true);
-  const [aiText, setAiText] = useState("Hi — I'm Aura. How are you feeling today?");
+  const [aiStatus, setAiStatus] = useState("Hi — I'm Aura. How are you feeling today?");
   const [expression, setExpression] = useState<Expression>({
     mouthOpen: 0,
-    eyebrowRaise: 0,
-    pupilX: 0,
-    pupilY: 0,
   });
 
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -35,36 +29,121 @@ export default function AdvancedAuraCall(): JSX.Element {
   const analyserLocalRef = useRef<AnalyserNode | null>(null);
   const analyserRemoteRef = useRef<AnalyserNode | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
-  const wsRef = useRef<WebSocket | null>(null);
   const animFrameRef = useRef<number | null>(null);
+  const mouthRef = useRef<SVGPathElement | null>(null);
 
-  function makePeerConnection(): RTCPeerConnection {
-    const pc = new RTCPeerConnection({
-      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
-    });
-    pc.oniceconnectionstatechange = () => console.log('ICE state:', pc.iceConnectionState);
-    pc.ontrack = (ev) => {
-      if (remoteAudioRef.current) {
-        remoteAudioRef.current.srcObject = ev.streams[0];
-      }
-    };
-    return pc;
+  const character = {
+    mouthShapes: {
+      neutral: 'M 80 130 Q 100 130 120 130',
+      a: 'M 80 130 Q 100 145 120 130',
+      b: 'M 80 135 Q 100 135 120 135',
+      c: 'M 80 125 Q 100 140 120 125',
+    },
+  };
+  
+  let lipSyncInterval: NodeJS.Timer;
+  const startLipSync = () => {
+    if (lipSyncInterval || !mouthRef.current) return;
+    const shapes = Object.values(character.mouthShapes);
+    lipSyncInterval = setInterval(() => {
+      mouthRef.current!.setAttribute('d', shapes[Math.floor(Math.random() * shapes.length)]);
+    }, 120);
+  };
+  const stopLipSync = () => {
+    clearInterval(lipSyncInterval);
+    if (mouthRef.current) mouthRef.current.setAttribute('d', character.mouthShapes.neutral);
+  };
+
+  const startLocalMedia = async (): Promise<void> => {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        localStreamRef.current = stream;
+        if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+
+        const audioCtx = audioCtxRef.current || new (window.AudioContext || (window as any).webkitAudioContext)();
+        audioCtxRef.current = audioCtx;
+        const src = audioCtx.createMediaStreamSource(stream);
+        const analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 2048;
+        src.connect(analyser);
+        analyserLocalRef.current = analyser;
+    } catch (err) {
+        console.error('Cannot access camera/mic', err);
+        setAiStatus('Camera or microphone not available.');
+    }
   }
 
-  async function startLocalMedia(): Promise<void> {
-    const constraints = { audio: true, video: { width: 640, height: 480 } };
-    const stream = await navigator.mediaDevices.getUserMedia(constraints);
-    localStreamRef.current = stream;
-    if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+  const startCall = async (): Promise<void> => {
+    setInCall(true);
+    setAiStatus('Connecting...');
+    await startLocalMedia();
+    
+    try {
+        // Step 1: Create a session via our backend proxy
+        const sessionResponse = await fetch(AURA_API_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'create_session', model: MODEL }),
+        });
 
-    const audioCtx = audioCtxRef.current || new (window.AudioContext || (window as any).webkitAudioContext)();
-    audioCtxRef.current = audioCtx;
-    const src = audioCtx.createMediaStreamSource(stream);
-    const analyser = audioCtx.createAnalyser();
-    analyser.fftSize = 2048;
-    src.connect(analyser);
-    analyserLocalRef.current = analyser;
+        if (!sessionResponse.ok) {
+            const errorText = await sessionResponse.text();
+            throw new Error(`Failed to create session: ${errorText}`);
+        }
+        
+        const sessionData = await sessionResponse.json();
+        const sessionName = sessionData.name;
+        console.log('Session created:', sessionName);
+
+        const pc = new RTCPeerConnection({
+          iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+        });
+        pcRef.current = pc;
+
+        localStreamRef.current?.getTracks().forEach(track => pc.addTrack(track, localStreamRef.current!));
+
+        pc.ontrack = (event) => {
+            if (remoteAudioRef.current) {
+                remoteAudioRef.current.srcObject = event.streams[0];
+                attachRemoteAnalyser();
+                startLipSync();
+            }
+             event.streams[0].onremovetrack = () => {
+                stopLipSync();
+            };
+        };
+
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+
+        // Step 2: Exchange SDP via our backend proxy
+        const sdpResponse = await fetch(AURA_API_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'exchange_sdp',
+                sessionName: sessionName,
+                sdp: offer.sdp
+            }),
+        });
+        
+        if (!sdpResponse.ok) {
+            const errorText = await sdpResponse.text();
+            throw new Error(`SDP exchange failed: ${errorText}`);
+        }
+
+        const answer = await sdpResponse.json();
+        await pc.setRemoteDescription({ type: 'answer', sdp: answer.sdp });
+
+        setAiStatus("Hi! I'm Aura. How are you feeling today?");
+
+    } catch (e) {
+      console.error('startCall error', e);
+      cleanupAll();
+      alert('Could not start call. See console for details.');
+    }
   }
+
 
   function attachRemoteAnalyser(): void {
     if (!remoteAudioRef.current) return;
@@ -78,106 +157,6 @@ export default function AdvancedAuraCall(): JSX.Element {
     analyserRemoteRef.current = analyser;
   }
 
-  async function createConnectionAndExchangeSDP(): Promise<void> {
-    const pc = makePeerConnection();
-    pcRef.current = pc;
-
-    if (!localStreamRef.current) throw new Error('Local stream missing');
-    localStreamRef.current.getTracks().forEach((t) => pc.addTrack(t, localStreamRef.current as MediaStream));
-
-    const offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
-
-    const resp = await fetch(AURA_API_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sdp: offer.sdp }),
-    });
-
-    if (!resp.ok) {
-      const text = await resp.text();
-      throw new Error('SDP exchange failed: ' + text);
-    }
-
-    const answerSdp = await resp.text();
-    await pc.setRemoteDescription({ type: 'answer', sdp: answerSdp });
-  }
-
-  function connectEventsWebSocket(): void {
-    // Note: WebSocket functionality is not implemented in the backend for this version.
-  }
-
-  function startExpressionLoop(): void {
-    const localAnalyser = analyserLocalRef.current;
-    const remoteAnalyser = analyserRemoteRef.current;
-    if (!localAnalyser && !remoteAnalyser) return;
-
-    const tmpArrayLocal = new Uint8Array(localAnalyser?.frequencyBinCount || 0);
-    const tmpArrayRemote = new Uint8Array(remoteAnalyser?.frequencyBinCount || 0);
-
-    const loop = () => {
-      let localLevel = 0;
-      let remoteLevel = 0;
-
-      if (localAnalyser) {
-        localAnalyser.getByteTimeDomainData(tmpArrayLocal);
-        let sum = 0;
-        for (let i = 0; i < tmpArrayLocal.length; i++) {
-          const v = tmpArrayLocal[i] - 128;
-          sum += v * v;
-        }
-        localLevel = Math.sqrt(sum / tmpArrayLocal.length) / 128;
-      }
-
-      if (remoteAnalyser) {
-        remoteAnalyser.getByteTimeDomainData(tmpArrayRemote);
-        let sum = 0;
-        for (let i = 0; i < tmpArrayRemote.length; i++) {
-          const v = tmpArrayRemote[i] - 128;
-          sum += v * v;
-        }
-        remoteLevel = Math.sqrt(sum / tmpArrayRemote.length) / 128;
-      }
-
-      const mouthOpen = Math.max(remoteLevel * 1.2, localLevel * 0.9);
-      const eyebrowRaise = Math.min(localLevel * 1.5, 1);
-
-      const t = Date.now() / 1000;
-      const pupilX = Math.sin(t * 0.8) * 0.15 + (Math.random() - 0.5) * 0.02;
-      const pupilY = Math.cos(t * 0.7) * 0.08 + (Math.random() - 0.5) * 0.02;
-
-      setExpression({
-        mouthOpen: Math.min(Math.max(mouthOpen, 0), 1),
-        eyebrowRaise: Math.min(Math.max(eyebrowRaise, 0), 1),
-        pupilX,
-        pupilY,
-      });
-
-      animFrameRef.current = requestAnimationFrame(loop);
-    };
-
-    animFrameRef.current = requestAnimationFrame(loop);
-  }
-
-  function stopExpressionLoop(): void {
-    if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-    animFrameRef.current = null;
-  }
-
-  async function startCall(): Promise<void> {
-    try {
-      await startLocalMedia();
-      await createConnectionAndExchangeSDP();
-      attachRemoteAnalyser();
-      // connectEventsWebSocket(); // Disabled for now
-      startExpressionLoop();
-      setInCall(true);
-    } catch (e) {
-      console.error('startCall error', e);
-      cleanupAll();
-      alert('Could not start call. See console for details.');
-    }
-  }
 
   function cleanupAll(): void {
     localStreamRef.current?.getTracks().forEach((t) => t.stop());
@@ -186,22 +165,8 @@ export default function AdvancedAuraCall(): JSX.Element {
     pcRef.current?.close();
     pcRef.current = null;
 
-    wsRef.current?.close();
-    wsRef.current = null;
-
-    try {
-      analyserLocalRef.current = null;
-      analyserRemoteRef.current = null;
-      if (audioCtxRef.current && typeof audioCtxRef.current.close === 'function') {
-        audioCtxRef.current.close();
-      }
-      audioCtxRef.current = null;
-    } catch (e) {
-      console.warn('audio ctx close err', e);
-    }
-
-    stopExpressionLoop();
-
+    stopLipSync();
+    
     if (remoteAudioRef.current) {
       remoteAudioRef.current.pause();
       remoteAudioRef.current.srcObject = null;
@@ -211,7 +176,7 @@ export default function AdvancedAuraCall(): JSX.Element {
     }
 
     setInCall(false);
-    setAiText("Session ended");
+    setAiStatus("Session ended");
   }
 
   function toggleMic() {
@@ -230,21 +195,18 @@ export default function AdvancedAuraCall(): JSX.Element {
   useEffect(() => {
     return () => cleanupAll();
   }, []);
-
-  function mouthPathFor(open: number) {
-    const ctl = 0 + 22 * open;
-    return `M68 128 Q100 ${128 + ctl} 132 128`;
-  }
-
-  function pupilTransform(x: number, y: number) {
-    return `translate(${x * 6}, ${y * 4})`;
-  }
-
-  function eyebrowPath(raise: number, left = true) {
-    const y = 78 - raise * 8;
-    if (left) return `M60 ${y} Q80 ${y - 6} 96 ${y}`;
-    return `M104 ${y} Q120 ${y - 6} 140 ${y}`;
-  }
+  
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const eyes = document.querySelector('#eyes') as SVGElement;
+      if (!eyes) return;
+      eyes.style.transform = 'scaleY(0.1)';
+      setTimeout(() => {
+        eyes.style.transform = 'scaleY(1)';
+      }, 200);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="h-screen w-screen flex flex-col items-center justify-center font-body bg-gradient-to-br from-blue-100 to-indigo-200">
@@ -259,7 +221,7 @@ export default function AdvancedAuraCall(): JSX.Element {
                 </CardDescription>
             </CardHeader>
             <CardContent>
-                <p className="mb-8">This is a safe space to talk about whatever's on your mind. Aura is here to listen without judgment. Ready to chat?</p>
+                <p className="mb-8">{aiStatus}</p>
                 <Button onClick={startCall} size="lg">
                     Start Conversation
                 </Button>
@@ -269,32 +231,31 @@ export default function AdvancedAuraCall(): JSX.Element {
         <div className="h-full w-full flex flex-col items-center justify-center relative">
           {/* AI Avatar */}
           <div className="w-96 h-96 flex items-center justify-center relative">
-            <svg viewBox="0 0 200 200" className="w-96 h-96">
-              <defs>
-                <radialGradient id="auraGrad" cx="50%" cy="40%">
-                  <stop offset="0%" stopColor="#60a5fa" stopOpacity="0.95" />
-                  <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.9" />
-                </radialGradient>
-              </defs>
-              <circle cx="100" cy="100" r="88" fill="url(#auraGrad)" />
-              <g id="eyes" transform="translate(0, -4)">
-                <ellipse cx="76" cy="90" rx="18" ry="10" fill="#fff" />
-                <g transform={pupilTransform(expression.pupilX, expression.pupilY)}>
-                  <circle cx="76" cy="90" r="5.2" fill="#0f172a" />
+            <svg viewBox="0 0 200 200" className="w-full h-full">
+                <defs>
+                  <radialGradient id="auraGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                    <stop offset="0%" style={{ stopColor: '#93c5fd', stopOpacity: 0.8 }} />
+                    <stop offset="100%" style={{ stopColor: '#3b82f6', stopOpacity: 0.9 }} />
+                  </radialGradient>
+                </defs>
+                <circle cx="100" cy="100" r="90" fill="url(#auraGradient)" />
+                <circle cx="100" cy="100" r="70" fill="none" stroke="#ffffff" strokeWidth="2" strokeOpacity="0.5" />
+                <g id="eyes" style={{ transition: 'transform 0.2s ease-out' }}>
+                  <path className="eye-line" d="M 70 90 L 90 90" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" />
+                  <path className="eye-line" d="M 110 90 L 130 90" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" />
                 </g>
-                <ellipse cx="124" cy="90" rx="18" ry="10" fill="#fff" />
-                <g transform={pupilTransform(expression.pupilX * 0.9, expression.pupilY)}>
-                  <circle cx="124" cy="90" r="5.2" fill="#0f172a" />
-                </g>
-                <ellipse cx="68" cy="60" rx="14" ry="6" fill="rgba(255,255,255,0.08)" />
-              </g>
-              <path d={eyebrowPath(expression.eyebrowRaise, true)} stroke="#0f172a" strokeWidth={3} strokeLinecap="round" fill="none" />
-              <path d={eyebrowPath(expression.eyebrowRaise, false)} stroke="#0f172a" strokeWidth={3} strokeLinecap="round" fill="none" />
-              <path d={mouthPathFor(expression.mouthOpen)} stroke="#fff" strokeWidth={3} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                <path
+                  ref={mouthRef}
+                  d="M 80 130 Q 100 130 120 130"
+                  stroke="#ffffff"
+                  strokeWidth="3"
+                  fill="none"
+                  strokeLinecap="round"
+                />
             </svg>
              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-full max-w-xs">
                 <div className="bg-background/80 backdrop-blur-md text-foreground p-3 rounded-lg shadow-md text-center">
-                    <div className="text-sm">{aiText}</div>
+                    <div className="text-sm">{aiStatus}</div>
                 </div>
             </div>
           </div>

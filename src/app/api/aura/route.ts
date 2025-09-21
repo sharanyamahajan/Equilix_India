@@ -1,55 +1,74 @@
 
 import {NextRequest, NextResponse} from 'next/server';
 
+const API_KEY = process.env.GEMINI_API_KEY;
+
 export async function POST(req: NextRequest) {
+  if (!API_KEY) {
+    return NextResponse.json(
+      {error: 'API key is not configured on the server.'},
+      {status: 500}
+    );
+  }
+
   try {
-    const { sdp } = await req.json();
+    const { action, sessionName, sdp, model } = await req.json();
 
-    if (!sdp) {
-      return NextResponse.json(
-        {error: 'Session Description (SDP) is required.'},
-        {status: 400}
+    if (action === 'create_session') {
+      const sessionResponse = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}/sessions?key=${API_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ modalities: ['TEXT', 'AUDIO'] }),
+        }
       );
-    }
-    if (!process.env.GEMINI_API_KEY) {
-      return NextResponse.json(
-        {error: 'API key is not configured on the server.'},
-        {status: 500}
+
+      if (!sessionResponse.ok) {
+        const errorText = await sessionResponse.text();
+        console.error('Gemini Session API Error:', errorText);
+        return NextResponse.json(
+          { error: `Gemini Session API failed: ${errorText}` },
+          { status: sessionResponse.status }
+        );
+      }
+      
+      const sessionData = await sessionResponse.json();
+      return NextResponse.json(sessionData);
+
+    } else if (action === 'exchange_sdp') {
+      if (!sessionName || !sdp) {
+        return NextResponse.json(
+          { error: 'Session name and SDP are required for exchange.' },
+          { status: 400 }
+        );
+      }
+
+      const sdpResponse = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}/sessions/${sessionName}:exchange?key=${API_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sdp: sdp }),
+        }
       );
+      
+      if (!sdpResponse.ok) {
+        const errorText = await sdpResponse.text();
+        console.error('Gemini SDP Exchange API Error:', errorText);
+        return NextResponse.json(
+          { error: `Gemini SDP Exchange API failed: ${errorText}` },
+          { status: sdpResponse.status }
+        );
+      }
+      
+      const answerData = await sdpResponse.json();
+      return NextResponse.json(answerData);
+
+    } else {
+      return NextResponse.json({ error: 'Invalid action.' }, { status: 400 });
     }
 
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-exp:generateAnswer?key=${process.env.GEMINI_API_KEY}`;
-
-    const geminiResponse = await fetch(geminiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [{
-            parts: [{
-                text: sdp
-            }]
-        }]
-      }),
-    });
-
-    if (!geminiResponse.ok) {
-      const errorText = await geminiResponse.text();
-      console.error('Gemini API Error:', errorText);
-      return NextResponse.json(
-        {error: `Gemini API failed: ${errorText}`},
-        {status: geminiResponse.status}
-      );
-    }
-
-    const answerData = await geminiResponse.json();
-    const answerSdp = answerData.answer.text;
-    
-    return new Response(answerSdp, {
-        headers: { 'Content-Type': 'application/sdp' }
-    });
-    
   } catch (error: any) {
     console.error('Proxy API Error:', error);
     return NextResponse.json(
@@ -58,4 +77,3 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-
