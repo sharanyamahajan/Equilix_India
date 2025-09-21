@@ -6,9 +6,10 @@
  */
 
 import { ai } from '@/ai/genkit';
+import { z } from 'genkit';
 import wav from 'wav';
 import { googleAI } from '@genkit-ai/googleai';
-import { AIFriendInput, AIFriendInputSchema, AIFriendOutput, AIFriendOutputSchema } from '@/ai/schemas/aura';
+import { AIFriendInputSchema, AIFriendOutputSchema, type AIFriendInput, type AIFriendOutput } from '@/ai/schemas/aura';
 
 
 export async function aiFriend(input: AIFriendInput): Promise<AIFriendOutput> {
