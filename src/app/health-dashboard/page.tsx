@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Bot, Heart, Activity, TrendingUp, BarChart } from 'lucide-react';
+import { ArrowRight, Bot, Heart, Activity, TrendingUp, BarChart, Camera } from 'lucide-react';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import Link from 'next/link';
@@ -124,7 +124,14 @@ export default function HealthDashboardPage() {
                     <CardContent className="grid sm:grid-cols-3 gap-4">
                         <div className="grid gap-2">
                            <Label htmlFor="stress-input">Stress Level (0-100)</Label>
-                           <Input id="stress-input" type="number" value={stressInput} onChange={(e) => setStressInput(e.target.value)} placeholder="e.g. 68" />
+                           <div className="flex gap-2">
+                            <Input id="stress-input" type="number" value={stressInput} onChange={(e) => setStressInput(e.target.value)} placeholder="e.g. 68" />
+                            <Button asChild variant="outline" size="icon" title="Auto-detect Stress">
+                                <Link href="/stress-detector">
+                                    <Camera className="w-4 h-4" />
+                                </Link>
+                            </Button>
+                           </div>
                         </div>
                         <div className="grid gap-2">
                            <Label htmlFor="bp-input">Systolic BP (mmHg)</Label>

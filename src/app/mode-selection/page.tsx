@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { BookText, Wind, ScanFace, Mic, BrainCircuit, HeartPulse, Users } from 'lucide-react';
+import { BookText, Wind, ScanFace, Mic, BrainCircuit, HeartPulse, Users, Camera } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const primaryFeature = {
@@ -31,6 +31,12 @@ const secondaryModes = [
     title: 'Emotion Scan',
     description: 'Use your camera to get AI-powered emotional feedback.',
     icon: ScanFace,
+  },
+  {
+    href: '/stress-detector',
+    title: 'Live Stress Detector',
+    description: 'Get a real-time stress score using your camera.',
+    icon: Camera,
   },
   {
     href: '/mantra-chanting',
