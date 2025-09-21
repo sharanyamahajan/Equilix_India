@@ -66,8 +66,9 @@ export function NavBar() {
     )}>
       <div className="container flex h-20 items-center">
         <div className="mr-auto flex items-center">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="font-signature text-3xl text-white">Equilix</span>
+          <Link href="/" className="group relative flex items-center gap-2">
+            <div className="absolute -top-1/2 -left-1/2 w-32 h-32 bg-primary/30 rounded-full blur-2xl opacity-60 group-hover:opacity-80 transition-opacity duration-300"></div>
+            <span className="font-signature text-3xl text-white relative">Equilix</span>
           </Link>
         </div>
 
