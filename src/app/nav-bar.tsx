@@ -22,18 +22,13 @@ export function NavBar() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isClient, setIsClient] = useState(false);
 
+  // This effect ensures the component re-checks the login status on every navigation change.
   useEffect(() => {
-    setIsClient(true);
-  }, []);
-  
-  useEffect(() => {
-    if (isClient) {
-      const user = localStorage.getItem('loggedInUserEmail');
-      setIsLoggedIn(!!user);
-    }
-  }, [isClient, pathname]); // Re-check login status on every navigation
+    // We can safely check localStorage here because useEffect only runs on the client.
+    const user = localStorage.getItem('loggedInUserEmail');
+    setIsLoggedIn(!!user);
+  }, [pathname]); // The key is to re-run this check when the pathname changes.
 
   useEffect(() => {
     if (mobileNavOpen) {
@@ -95,7 +90,7 @@ export function NavBar() {
 
         {/* Desktop Auth Buttons */}
         <div className="hidden md:flex items-center justify-end gap-2 ml-auto">
-            {isClient && (isLoggedIn ? (
+            {isLoggedIn ? (
               <Button asChild>
                 <Link href="/profile">My Profile</Link>
               </Button>
@@ -108,7 +103,7 @@ export function NavBar() {
                   <Link href="/signup">Sign Up</Link>
                 </Button>
               </>
-            ))}
+            )}
         </div>
 
 
@@ -130,7 +125,7 @@ export function NavBar() {
                   <NavLinksContent isMobile={true} />
                 </div>
                  <div className="mt-auto flex flex-col gap-2 px-2">
-                    {isClient && (isLoggedIn ? (
+                    {isLoggedIn ? (
                        <Button className="justify-center text-lg" asChild>
                           <Link href="/profile">My Profile</Link>
                         </Button>
@@ -143,7 +138,7 @@ export function NavBar() {
                                 <Link href="/signup">Sign Up</Link>
                             </Button>
                         </>
-                    ))}
+                    )}
                 </div>
               </div>
             </SheetContent>
