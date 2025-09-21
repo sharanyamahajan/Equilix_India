@@ -41,8 +41,8 @@ const AuraPal: React.FC = () => {
 
       const response = await fetch('/api/aura', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sdp: offer.sdp }),
+        headers: { 'Content-Type': 'text/plain' },
+        body: offer.sdp,
       });
       
       if (!response.ok) {
