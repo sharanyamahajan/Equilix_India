@@ -37,7 +37,6 @@ export default function MantraChantingPage() {
     
     const recognitionRef = useRef<SpeechRecognition | null>(null);
     const animationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-    const lastChantTimeRef = useRef(0);
 
     useEffect(() => {
         setIsClient(true);
@@ -61,53 +60,43 @@ export default function MantraChantingPage() {
         animationTimeoutRef.current = setTimeout(() => setIsAnimating(false), 1000);
     }, [hapticsEnabled]);
 
-
-    const handleMantraRecognized = useCallback(() => {
-       const now = Date.now();
-        // Simple cooldown: only count if it's been > 1 second since last count
-        if (now - lastChantTimeRef.current > 1000) {
-            lastChantTimeRef.current = now;
-            setChantCount(prev => prev + 1);
-            triggerAnimationAndHaptics();
-        }
-    }, [triggerAnimationAndHaptics]);
-    
-    const startListening = useCallback(() => {
+    const setupRecognition = useCallback(() => {
         if (!isClient || !('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
-            alert("Speech recognition is not supported in your browser.");
             return;
         }
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        
-        if (recognitionRef.current) {
-            recognitionRef.current.onresult = () => {};
-            recognitionRef.current.onerror = () => {};
-            recognitionRef.current.onend = () => {};
-            recognitionRef.current.stop();
-        }
-        
         const recognition = new SpeechRecognition();
-        recognitionRef.current = recognition;
         
         recognition.continuous = true;
-        recognition.interimResults = true; // Process results as they come
+        recognition.interimResults = false; // Only process final results
         recognition.lang = 'en-US';
         
-        recognition.onresult = (event) => {
-            const transcript = Array.from(event.results)
-                .map(result => result[0])
-                .map(result => result.transcript)
-                .join('')
-                .trim()
-                .toLowerCase();
-            
-            // Use regex to match whole word to avoid partial matches
-            const mantraRegex = new RegExp(`\\b${selectedMantra.keyword}\\b`);
+        let lastResultIndex = 0;
 
-            if (mantraRegex.test(transcript)) {
-                 handleMantraRecognized();
+        recognition.onresult = (event) => {
+            let newChantCount = 0;
+            for (let i = lastResultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    const transcript = event.results[i][0].transcript.trim().toLowerCase();
+                    const words = transcript.split(/\s+/);
+                    const keyword = selectedMantra.keyword.toLowerCase();
+                    
+                    const count = words.filter(word => word === keyword).length;
+                    
+                    if (count > 0) {
+                        newChantCount += count;
+                    }
+                }
             }
+
+            if (newChantCount > 0) {
+                setChantCount(prev => prev + newChantCount);
+                for (let i=0; i<newChantCount; i++) {
+                   setTimeout(() => triggerAnimationAndHaptics(), i * 150);
+                }
+            }
+            lastResultIndex = event.results.length;
         };
 
         recognition.onerror = (event) => {
@@ -124,29 +113,39 @@ export default function MantraChantingPage() {
         recognition.onend = () => {
            if (isListening) {
              try {
-                if(recognitionRef.current) recognitionRef.current.start()
+                recognition.start();
              } catch(e) {
-                // Already started or other error, often fine.
+                console.error("Could not restart recognition", e);
              }
            }
         };
 
-        try {
-            recognition.start();
-            setIsListening(true);
-        } catch(e) {
-            console.error("Could not start recognition", e);
-            setIsListening(false);
-        }
+        recognitionRef.current = recognition;
+    }, [isClient, selectedMantra.keyword, triggerAnimationAndHaptics, isListening]);
 
-    }, [isClient, selectedMantra.keyword, handleMantraRecognized, isListening]);
-    
-    const stopListening = useCallback(() => {
-        if (recognitionRef.current) {
-            setIsListening(false);
-            recognitionRef.current.stop();
+    useEffect(() => {
+        if (isClient) {
+            setupRecognition();
         }
-    }, []);
+    }, [isClient, setupRecognition]);
+    
+    const startListening = () => {
+        if (recognitionRef.current && !isListening) {
+            try {
+                recognitionRef.current.start();
+                setIsListening(true);
+            } catch (e) {
+                console.error("Could not start recognition", e);
+            }
+        }
+    };
+    
+    const stopListening = () => {
+        if (recognitionRef.current && isListening) {
+            recognitionRef.current.stop();
+            setIsListening(false);
+        }
+    };
 
     const toggleListening = () => {
         if (isListening) {
@@ -336,7 +335,7 @@ export default function MantraChantingPage() {
                 {MainContent()}
             </AnimatePresence>
 
-            <style jsx global>{`
+            <style jsx global>{\`
                 .glass-card {
                     background: hsl(var(--card) / 0.5) !important;
                     backdrop-filter: blur(12px) saturate(150%);
@@ -354,7 +353,7 @@ export default function MantraChantingPage() {
                 .control-btn:hover { background-color: hsl(var(--secondary)); transform: translateY(-2px); }
                 .control-btn.active { background-color: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
                 .control-btn.hang-up { background-color: hsl(var(--accent)); color: hsl(var(--accent-foreground)); }
-            `}</style>
+            \`}</style>
         </div>
     );
 }
