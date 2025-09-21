@@ -13,22 +13,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ reply: "Invalid input" }, { status: 400 });
     }
 
+    // The AI flow is now robust enough to handle errors, so we can simplify this.
     const aiResponse = await aiFriend({
         history: [], // For simplicity, keeping history clean for each request.
         message: message,
         systemPrompt: novaSystemPrompt,
     } as AIFriendInput);
     
-    if (aiResponse.reply) {
-        return NextResponse.json({ reply: aiResponse.reply });
-    } else {
-         return NextResponse.json({ reply: "Hmm, I don’t have an answer right now." }, { status: 500 });
-    }
+    return NextResponse.json({ reply: aiResponse.reply });
 
   } catch (error) {
     console.error("Nova API Error:", error);
+    // This is a fallback for unexpected server errors.
     return NextResponse.json({
-      reply: "⚠️ Nova is having trouble connecting to AI. Try again later!",
+      reply: "⚠️ Nova is having trouble with an internal error. Please try again later!",
     }, { status: 500 });
   }
 }

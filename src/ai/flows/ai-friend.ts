@@ -49,8 +49,11 @@ const aiFriendFlow = ai.defineFlow(
 
     const choice = response.candidates?.[0];
     
+    // Check for valid response and handle errors gracefully
     if (!choice || !choice.message || !choice.message.content || choice.message.content.length === 0) {
-        throw new Error("I'm sorry, I was unable to generate a response. This might be due to safety settings or an internal error. Please try a different question.");
+        return { 
+            reply: "I'm not sure how to respond to that. Could you please rephrase?",
+        };
     }
 
     const toolCalls = choice.message.content.filter(part => part.type === 'toolRequest').map(part => {
