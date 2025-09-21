@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview A conversational AI friend with memory, now repurposed for video calls.
@@ -9,15 +8,12 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
-const MessageSchema = z.object({
-  role: z.enum(['user', 'model']),
-  text: z.string(),
-});
-
 const AIFriendInputSchema = z.object({
-  history: z.array(MessageSchema).optional().describe('The conversation history.'),
+  history: z.array(z.object({
+    role: z.enum(['user', 'model']),
+    text: z.string(),
+  })).optional().describe('The conversation history.'),
   message: z.string().describe("The user's latest message to the AI friend."),
-  systemPrompt: z.string().optional().describe("An optional system prompt to define the AI's personality. If not provided, a default persona will be used."),
 });
 export type AIFriendInput = z.infer<typeof AIFriendInputSchema>;
 
@@ -32,7 +28,7 @@ export async function aiFriend(input: AIFriendInput): Promise<AIFriendOutput> {
   return aiFriendFlow(input);
 }
 
-const defaultSystemPrompt = `You are Aura, a professional and empathetic AI companion for a voice call. Your purpose is to provide a safe, supportive space for users. Listen carefully, offer thoughtful perspectives, and gently guide them to reflect on their feelings. Do not give medical advice. Keep your responses concise, clear, and calm, suitable for being spoken aloud.`;
+const auraSystemPrompt = `You are Aura, a professional and empathetic AI companion. Your purpose is to provide a safe, supportive space for users. Listen carefully, offer thoughtful perspectives, and gently guide them to reflect on their feelings. Do not give medical advice. Keep your responses concise, clear, and calm, suitable for being spoken aloud.`;
 
 const aiFriendFlow = ai.defineFlow(
   {
@@ -40,27 +36,23 @@ const aiFriendFlow = ai.defineFlow(
     inputSchema: AIFriendInputSchema,
     outputSchema: AIFriendOutputSchema,
   },
-  async ({ history, message, systemPrompt }) => {
-    const finalSystemPrompt = systemPrompt || defaultSystemPrompt;
-
+  async ({ history, message }) => {
     const fullHistory = [
-        { role: 'system', content: [{ text: finalSystemPrompt }] },
-        ...(history?.map(msg => ({ role: msg.role, content: [{ text: msg.text }] })) || []),
+      { role: 'system', content: [{ text: auraSystemPrompt }] },
+      ...(history?.map(msg => ({ role: msg.role, content: [{ text: msg.text }] })) || []),
     ];
 
     const response = await ai.generate({
       history: fullHistory,
       prompt: message,
     });
-
-    const choice = response.candidates?.[0];
     
-    const reply = choice?.message?.content?.map(part => part.text || "").join("").trim();
+    const reply = response.text;
 
     if (!reply) {
-        return { 
-            reply: "I'm not sure how to respond to that. Could you please rephrase?",
-        };
+      return { 
+        reply: "I'm not sure how to respond to that. Can you try rephrasing?",
+      };
     }
     
     return { reply };

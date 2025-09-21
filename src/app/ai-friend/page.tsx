@@ -1,25 +1,16 @@
-
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { getAIFriendResponse } from '@/app/actions';
-import { type AIFriendInput } from '@/ai/schemas/ai-friend';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
+import { getAIFriendResponse, type AIFriendInput } from '@/app/actions';
 
 export default function AIFriendPage() {
-  const router = useRouter();
-  const { toast } = useToast();
-
-  // --- State Management ---
   const [screen, setScreen] = useState<'welcome' | 'call'>('welcome');
   const [isMicOn, setIsMicOn] = useState(true);
   const [isCameraOn, setIsCameraOn] = useState(true);
   const [isAIThinking, setIsAIThinking] = useState(false);
-  const [aiStatusText, setAiStatusText] = useState("Hi there! What's on your mind today?");
-  
-  // --- Refs for DOM elements and external objects ---
+  const [aiStatusContent, setAiStatusContent] = useState<string>("<p>Hi there! What's on your mind today?</p>");
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
@@ -27,10 +18,8 @@ export default function AIFriendPage() {
   const lipSyncIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isMounted = useRef(true);
 
-
   const character = {
     name: 'Aura',
-    prompt: `You are Aura, a professional and empathetic AI companion. Your purpose is to provide a safe, supportive space for users. Listen carefully, offer thoughtful perspectives, and gently guide them to reflect on their feelings. Do not give medical advice. Keep your responses concise, clear, and calm.`,
     svg: `<svg viewBox="0 0 200 200" id="aura-svg" class="w-full h-full">
             <defs>
                 <radialGradient id="auraGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
@@ -73,50 +62,43 @@ export default function AIFriendPage() {
       mouthRef.current.setAttribute('d', character.mouthShapes.neutral);
     }
   }, [character.mouthShapes.neutral]);
-
+  
   const setAIStatus = (status: 'thinking' | 'speaking' | 'listening', text: string = "") => {
     if (!isMounted.current) return;
-    if (status === 'speaking') {
-      setIsAIThinking(true);
-      setAiStatusText(text);
-    } else if (status === 'thinking') {
-      setIsAIThinking(true);
-      setAiStatusText(""); // Placeholder for flashing dots
-    } else {
-      setIsAIThinking(false);
-      setAiStatusText("I'm listening...");
+    setIsAIThinking(status === 'thinking' || status === 'speaking');
+    let content = '';
+    switch (status) {
+      case "thinking":
+        content = '<div class="dot-flashing"></div>';
+        break;
+      case "speaking":
+        content = `<p id="ai-status-text">${text}</p>`;
+        break;
+      case "listening":
+      default:
+        content = `<p id="ai-status-text">I'm listening...</p>`;
+        break;
     }
+    setAiStatusContent(content);
   };
-
+  
   const startSpeechRecognition = useCallback(() => {
     if (recognitionRef.current && !isAIThinking) {
-      try {
-        recognitionRef.current.start();
-      } catch (e) {
-        // May already be started
-      }
+      try { recognitionRef.current.start(); } catch (e) { /* May already be started */ }
     }
   }, [isAIThinking]);
 
   const stopSpeechRecognition = useCallback(() => {
     if (recognitionRef.current) {
-      try {
-        recognitionRef.current.stop();
-      } catch (e) {
-        // May already have been stopped
-      }
+      try { recognitionRef.current.stop(); } catch (e) { /* May already be stopped */ }
     }
   }, []);
 
   const speak = useCallback((text: string) => {
     if (!isMounted.current) return;
-    
-    // Clear any ongoing speech before starting a new one.
-    window.speechSynthesis.cancel(); 
-
+    window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.onstart = () => {
-      setIsAIThinking(true);
       stopSpeechRecognition();
       setAIStatus("speaking", text);
       startLipSync();
@@ -124,41 +106,28 @@ export default function AIFriendPage() {
     utterance.onend = () => {
       stopLipSync();
       setAIStatus("listening");
-      if (isMounted.current && isMicOn) {
-        startSpeechRecognition();
-      }
+      if (isMounted.current && isMicOn) startSpeechRecognition();
     };
     utterance.onerror = (e) => {
-      if (e.error === 'canceled' || e.error === 'interrupted') {
-        // These are expected when we call window.speechSynthesis.cancel() or start a new utterance.
-        // We can safely ignore them.
-      } else {
-        console.error('Speech synthesis error:', e);
+      if (e.error !== 'canceled' && e.error !== 'interrupted') {
+          console.error('Speech synthesis error:', e);
       }
-      // Ensure UI resets correctly even if there was an error.
       stopLipSync();
       setAIStatus("listening");
-      setIsAIThinking(false);
     };
     window.speechSynthesis.speak(utterance);
   }, [startLipSync, stopLipSync, startSpeechRecognition, stopSpeechRecognition, isMicOn]);
 
   const getAIResponse = useCallback(async (userText: string) => {
     setAIStatus("thinking");
-    
-    const result = await getAIFriendResponse({
-      history: [],
-      message: userText,
-      systemPrompt: character.prompt,
-    } as AIFriendInput);
-    
+    const result = await getAIFriendResponse({ message: userText } as AIFriendInput);
     if (result.success && result.data?.reply) {
       speak(result.data.reply);
     } else {
       console.error("Error calling AI Friend:", result.error);
       speak("I'm having a little trouble connecting right now. Please try again in a moment.");
     }
-  }, [character.prompt, speak]);
+  }, [speak]);
   
   useEffect(() => {
     isMounted.current = true;
@@ -172,9 +141,7 @@ export default function AIFriendPage() {
       recognition.onresult = (event) => {
         let finalTranscript = '';
         for (let i = event.resultIndex; i < event.results.length; ++i) {
-          if (event.results[i].isFinal) {
-            finalTranscript += event.results[i][0].transcript;
-          }
+          if (event.results[i].isFinal) finalTranscript += event.results[i][0].transcript;
         }
         if (finalTranscript.trim()) {
           stopSpeechRecognition();
@@ -183,21 +150,14 @@ export default function AIFriendPage() {
       };
       
       recognition.onerror = (event) => {
-        if (event.error !== 'no-speech' && event.error !== 'aborted') {
-          console.error('Speech recognition error:', event.error);
-        }
+        if (event.error !== 'no-speech' && event.error !== 'aborted') console.error('Speech recognition error:', event.error);
       };
 
       recognition.onend = () => {
-        if (isMounted.current && isMicOn && !isAIThinking) {
-          startSpeechRecognition();
-        }
+        if (isMounted.current && isMicOn && !isAIThinking) startSpeechRecognition();
       };
-    } else {
-      toast({ title: "Unsupported Browser", description: "Speech recognition is not available in your browser.", variant: "destructive" });
     }
 
-    // Blinking effect
     const eyeBlinkInterval = setInterval(() => {
       const eyes = document.getElementById('eyes');
       if (document.hidden || !eyes) return;
@@ -210,64 +170,54 @@ export default function AIFriendPage() {
       clearInterval(eyeBlinkInterval);
       if (lipSyncIntervalRef.current) clearInterval(lipSyncIntervalRef.current);
       stopSpeechRecognition();
-      if (localStreamRef.current) {
-        localStreamRef.current.getTracks().forEach(track => track.stop());
-      }
+      if (localStreamRef.current) localStreamRef.current.getTracks().forEach(track => track.stop());
       window.speechSynthesis?.cancel();
     };
-  }, [getAIResponse, stopSpeechRecognition, startSpeechRecognition, isMicOn, isAIThinking, toast]);
+  }, [getAIResponse, stopSpeechRecognition, startSpeechRecognition, isMicOn, isAIThinking]);
 
   const startMedia = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       localStreamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
+      if (videoRef.current) videoRef.current.srcObject = stream;
       setIsCameraOn(true);
       setIsMicOn(true);
+      return true;
     } catch (err) {
       console.error("Error accessing media devices.", err);
-      toast({
-        title: "Media Access Denied",
-        description: "Could not access camera or microphone. Please check permissions.",
-        variant: "destructive",
-      });
+      alert("Could not access camera or microphone. Please check permissions.");
       setIsCameraOn(false);
       setIsMicOn(false);
+      return false;
     }
   };
 
   const handleStartCall = async () => {
-    await startMedia();
-    setScreen('call');
-    speak(`Hello! I'm Aura. What's on your mind today?`);
+    const success = await startMedia();
+    if(success) {
+      setScreen('call');
+      speak(`Hello! I'm Aura. What's on your mind today?`);
+    }
   };
 
   const handleEndCall = () => {
-    // The main useEffect cleanup hook handles stopping streams, speech, etc.
+    window.speechSynthesis.cancel();
+    if (localStreamRef.current) localStreamRef.current.getTracks().forEach(track => track.stop());
+    stopSpeechRecognition();
     setScreen('welcome');
   };
 
   const toggleMic = () => {
     const newMicState = !isMicOn;
-    if (localStreamRef.current && localStreamRef.current.getAudioTracks().length > 0) {
-      localStreamRef.current.getAudioTracks()[0].enabled = newMicState;
-      setIsMicOn(newMicState);
-      if (newMicState) {
-        startSpeechRecognition();
-      } else {
-        stopSpeechRecognition();
-      }
-    }
+    if (localStreamRef.current?.getAudioTracks().length) localStreamRef.current.getAudioTracks()[0].enabled = newMicState;
+    setIsMicOn(newMicState);
+    newMicState ? startSpeechRecognition() : stopSpeechRecognition();
   };
   
   const toggleCamera = () => {
     const newCameraState = !isCameraOn;
-    if (localStreamRef.current && localStreamRef.current.getVideoTracks().length > 0) {
-      localStreamRef.current.getVideoTracks()[0].enabled = newCameraState;
-      setIsCameraOn(newCameraState);
-    }
+    if (localStreamRef.current?.getVideoTracks().length) localStreamRef.current.getVideoTracks()[0].enabled = newCameraState;
+    setIsCameraOn(newCameraState);
   };
   
   return (
@@ -289,14 +239,10 @@ export default function AIFriendPage() {
         {screen === 'call' && (
           <div id="call-screen" className="h-full w-full flex flex-col items-center justify-center relative p-4">
             <div className="w-full flex-grow flex items-center justify-center flex-col overflow-hidden relative">
-              <div id="ai-character-container" dangerouslySetInnerHTML={{ __html: character.svg }} style={{ width: '300px', height: '300px' }} ref={() => {
-                  if (typeof window !== "undefined") {
-                    mouthRef.current = document.getElementById('mouth') as SVGPathElement | null
-                  }
+              <div id="ai-character-container" dangerouslySetInnerHTML={{ __html: character.svg }} style={{ width: '300px', height: '300px' }} ref={(el) => {
+                  if (el) mouthRef.current = el.querySelector('#mouth');
               }}></div>
-              <div id="ai-status" className="absolute bottom-40 glass-card">
-                  {isAIThinking && aiStatusText === "" && <div className="dot-flashing"></div>}
-                  <p id="ai-status-text">{aiStatusText}</p>
+              <div id="ai-status" className="absolute bottom-40 glass-card" dangerouslySetInnerHTML={{ __html: aiStatusContent }}>
               </div>
             </div>
             
@@ -322,7 +268,6 @@ export default function AIFriendPage() {
                     <button id="end-call-btn" onClick={handleEndCall} className="control-btn hang-up" title="End Conversation"><svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 8l6-6M2 2l20 20" /></svg></button>
                 </div>
             </div>
-
           </div>
         )}
       </div>
