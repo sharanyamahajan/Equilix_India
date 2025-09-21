@@ -22,13 +22,18 @@ export function NavBar() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isClient, setIsClient] = useState(false);
 
-  // This effect ensures the component re-checks the login status on every navigation change.
   useEffect(() => {
-    // We can safely check localStorage here because useEffect only runs on the client.
-    const user = localStorage.getItem('loggedInUserEmail');
-    setIsLoggedIn(!!user);
-  }, [pathname]); // The key is to re-run this check when the pathname changes.
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (isClient) {
+      const user = localStorage.getItem('loggedInUserEmail');
+      setIsLoggedIn(!!user);
+    }
+  }, [pathname, isClient]);
 
   useEffect(() => {
     if (mobileNavOpen) {
@@ -61,8 +66,7 @@ export function NavBar() {
             )}
           >
             <link.icon className="h-5 w-5" />
-            <span className={cn({ 'hidden lg:inline': !isMobile })}>{link.label}</span>
-            {isMobile && <span className="text-lg">{link.label}</span>}
+            <span className={cn(isMobile ? 'text-lg' : 'hidden lg:inline' )}>{link.label}</span>
           </Link>
         );
       })}
@@ -90,7 +94,7 @@ export function NavBar() {
 
         {/* Desktop Auth Buttons */}
         <div className="hidden md:flex items-center justify-end gap-2 ml-auto">
-            {isLoggedIn ? (
+            {isClient && isLoggedIn ? (
               <Button asChild>
                 <Link href="/profile">My Profile</Link>
               </Button>
@@ -125,7 +129,7 @@ export function NavBar() {
                   <NavLinksContent isMobile={true} />
                 </div>
                  <div className="mt-auto flex flex-col gap-2 px-2">
-                    {isLoggedIn ? (
+                    {isClient && isLoggedIn ? (
                        <Button className="justify-center text-lg" asChild>
                           <Link href="/profile">My Profile</Link>
                         </Button>
