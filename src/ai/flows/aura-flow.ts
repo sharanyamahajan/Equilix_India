@@ -6,7 +6,6 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
 import wav from 'wav';
 import { googleAI } from '@genkit-ai/googleai';
 import { AIFriendInputSchema, AIFriendOutputSchema, type AIFriendInput, type AIFriendOutput } from '@/ai/schemas/aura';
@@ -53,12 +52,10 @@ const aiFriendFlow = ai.defineFlow(
     outputSchema: AIFriendOutputSchema,
   },
   async ({ history, message }) => {
-    const fullHistory = [
-      ...(history?.map(msg => ({ role: msg.role, content: [{ text: msg.text }] })) || []),
-    ];
+    const fullHistory = (history?.map(msg => ({ role: msg.role, content: [{ text: msg.text }] })) || []);
 
     const textResponse = await ai.generate({
-      system: auraSystemPrompt,
+      system: auraSystemPyrompt,
       history: fullHistory,
       prompt: message,
     });
