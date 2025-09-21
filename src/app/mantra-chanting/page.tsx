@@ -26,22 +26,6 @@ const mantras = [
 
 type Screen = 'selection' | 'learning' | 'chanting' | 'completion';
 
-// Debounce function
-function debounce<F extends (...args: any[]) => any>(func: F, waitFor: number) {
-    let timeout: NodeJS.Timeout | null = null;
-
-    const debounced = (...args: Parameters<F>) => {
-        if (timeout !== null) {
-            clearTimeout(timeout);
-            timeout = null;
-        }
-        timeout = setTimeout(() => func(...args), waitFor);
-    };
-
-    return debounced as (...args: Parameters<F>) => void;
-}
-
-
 export default function MantraChantingPage() {
     const [screen, setScreen] = useState<Screen>('selection');
     const [isClient, setIsClient] = useState(false);
@@ -80,7 +64,7 @@ export default function MantraChantingPage() {
 
     const handleMantraRecognized = useCallback(() => {
        const now = Date.now();
-        // Simple debounce: only count if it's been > 1 second since last count
+        // Simple cooldown: only count if it's been > 1 second since last count
         if (now - lastChantTimeRef.current > 1000) {
             lastChantTimeRef.current = now;
             setChantCount(prev => prev + 1);
@@ -111,7 +95,12 @@ export default function MantraChantingPage() {
         recognition.lang = 'en-US';
         
         recognition.onresult = (event) => {
-            const transcript = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
+            const transcript = Array.from(event.results)
+                .map(result => result[0])
+                .map(result => result.transcript)
+                .join('')
+                .trim()
+                .toLowerCase();
             
             // Use regex to match whole word to avoid partial matches
             const mantraRegex = new RegExp(`\\b${selectedMantra.keyword}\\b`);
@@ -154,9 +143,9 @@ export default function MantraChantingPage() {
     
     const stopListening = useCallback(() => {
         if (recognitionRef.current) {
+            setIsListening(false);
             recognitionRef.current.stop();
         }
-        setIsListening(false);
     }, []);
 
     const toggleListening = () => {
@@ -347,7 +336,7 @@ export default function MantraChantingPage() {
                 {MainContent()}
             </AnimatePresence>
 
-            <style jsx global>{`
+            <style jsx global>{\`
                 .glass-card {
                     background: hsl(var(--card) / 0.5) !important;
                     backdrop-filter: blur(12px) saturate(150%);
@@ -365,8 +354,7 @@ export default function MantraChantingPage() {
                 .control-btn:hover { background-color: hsl(var(--secondary)); transform: translateY(-2px); }
                 .control-btn.active { background-color: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
                 .control-btn.hang-up { background-color: hsl(var(--accent)); color: hsl(var(--accent-foreground)); }
-            `}
-            </style>
+            \`}</style>
         </div>
     );
 }
