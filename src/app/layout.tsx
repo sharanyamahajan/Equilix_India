@@ -4,6 +4,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { NavBar } from '@/components/app/nav-bar';
 import { AnimatedBackground } from '@/components/app/animated-background';
 import { FloatingBot } from '@/components/app/floating-bot';
+import { Analytics } from "@vercel/analytics/next"
 
 
 export const metadata: Metadata = {
@@ -32,6 +33,7 @@ export default function RootLayout({
         </div>
         <FloatingBot />
         <Toaster />
+        <Analytics />
       </body>
     </html>
   );
