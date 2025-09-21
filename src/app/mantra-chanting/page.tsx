@@ -69,19 +69,19 @@ export default function MantraChantingPage() {
         const recognition = new SpeechRecognition();
         
         recognition.continuous = true;
-        recognition.interimResults = false; // Only process final results
+        recognition.interimResults = false; // Only process final results for higher accuracy
         recognition.lang = 'en-US';
         
-        let lastResultIndex = 0;
-
         recognition.onresult = (event) => {
             let newChantCount = 0;
-            for (let i = lastResultIndex; i < event.results.length; ++i) {
+            // Iterate through all results since last process
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
                 if (event.results[i].isFinal) {
                     const transcript = event.results[i][0].transcript.trim().toLowerCase();
                     const words = transcript.split(/\s+/);
                     const keyword = selectedMantra.keyword.toLowerCase();
                     
+                    // Count occurrences of the keyword in the final transcript
                     const count = words.filter(word => word === keyword).length;
                     
                     if (count > 0) {
@@ -93,15 +93,15 @@ export default function MantraChantingPage() {
             if (newChantCount > 0) {
                 setChantCount(prev => prev + newChantCount);
                 for (let i=0; i<newChantCount; i++) {
+                   // Stagger animation for multiple counts
                    setTimeout(() => triggerAnimationAndHaptics(), i * 150);
                 }
             }
-            lastResultIndex = event.results.length;
         };
 
         recognition.onerror = (event) => {
             if (event.error === 'aborted' || event.error === 'no-speech') {
-                return;
+                return; // These are not actual errors
             }
             console.error('Speech recognition error:', event.error);
             if (event.error === 'not-allowed') {
@@ -111,10 +111,12 @@ export default function MantraChantingPage() {
         };
         
         recognition.onend = () => {
+           // If listening should be active, restart it. This handles auto-stops.
            if (isListening) {
              try {
                 recognition.start();
              } catch(e) {
+                // This can happen if it's already starting, which is fine.
                 console.error("Could not restart recognition", e);
              }
            }
@@ -124,10 +126,17 @@ export default function MantraChantingPage() {
     }, [isClient, selectedMantra.keyword, triggerAnimationAndHaptics, isListening]);
 
     useEffect(() => {
+        // Setup recognition anytime isListening state changes and we are on the client
         if (isClient) {
+            // If there's an existing recognition, stop it before setting up a new one
+            if (recognitionRef.current) {
+                recognitionRef.current.onend = null; // prevent restart
+                recognitionRef.current.stop();
+            }
             setupRecognition();
         }
-    }, [isClient, setupRecognition]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isClient, selectedMantra.keyword]);
     
     const startListening = () => {
         if (recognitionRef.current && !isListening) {
@@ -136,6 +145,8 @@ export default function MantraChantingPage() {
                 setIsListening(true);
             } catch (e) {
                 console.error("Could not start recognition", e);
+                // It might be that recognition is already starting, try to set state anyway
+                setIsListening(true);
             }
         }
     };
@@ -316,6 +327,7 @@ export default function MantraChantingPage() {
                 );
 
         }
+        return null;
     }
 
     return (
@@ -335,7 +347,7 @@ export default function MantraChantingPage() {
                 {MainContent()}
             </AnimatePresence>
 
-            <style jsx global>{\`
+            <style jsx global>{`
                 .glass-card {
                     background: hsl(var(--card) / 0.5) !important;
                     backdrop-filter: blur(12px) saturate(150%);
@@ -353,7 +365,7 @@ export default function MantraChantingPage() {
                 .control-btn:hover { background-color: hsl(var(--secondary)); transform: translateY(-2px); }
                 .control-btn.active { background-color: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
                 .control-btn.hang-up { background-color: hsl(var(--accent)); color: hsl(var(--accent-foreground)); }
-            \`}</style>
+            `}</style>
         </div>
     );
 }
