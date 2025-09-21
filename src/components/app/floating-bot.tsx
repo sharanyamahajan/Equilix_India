@@ -12,7 +12,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Bot, Loader2, Send, User, X } from 'lucide-react';
+import { Bot, Loader2, Send, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { chat } from '@/app/actions';
 import ReactMarkdown from 'react-markdown';
@@ -56,7 +56,7 @@ export function FloatingBot() {
     
             const result = await chat({ history: chatHistory, message: currentInput });
     
-            if (result.success && result.data) {
+            if (result && result.data) {
                 const modelMessage: Message = {
                 role: 'model',
                 content: result.data.response,
@@ -197,7 +197,6 @@ export function FloatingBot() {
             </div>
           </SheetFooter>
 
-          {/* Close Button is part of SheetContent now */}
         </SheetContent>
       </Sheet>
     </>
