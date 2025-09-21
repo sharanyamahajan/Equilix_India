@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
@@ -261,8 +260,8 @@ export default function AIFriendPage() {
         {!inCall ? (
           <div className="text-center p-8">
             <h1 className="text-5xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-600 animate-pulse">Welcome to AI Video Call</h1>
-            <p className="text-xl text-gray-600 mb-8">Your professional AI companion for mental wellness.</p>
-            <p className="max-w-2xl mx-auto text-gray-600 mb-8">
+            <p className="text-xl text-muted-foreground mb-8">Your professional AI companion for mental wellness.</p>
+            <p className="max-w-2xl mx-auto text-muted-foreground mb-8">
               This is a safe space to talk about whatever's on your mind. <b>Aura</b> is here to listen without judgment. Ready to chat?
             </p>
             <Button
@@ -297,6 +296,7 @@ export default function AIFriendPage() {
                   onClick={toggleMic}
                   className={`control-btn ${isMicOn ? "active" : ""}`}
                   size="icon"
+                  variant="outline"
                 >
                   {isMicOn ? <Mic /> : <MicOff />}
                 </Button>
@@ -304,6 +304,7 @@ export default function AIFriendPage() {
                   onClick={toggleCamera}
                   className={`control-btn ${isCameraOn ? "active" : ""}`}
                   size="icon"
+                  variant="outline"
                 >
                   {isCameraOn ? <Video /> : <VideoOff />}
                 </Button>
@@ -311,6 +312,7 @@ export default function AIFriendPage() {
                   onClick={handleEndCall}
                   className="control-btn hang-up"
                   size="icon"
+                  variant="destructive"
                 >
                   <PhoneOff />
                 </Button>
@@ -344,29 +346,36 @@ export default function AIFriendPage() {
         }
 
         .control-btn {
-            background-color: rgba(255, 255, 255, 0.3);
-            border-radius: 9999px;
-            width: 52px;
-            height: 52px;
+            background-color: rgba(255, 255, 255, 0.3) !important;
+            border-radius: 9999px !important;
+            width: 52px !important;
+            height: 52px !important;
             display: flex;
             align-items: center;
             justify-content: center;
             transition: all 0.2s ease-in-out;
-            color: #374151; /* text-gray-700 */
+            color: #374151 !important; /* text-gray-700 */
+            border: 1px solid rgba(255, 255, 255, 0.4) !important;
         }
 
         .control-btn:hover {
-            background-color: rgba(255, 255, 255, 0.5);
+            background-color: rgba(255, 255, 255, 0.5) !important;
             transform: translateY(-2px);
         }
 
         .control-btn.active {
-            background-color: #3B82F6; /* bg-blue-500 */
-            color: white;
+            background-color: hsl(var(--primary)) !important;
+            color: hsl(var(--primary-foreground)) !important;
         }
         
-        .control-btn.hang-up { background-color: #ef4444; color: white; }
-        .control-btn.hang-up:hover { background-color: #dc2626; }
+        .control-btn.hang-up { 
+            background-color: hsl(var(--destructive)) !important; 
+            color: hsl(var(--destructive-foreground)) !important;
+            border-color: transparent !important;
+        }
+        .control-btn.hang-up:hover { 
+            background-color: hsl(var(--destructive) / 0.9) !important; 
+        }
 
         .dot-flashing {
             position: relative; width: 10px; height: 10px; border-radius: 5px;

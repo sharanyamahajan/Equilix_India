@@ -39,11 +39,11 @@ const aiFriendFlow = ai.defineFlow(
   },
   async ({ history, message }) => {
     const fullHistory = [
-      { role: 'system', content: [{ text: auraSystemPrompt }] },
       ...(history?.map(msg => ({ role: msg.role, content: [{ text: msg.text }] })) || []),
     ];
 
     const response = await ai.generate({
+      system: auraSystemPrompt,
       history: fullHistory,
       prompt: message,
     });
