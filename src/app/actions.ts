@@ -11,6 +11,7 @@ import { chat as chatFlow } from '@/ai/flows/chat-flow';
 import type { ChatInput } from '@/ai/schemas/chat';
 import type { AIFriendInput, AIFriendOutput } from '@/ai/schemas/aura';
 import { detectStress as detectStressFlow, type DetectStressInput } from '@/ai/flows/detect-stress-flow';
+import { detectOmChant as detectOmChantFlow } from '@/ai/flows/detect-om-chant';
 
 
 export async function getHtmlImprovements(htmlContent: string) {
@@ -104,4 +105,21 @@ export async function chat(input: ChatInput) {
         console.error('AI Error:', error);
         return { success: false, error: 'Failed to get chat response.' };
     }
+}
+
+export async function getOmChantDetection(imageDataUri: string) {
+  if (!imageDataUri) {
+    return { success: false, error: 'Image data cannot be empty.' };
+  }
+
+  try {
+    const result = await detectOmChantFlow({ imageDataUri });
+    return { success: true, data: result };
+  } catch (error) {
+    // Suppress noisy logs for this specific flow, as it runs frequently
+    if (process.env.NODE_ENV !== 'production') {
+      // console.log('AI chant detection error:', error);
+    }
+    return { success: false, error: 'Failed to detect chant from the AI model.' };
+  }
 }

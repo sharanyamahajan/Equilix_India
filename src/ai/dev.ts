@@ -1,3 +1,4 @@
+'use server';
 import { config } from 'dotenv';
 config();
 
@@ -9,3 +10,4 @@ import '@/ai/flows/create-ai-twin.ts';
 import '@/ai/flows/learn-from-history.ts';
 import '@/ai/flows/chat-flow.ts';
 import '@/ai/flows/detect-stress-flow.ts';
+import '@/ai/flows/detect-om-chant.ts';
