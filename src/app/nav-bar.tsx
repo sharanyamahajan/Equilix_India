@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { LayoutGrid, Menu, Info, Bot, Home, Store, Users, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
-import { Button } from '../ui/button';
+import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 const navLinks = [
@@ -29,19 +29,22 @@ export function NavBar() {
   }, []);
   
   useEffect(() => {
-    if (isClient) {
-        const checkLoginStatus = () => {
-            const user = localStorage.getItem('loggedInUserEmail');
-            setIsLoggedIn(!!user);
-        };
-        checkLoginStatus();
+    const checkLoginStatus = () => {
+      if (isClient) {
+        const user = localStorage.getItem('loggedInUserEmail');
+        setIsLoggedIn(!!user);
+      }
+    };
+    checkLoginStatus();
 
-        window.addEventListener('storage', checkLoginStatus);
-        return () => {
-            window.removeEventListener('storage', checkLoginStatus);
-        };
-    }
-  }, [isClient, pathname]);
+    window.addEventListener('storage', checkLoginStatus);
+    const interval = setInterval(checkLoginStatus, 1000); 
+
+    return () => {
+        window.removeEventListener('storage', checkLoginStatus);
+        clearInterval(interval);
+    };
+  }, [isClient]);
 
   useEffect(() => {
     setMobileNavOpen(false);
@@ -117,7 +120,11 @@ export function NavBar() {
 
         {/* Desktop Auth Buttons */}
         <div className="hidden md:flex items-center justify-end gap-2 ml-auto">
-            {isClient && !isLoggedIn && (
+            {isClient && (isLoggedIn ? (
+              <Button asChild variant="secondary">
+                <Link href="/profile">My Profile</Link>
+              </Button>
+            ) : (
               <>
                 <Button variant="ghost" asChild>
                   <Link href="/login">Login</Link>
@@ -126,7 +133,7 @@ export function NavBar() {
                   <Link href="/signup">Sign Up</Link>
                 </Button>
               </>
-            )}
+            ))}
         </div>
 
 
@@ -148,7 +155,11 @@ export function NavBar() {
                   <NavLinksContent isMobile={true} />
                 </div>
                  <div className="mt-auto flex flex-col gap-2 px-2">
-                    {isClient && !isLoggedIn && (
+                    {isClient && (isLoggedIn ? (
+                       <Button className="justify-center text-lg" asChild>
+                          <Link href="/profile">My Profile</Link>
+                        </Button>
+                    ) : (
                         <>
                             <Button variant="ghost" className="justify-start text-lg" asChild>
                                 <Link href="/login">Login</Link>
@@ -157,7 +168,7 @@ export function NavBar() {
                                 <Link href="/signup">Sign Up</Link>
                             </Button>
                         </>
-                    )}
+                    ))}
                 </div>
               </div>
             </SheetContent>
