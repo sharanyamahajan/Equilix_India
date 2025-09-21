@@ -29,25 +29,31 @@ export function NavBar() {
   }, []);
   
   useEffect(() => {
-    const checkLoginStatus = () => {
-      if (isClient) {
+    if (isClient) {
+      const checkLoginStatus = () => {
         const user = localStorage.getItem('loggedInUserEmail');
         setIsLoggedIn(!!user);
-      }
-    };
-    checkLoginStatus();
+      };
+      
+      checkLoginStatus(); // Check on mount and when isClient changes
 
-    window.addEventListener('storage', checkLoginStatus);
-    const interval = setInterval(checkLoginStatus, 1000); 
+      // To handle changes from other tabs, we can still use the storage event
+      window.addEventListener('storage', checkLoginStatus);
+      
+      // A simple interval can help catch cases where the event doesn't fire
+      const intervalId = setInterval(checkLoginStatus, 1000);
 
-    return () => {
+      return () => {
         window.removeEventListener('storage', checkLoginStatus);
-        clearInterval(interval);
-    };
+        clearInterval(intervalId);
+      };
+    }
   }, [isClient]);
 
   useEffect(() => {
-    setMobileNavOpen(false);
+    if (mobileNavOpen) {
+      setMobileNavOpen(false);
+    }
   }, [pathname]);
 
   useEffect(() => {
