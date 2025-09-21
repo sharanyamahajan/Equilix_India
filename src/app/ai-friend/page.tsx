@@ -2,45 +2,56 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { getAIFriendResponse, type AIFriendInput } from '@/app/actions';
+import { getAIFriendResponse } from '@/app/actions';
+import { Mic, MicOff, Video, VideoOff, PhoneOff } from 'lucide-react';
 
 export default function AIFriendPage() {
-  const [screen, setScreen] = useState<'welcome' | 'call'>('welcome');
+  const [inCall, setInCall] = useState(false);
   const [isMicOn, setIsMicOn] = useState(true);
   const [isCameraOn, setIsCameraOn] = useState(true);
-  const [isAIThinking, setIsAIThinking] = useState(false);
-  const [aiStatusContent, setAiStatusContent] = useState<string>("<p>Hi there! What's on your mind today?</p>");
-
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const [aiStatus, setAiStatus] = useState<'welcome' | 'thinking' | 'speaking' | 'listening'>('welcome');
+  const [aiText, setAiText] = useState("Hi there! What's on your mind today?");
+  
+  const userVideoRef = useRef<HTMLVideoElement>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<any>(null);
   const mouthRef = useRef<SVGPathElement | null>(null);
   const lipSyncIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isMounted = useRef(true);
 
   const character = {
     name: 'Aura',
-    svg: `<svg viewBox="0 0 200 200" id="aura-svg" class="w-full h-full">
-            <defs>
-                <radialGradient id="auraGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-                    <stop offset="0%" style="stop-color:#93c5fd; stop-opacity:0.8" />
-                    <stop offset="100%" style="stop-color:#3b82f6; stop-opacity:0.9" />
-                </radialGradient>
-            </defs>
-            <circle cx="100" cy="100" r="90" fill="url(#auraGradient)" />
-            <circle cx="100" cy="100" r="70" fill="none" stroke="#ffffff" stroke-width="2" stroke-opacity="0.5" />
-            <g id="eyes" style="transition: transform 0.2s ease-out;">
-                <path class="eye-line" d="M 70 90 L 90 90" stroke="#ffffff" stroke-width="3" stroke-linecap="round" />
-                <path class="eye-line" d="M 110 90 L 130 90" stroke="#ffffff" stroke-width="3" stroke-linecap="round" />
-            </g>
-            <path id="mouth" d="M 80 130 Q 100 130 120 130" stroke="#ffffff" stroke-width="3" fill="none" stroke-linecap="round"/>
-        </svg>`,
+    svg: (
+      <svg viewBox="0 0 200 200" id="aura-svg" className="w-full h-full">
+        <defs>
+          <radialGradient id="auraGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+            <stop offset="0%" stopColor="#93c5fd" stopOpacity={0.8} />
+            <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.9} />
+          </radialGradient>
+        </defs>
+        <circle cx="100" cy="100" r="90" fill="url(#auraGradient)" />
+        <circle cx="100" cy="100" r="70" fill="none" stroke="#ffffff" strokeWidth="2" strokeOpacity="0.5" />
+        <g id="eyes" style={{ transition: "transform 0.2s ease-out" }}>
+          <path d="M 70 90 L 90 90" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" />
+          <path d="M 110 90 L 130 90" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" />
+        </g>
+        <path
+          ref={mouthRef}
+          id="mouth"
+          d="M 80 130 Q 100 130 120 130"
+          stroke="#ffffff"
+          strokeWidth="3"
+          fill="none"
+          strokeLinecap="round"
+        />
+      </svg>
+    ),
     mouthShapes: {
       neutral: "M 80 130 Q 100 130 120 130",
       a: "M 80 130 Q 100 145 120 130",
       b: "M 80 135 Q 100 135 120 135",
-      c: "M 80 125 Q 100 140 120 125"
-    }
+      c: "M 80 125 Q 100 140 120 125",
+    },
   };
 
   const startLipSync = useCallback(() => {
@@ -48,7 +59,7 @@ export default function AIFriendPage() {
     const shapes = Object.values(character.mouthShapes);
     lipSyncIntervalRef.current = setInterval(() => {
       if (mouthRef.current) {
-        mouthRef.current.setAttribute('d', shapes[Math.floor(Math.random() * shapes.length)]);
+        mouthRef.current.setAttribute("d", shapes[Math.floor(Math.random() * shapes.length)]);
       }
     }, 120);
   }, [character.mouthShapes]);
@@ -59,105 +70,111 @@ export default function AIFriendPage() {
       lipSyncIntervalRef.current = null;
     }
     if (mouthRef.current) {
-      mouthRef.current.setAttribute('d', character.mouthShapes.neutral);
+      mouthRef.current.setAttribute("d", character.mouthShapes.neutral);
     }
   }, [character.mouthShapes.neutral]);
-  
-  const setAIStatus = (status: 'thinking' | 'speaking' | 'listening', text: string = "") => {
-    if (!isMounted.current) return;
-    setIsAIThinking(status === 'thinking' || status === 'speaking');
-    let content = '';
-    switch (status) {
-      case "thinking":
-        content = '<div class="dot-flashing"></div>';
-        break;
-      case "speaking":
-        content = `<p id="ai-status-text">${text}</p>`;
-        break;
-      case "listening":
-      default:
-        content = `<p id="ai-status-text">I'm listening...</p>`;
-        break;
-    }
-    setAiStatusContent(content);
-  };
-  
+
   const startSpeechRecognition = useCallback(() => {
-    if (recognitionRef.current && !isAIThinking) {
-      try { recognitionRef.current.start(); } catch (e) { /* May already be started */ }
+    if (recognitionRef.current && isMicOn && aiStatus !== 'thinking' && aiStatus !== 'speaking') {
+      try {
+        recognitionRef.current.start();
+      } catch (e) {
+        // Recognition might already be started.
+      }
     }
-  }, [isAIThinking]);
+  }, [isMicOn, aiStatus]);
 
   const stopSpeechRecognition = useCallback(() => {
     if (recognitionRef.current) {
-      try { recognitionRef.current.stop(); } catch (e) { /* May already be stopped */ }
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {
+        // Recognition might already be stopped.
+      }
     }
   }, []);
-
+  
   const speak = useCallback((text: string) => {
     if (!isMounted.current) return;
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
+
     utterance.onstart = () => {
       stopSpeechRecognition();
-      setAIStatus("speaking", text);
+      setAiStatus("speaking");
+      setAiText(text);
       startLipSync();
     };
+
     utterance.onend = () => {
       stopLipSync();
-      setAIStatus("listening");
-      if (isMounted.current && isMicOn) startSpeechRecognition();
+      setAiStatus("listening");
+      if (isMounted.current) {
+        startSpeechRecognition();
+      }
     };
+    
     utterance.onerror = (e) => {
       if (e.error !== 'canceled' && e.error !== 'interrupted') {
           console.error('Speech synthesis error:', e);
       }
       stopLipSync();
-      setAIStatus("listening");
+      setAiStatus("listening");
     };
+
     window.speechSynthesis.speak(utterance);
-  }, [startLipSync, stopLipSync, startSpeechRecognition, stopSpeechRecognition, isMicOn]);
+  }, [startLipSync, stopLipSync, startSpeechRecognition, stopSpeechRecognition]);
+
 
   const getAIResponse = useCallback(async (userText: string) => {
-    setAIStatus("thinking");
-    const result = await getAIFriendResponse({ message: userText } as AIFriendInput);
-    if (result.success && result.data?.reply) {
-      speak(result.data.reply);
-    } else {
-      console.error("Error calling AI Friend:", result.error);
-      speak("I'm having a little trouble connecting right now. Please try again in a moment.");
+    if (!isMounted.current) return;
+    setAiStatus("thinking");
+    const result = await getAIFriendResponse({ message: userText });
+    if (isMounted.current) {
+      if (result.success && result.data?.reply) {
+        speak(result.data.reply);
+      } else {
+        console.error("AI error:", result.error);
+        speak("I'm having a little trouble connecting right now.");
+      }
     }
   }, [speak]);
-  
+
   useEffect(() => {
     isMounted.current = true;
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (SpeechRecognition) {
       const recognition = new SpeechRecognition();
       recognition.continuous = true;
       recognition.interimResults = true;
       recognitionRef.current = recognition;
 
-      recognition.onresult = (event) => {
-        let finalTranscript = '';
+      recognition.onresult = (event: any) => {
+        let finalTranscript = "";
         for (let i = event.resultIndex; i < event.results.length; ++i) {
-          if (event.results[i].isFinal) finalTranscript += event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript;
+          }
         }
         if (finalTranscript.trim()) {
           stopSpeechRecognition();
           getAIResponse(finalTranscript.trim());
         }
       };
-      
-      recognition.onerror = (event) => {
-        if (event.error !== 'no-speech' && event.error !== 'aborted') console.error('Speech recognition error:', event.error);
+
+      recognition.onerror = (event: any) => {
+         if (event.error !== 'no-speech' && event.error !== 'aborted') {
+            console.error("Speech recognition error:", event.error);
+         }
       };
 
       recognition.onend = () => {
-        if (isMounted.current && isMicOn && !isAIThinking) startSpeechRecognition();
+        if (isMounted.current && isMicOn && aiStatus === 'listening') {
+          startSpeechRecognition();
+        }
       };
     }
-
+    
     const eyeBlinkInterval = setInterval(() => {
       const eyes = document.getElementById('eyes');
       if (document.hidden || !eyes) return;
@@ -173,105 +190,122 @@ export default function AIFriendPage() {
       if (localStreamRef.current) localStreamRef.current.getTracks().forEach(track => track.stop());
       window.speechSynthesis?.cancel();
     };
-  }, [getAIResponse, stopSpeechRecognition, startSpeechRecognition, isMicOn, isAIThinking]);
+  }, [getAIResponse, stopSpeechRecognition, startSpeechRecognition, isMicOn, aiStatus]);
+
 
   const startMedia = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       localStreamRef.current = stream;
-      if (videoRef.current) videoRef.current.srcObject = stream;
-      setIsCameraOn(true);
-      setIsMicOn(true);
-      return true;
+      if (userVideoRef.current) {
+        userVideoRef.current.srcObject = stream;
+      }
     } catch (err) {
-      console.error("Error accessing media devices.", err);
-      alert("Could not access camera or microphone. Please check permissions.");
-      setIsCameraOn(false);
-      setIsMicOn(false);
-      return false;
+      console.error("Error accessing media devices", err);
+      alert("Could not access media devices. Please check permissions.");
     }
   };
 
   const handleStartCall = async () => {
-    const success = await startMedia();
-    if(success) {
-      setScreen('call');
-      speak(`Hello! I'm Aura. What's on your mind today?`);
-    }
+    await startMedia();
+    setInCall(true);
+    setAiStatus("listening");
   };
 
   const handleEndCall = () => {
-    window.speechSynthesis.cancel();
-    if (localStreamRef.current) localStreamRef.current.getTracks().forEach(track => track.stop());
+    localStreamRef.current?.getTracks().forEach((track) => track.stop());
     stopSpeechRecognition();
-    setScreen('welcome');
+    window.speechSynthesis.cancel();
+    setInCall(false);
+    setAiStatus("welcome");
   };
-
+  
   const toggleMic = () => {
-    const newMicState = !isMicOn;
-    if (localStreamRef.current?.getAudioTracks().length) localStreamRef.current.getAudioTracks()[0].enabled = newMicState;
-    setIsMicOn(newMicState);
-    newMicState ? startSpeechRecognition() : stopSpeechRecognition();
-  };
-  
+      const newMicState = !isMicOn;
+      setIsMicOn(newMicState);
+      if (localStreamRef.current) {
+          localStreamRef.current.getAudioTracks().forEach((t) => (t.enabled = newMicState));
+      }
+      if (newMicState) {
+          startSpeechRecognition();
+      } else {
+          stopSpeechRecognition();
+      }
+  }
+
   const toggleCamera = () => {
-    const newCameraState = !isCameraOn;
-    if (localStreamRef.current?.getVideoTracks().length) localStreamRef.current.getVideoTracks()[0].enabled = newCameraState;
-    setIsCameraOn(newCameraState);
-  };
-  
+      const newCamState = !isCameraOn;
+      setIsCameraOn(newCamState);
+      if (localStreamRef.current) {
+          localStreamRef.current.getVideoTracks().forEach((t) => (t.enabled = newCamState));
+      }
+  }
+
+
   return (
     <>
-      <div id="app-wrapper" className="h-screen w-screen flex flex-col items-center justify-center transition-opacity duration-500 font-body">
-        {screen === 'welcome' && (
-          <div id="welcome-screen" className="text-center p-8">
-             <h1 className="text-5xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-600 animate-pulse">Welcome to AI Video Call</h1>
-             <p className="text-xl text-gray-600 mb-8">Your professional AI companion for mental wellness.</p>
+      <div className="h-screen w-screen flex flex-col items-center justify-center">
+        {!inCall ? (
+          <div className="text-center p-8">
+            <h1 className="text-5xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-600 animate-pulse">Welcome to AI Video Call</h1>
+            <p className="text-xl text-gray-600 mb-8">Your professional AI companion for mental wellness.</p>
             <p className="max-w-2xl mx-auto text-gray-600 mb-8">
-              This is a safe space to talk about whatever's on your mind. <strong>Aura</strong> is here to listen without judgment. Ready to chat?
+              This is a safe space to talk about whatever's on your mind. <b>Aura</b> is here to listen without judgment. Ready to chat?
             </p>
-            <Button id="start-call-btn" onClick={handleStartCall} size="lg">
+            <Button
+              onClick={handleStartCall}
+              size="lg"
+            >
               Start Conversation
             </Button>
           </div>
-        )}
-
-        {screen === 'call' && (
-          <div id="call-screen" className="h-full w-full flex flex-col items-center justify-center relative p-4">
-            <div className="w-full flex-grow flex items-center justify-center flex-col overflow-hidden relative">
-              <div id="ai-character-container" dangerouslySetInnerHTML={{ __html: character.svg }} style={{ width: '300px', height: '300px' }} ref={(el) => {
-                  if (el) mouthRef.current = el.querySelector('#mouth');
-              }}></div>
-              <div id="ai-status" className="absolute bottom-40 glass-card" dangerouslySetInnerHTML={{ __html: aiStatusContent }}>
+        ) : (
+          <div className="h-full w-full flex flex-col items-center justify-center relative">
+            <div className="w-full flex-grow flex items-center justify-center flex-col relative">
+              <div style={{ width: "300px", height: "300px" }}>{character.svg}</div>
+              <div className="absolute bottom-40 glass-card p-4 text-gray-800 text-center">
+                {aiStatus === "thinking" ? (
+                  <div className="dot-flashing"></div>
+                ) : (
+                  <p>{aiStatus === "speaking" ? aiText : "I'm listening..."}</p>
+                )}
               </div>
             </div>
-            
-            <div id="user-video-container" className="glass-card">
-              <video id="user-video" ref={videoRef} autoPlay muted playsInline style={{display: isCameraOn ? 'block' : 'none' }}></video>
-              {!isCameraOn && (
-                <div id="camera-off-placeholder" className="icon-placeholder">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-full h-full"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
-                </div>
-              )}
-            </div>
+
+            {isCameraOn && (
+              <div className="absolute bottom-28 right-4 w-[200px] h-[150px] rounded-xl overflow-hidden glass-card">
+                <video ref={userVideoRef} autoPlay muted playsInline className="w-full h-full object-cover -scale-x-100" />
+              </div>
+            )}
 
             <div className="w-full p-4 absolute bottom-0">
-                <div className="max-w-sm mx-auto flex justify-center items-center space-x-4 glass-card rounded-full p-2">
-                    <button id="mic-btn" onClick={toggleMic} className={`control-btn ${isMicOn ? 'active' : ''}`} title="Mute/Unmute Mic">
-                      <svg id="mic-on-icon" xmlns="http://www.w3.org/2000/svg" className={`h-6 w-6 ${!isMicOn ? 'hidden' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-14 0m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
-                      <svg id="mic-off-icon" xmlns="http://www.w3.org/2000/svg" className={`h-6 w-6 ${isMicOn ? 'hidden' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.586 15.586a7 7 0 01-9.172-9.172l9.172 9.172zM12 18.75a.75.75 0 01-.75-.75V15a3 3 0 013-3h.75a.75.75 0 010 1.5h-.75a1.5 1.5 0 00-1.5 1.5v3a.75.75 0 01-.75-.75zM19 11a7 7 0 01-14 0m12.414 4.414a7.001 7.001 0 00-9.172-9.172"/></svg>
-                    </button>
-                    <button id="camera-btn" onClick={toggleCamera} className={`control-btn ${isCameraOn ? 'active' : ''}`} title="Camera On/Off">
-                      <svg id="camera-on-icon" xmlns="http://www.w3.org/2000/svg" className={`h-6 w-6 ${!isCameraOn ? 'hidden' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                      <svg id="camera-off-icon" xmlns="http://www.w3.org/2000/svg" className={`h-6 w-6 ${isCameraOn ? 'hidden' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.586 15.586a7 7 0 01-9.172-9.172l9.172 9.172zM15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                    </button>
-                    <button id="end-call-btn" onClick={handleEndCall} className="control-btn hang-up" title="End Conversation"><svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 8l6-6M2 2l20 20" /></svg></button>
-                </div>
+              <div className="max-w-sm mx-auto flex justify-center items-center space-x-4 glass-card rounded-full p-2">
+                <Button
+                  onClick={toggleMic}
+                  className={`control-btn ${isMicOn ? "active" : ""}`}
+                  size="icon"
+                >
+                  {isMicOn ? <Mic /> : <MicOff />}
+                </Button>
+                <Button
+                  onClick={toggleCamera}
+                  className={`control-btn ${isCameraOn ? "active" : ""}`}
+                  size="icon"
+                >
+                  {isCameraOn ? <Video /> : <VideoOff />}
+                </Button>
+                <Button
+                  onClick={handleEndCall}
+                  className="control-btn hang-up"
+                  size="icon"
+                >
+                  <PhoneOff />
+                </Button>
+              </div>
             </div>
           </div>
         )}
       </div>
-      
       <style jsx global>{`
         body {
             background-color: #ccd8f1;
@@ -294,27 +328,6 @@ export default function AIFriendPage() {
             -webkit-backdrop-filter: blur(14px) saturate(150%);
             border: 1px solid rgba(255, 255, 255, 0.4);
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
-        }
-
-        #user-video-container {
-            position: absolute;
-            bottom: 7rem;
-            right: 2rem;
-            width: 200px;
-            height: 150px;
-            border-radius: 0.75rem;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        #user-video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
-        
-        .icon-placeholder {
-            width: 50%;
-            height: 50%;
-            color: #4b5563; /* text-gray-600 */
         }
 
         .control-btn {
@@ -341,17 +354,6 @@ export default function AIFriendPage() {
         
         .control-btn.hang-up { background-color: #ef4444; color: white; }
         .control-btn.hang-up:hover { background-color: #dc2626; }
-
-        #ai-status {
-            min-height: 5rem;
-            max-width: 80%;
-            margin: 0 auto;
-            padding: 1rem 1.5rem;
-            border-radius: 0.75rem;
-            text-align: center;
-            color: #1f2937; /* text-gray-800 */
-            transition: all 0.3s ease;
-        }
 
         .dot-flashing {
             position: relative; width: 10px; height: 10px; border-radius: 5px;
