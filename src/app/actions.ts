@@ -4,11 +4,12 @@ import { suggestHtmlImprovements } from '@/ai/flows/suggest-html-improvements';
 import { analyzeWellness } from '@/ai/flows/analyze-wellness';
 import type { WellnessSurveyInput } from '@/ai/schemas/wellness';
 import { detectEmotion } from '@/ai/flows/detect-emotion';
-import { aiFriend, type AIFriendInput } from '@/ai/flows/ai-friend';
+import { aiFriend as auraFlow } from '@/ai/flows/aura-flow';
 import { createAITwin as createAITwinFlow, type CreateAITwinInput } from '@/ai/flows/create-ai-twin';
 import { learnFromHistory as learnFromHistoryFlow, type LearnFromHistoryInput } from '@/ai/flows/learn-from-history';
 import { chat as chatFlow } from '@/ai/flows/chat-flow';
 import type { ChatInput } from '@/ai/schemas/chat';
+import type { AIFriendInput, AIFriendOutput } from '@/ai/schemas/aura';
 
 
 export async function getHtmlImprovements(htmlContent: string) {
@@ -49,9 +50,9 @@ export async function getEmotionDetection(imageDataUri: string) {
   }
 }
 
-export async function getAIFriendResponse(input: AIFriendInput) {
+export async function getAIFriendResponse(input: AIFriendInput): Promise<{ success: boolean, data?: AIFriendOutput, error?: string }> {
   try {
-    const result = await aiFriend(input);
+    const result = await auraFlow(input);
     return { success: true, data: result };
   } catch (error) {
     console.error('AI Error in getAIFriendResponse:', error);
