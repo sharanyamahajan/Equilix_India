@@ -53,6 +53,13 @@ export default function HealthDashboardPage() {
             if (storedData) {
                 setChartData(JSON.parse(storedData));
             }
+            
+            const detectedStressScore = localStorage.getItem('detectedStressScore');
+            if (detectedStressScore) {
+                setStressInput(detectedStressScore);
+                localStorage.removeItem('detectedStressScore'); // Clear the score after using it
+            }
+
         } catch (error) {
             console.error("Failed to parse health data from localStorage", error);
             localStorage.removeItem('healthDashboardData');
