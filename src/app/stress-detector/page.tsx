@@ -1,9 +1,7 @@
 'use client';
 
-import { useState, useRef, useEffect, useTransition } from 'react';
+import { useState, useRef, useEffect, useTransition, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import * as tf from '@tensorflow/tfjs';
-import * as faceLandmarksDetection from '@tensorflow-models/face-landmarks-detection';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -21,7 +19,6 @@ type StressResult = {
 
 export default function StressDetectorPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [isAnalyzing, startTransition] = useTransition();
   const [result, setResult] = useState<StressResult | null>(null);
@@ -29,6 +26,29 @@ export default function StressDetectorPage() {
   const router = useRouter();
   const { toast } = useToast();
 
+  useEffect(() => {
+    const getCameraPermission = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        setHasCameraPermission(true);
+
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      } catch (error) {
+        console.error('Error accessing camera:', error);
+        setHasCameraPermission(false);
+        toast({
+          variant: 'destructive',
+          title: 'Camera Access Denied',
+          description: 'Please enable camera permissions in your browser settings to use this app.',
+        });
+      }
+    };
+
+    getCameraPermission();
+  }, [toast]);
+  
   const handleAnalysis = useCallback(async () => {
     if (!videoRef.current || !textInput || isAnalyzing) {
         if (!textInput) {
@@ -66,64 +86,6 @@ export default function StressDetectorPage() {
     });
   }, [isAnalyzing, textInput, toast]);
 
-  useEffect(() => {
-    const getCameraAndModel = async () => {
-      try {
-        await tf.setBackend('webgl');
-        const model = await faceLandmarksDetection.load(
-          faceLandmarksDetection.SupportedPackages.mediapipeFacemesh,
-          { maxFaces: 1 }
-        );
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        setHasCameraPermission(true);
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.onloadedmetadata = () => {
-            if (videoRef.current && canvasRef.current) {
-              canvasRef.current.width = videoRef.current.videoWidth;
-              canvasRef.current.height = videoRef.current.videoHeight;
-            }
-            runFacemesh(model);
-          };
-        }
-      } catch (error) {
-        console.error('Error accessing camera or loading model:', error);
-        setHasCameraPermission(false);
-        toast({ variant: 'destructive', title: 'Setup Failed', description: 'Could not access camera or load detection model.'});
-      }
-    };
-    getCameraAndModel();
-  }, [toast]);
-  
-  const runFacemesh = async (model: faceLandmarksDetection.FaceLandmarksDetector) => {
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    if (video && canvas) {
-      const ctx = canvas.getContext('2d');
-      const detect = async () => {
-        if(ctx) {
-            const predictions = await model.estimateFaces({input: video});
-            ctx.clearRect(0,0, canvas.width, canvas.height);
-            if (predictions.length > 0) {
-                predictions.forEach(prediction => {
-                    const keypoints = prediction.scaledMesh as [number, number, number][];
-                    ctx.fillStyle = 'rgba(139, 92, 246, 0.5)';
-                    for (let i = 0; i < keypoints.length; i++) {
-                        const [x, y] = keypoints[i];
-                        ctx.beginPath();
-                        ctx.arc(x, y, 1, 0, 2 * Math.PI);
-                        ctx.fill();
-                    }
-                });
-            }
-        }
-        requestAnimationFrame(detect);
-      };
-      detect();
-    }
-  };
-
-
   const getStressColor = (score: number | null) => {
     if (score === null) return 'bg-muted';
     if (score > 75) return 'bg-destructive';
@@ -148,7 +110,6 @@ export default function StressDetectorPage() {
           <CardContent className="space-y-4">
             <div className="relative w-full aspect-video bg-secondary rounded-md overflow-hidden flex items-center justify-center">
               <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
-              <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
               {hasCameraPermission === false && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-secondary/80 text-center p-4">
                     <Camera className="w-10 h-10 text-muted-foreground mb-2" />
