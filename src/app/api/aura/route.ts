@@ -20,8 +20,7 @@ export async function POST(req: NextRequest) {
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          // The modalities should be nested inside a 'session' object.
-          body: JSON.stringify({ session: { modalities: ['TEXT', 'AUDIO'] } }),
+          body: JSON.stringify({ modalities: ['TEXT', 'AUDIO'] }),
         }
       );
 
