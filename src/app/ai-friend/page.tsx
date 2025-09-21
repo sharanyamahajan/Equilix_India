@@ -1,28 +1,82 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { getAIFriendResponse } from '@/app/actions';
-import { Mic, MicOff, Video, VideoOff, PhoneOff } from 'lucide-react';
-import type { AIFriendInput } from '@/ai/flows/ai-friend';
+import { PhoneOff } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Loader2 } from 'lucide-react';
 
-export default function AIFriendPage() {
+
+const AuraPal: React.FC = () => {
   const [inCall, setInCall] = useState(false);
-  const [isMicOn, setIsMicOn] = useState(true);
-  const [isCameraOn, setIsCameraOn] = useState(true);
-  const [aiStatus, setAiStatus] = useState<'welcome' | 'thinking' | 'speaking' | 'listening'>('welcome');
-  const [aiText, setAiText] = useState("Hi there! What's on your mind today?");
-  const [messages, setMessages] = useState<AIFriendInput['history']>([]);
-  
-  const userVideoRef = useRef<HTMLVideoElement>(null);
-  const localStreamRef = useRef<MediaStream | null>(null);
-  const recognitionRef = useRef<any>(null);
-  const mouthRef = useRef<SVGPathElement | null>(null);
-  const lipSyncIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const isMounted = useRef(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const localVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteAudioRef = useRef<HTMLAudioElement>(null);
+  const pcRef = useRef<RTCPeerConnection | null>(null);
+
+  const handleStartCall = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const pc = new RTCPeerConnection();
+      pcRef.current = pc;
+
+      pc.ontrack = (event) => {
+        if (remoteAudioRef.current) {
+          remoteAudioRef.current.srcObject = event.streams[0];
+        }
+      };
+      
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+      stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = stream;
+      }
+
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+
+      const response = await fetch('/api/aura', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sdp: offer.sdp }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to get answer from server.');
+      }
+
+      const answerData = await response.json();
+      const answer = { type: 'answer' as const, sdp: answerData.sdp };
+      await pc.setRemoteDescription(answer);
+
+      setInCall(true);
+
+    } catch (e: any) {
+        console.error('Failed to start call:', e);
+        setError(`Failed to start call: ${e.message}. Please check permissions and try again.`);
+    } finally {
+        setIsLoading(false);
+    }
+  };
+
+  const handleEndCall = () => {
+    if (pcRef.current) {
+        pcRef.current.close();
+        pcRef.current = null;
+    }
+    if (localVideoRef.current && localVideoRef.current.srcObject) {
+        (localVideoRef.current.srcObject as MediaStream).getTracks().forEach(track => track.stop());
+        localVideoRef.current.srcObject = null;
+    }
+    setInCall(false);
+  };
 
   const character = {
-    name: 'Aura',
     svg: (
       <svg viewBox="0 0 200 200" id="aura-svg" className="w-full h-full">
         <defs>
@@ -38,7 +92,6 @@ export default function AIFriendPage() {
           <path d="M 110 90 L 130 90" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" />
         </g>
         <path
-          ref={mouthRef}
           id="mouth"
           d="M 80 130 Q 100 130 120 130"
           stroke="#ffffff"
@@ -48,266 +101,39 @@ export default function AIFriendPage() {
         />
       </svg>
     ),
-    mouthShapes: {
-      neutral: "M 80 130 Q 100 130 120 130",
-      a: "M 80 130 Q 100 145 120 130",
-      b: "M 80 135 Q 100 135 120 135",
-      c: "M 80 125 Q 100 140 120 125",
-    },
   };
-
-  const startLipSync = useCallback(() => {
-    if (lipSyncIntervalRef.current || !mouthRef.current) return;
-    const shapes = Object.values(character.mouthShapes);
-    lipSyncIntervalRef.current = setInterval(() => {
-      if (mouthRef.current) {
-        mouthRef.current.setAttribute("d", shapes[Math.floor(Math.random() * shapes.length)]);
-      }
-    }, 120);
-  }, [character.mouthShapes]);
-
-  const stopLipSync = useCallback(() => {
-    if (lipSyncIntervalRef.current) {
-      clearInterval(lipSyncIntervalRef.current);
-      lipSyncIntervalRef.current = null;
-    }
-    if (mouthRef.current) {
-      mouthRef.current.setAttribute("d", character.mouthShapes.neutral);
-    }
-  }, [character.mouthShapes.neutral]);
-
-  const startSpeechRecognition = useCallback(() => {
-    if (recognitionRef.current && isMicOn && aiStatus !== 'thinking' && aiStatus !== 'speaking') {
-      try {
-        recognitionRef.current.start();
-      } catch (e) {
-        // Recognition might already be started.
-      }
-    }
-  }, [isMicOn, aiStatus]);
-
-  const stopSpeechRecognition = useCallback(() => {
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.stop();
-      } catch (e) {
-        // Recognition might already be stopped.
-      }
-    }
-  }, []);
-  
-  const speak = useCallback((text: string) => {
-    if (!isMounted.current) return;
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-
-    utterance.onstart = () => {
-      stopSpeechRecognition();
-      setAiStatus("speaking");
-      setAiText(text);
-      startLipSync();
-    };
-
-    utterance.onend = () => {
-      stopLipSync();
-      setAiStatus("listening");
-      setMessages((prev) => [...(prev || []), { role: 'model', text }]);
-      if (isMounted.current) {
-        startSpeechRecognition();
-      }
-    };
-    
-    utterance.onerror = (e) => {
-      if (e.error !== 'canceled' && e.error !== 'interrupted') {
-          console.error('Speech synthesis error:', e);
-      }
-      stopLipSync();
-      setAiStatus("listening");
-    };
-
-    window.speechSynthesis.speak(utterance);
-  }, [startLipSync, stopLipSync, startSpeechRecognition, stopSpeechRecognition]);
-
-
-  const getAIResponse = useCallback(async (userText: string) => {
-    if (!isMounted.current) return;
-    setAiStatus("thinking");
-    
-    const newHistory = [...(messages || []), { role: 'user', text: userText }];
-    setMessages(newHistory);
-
-    const result = await getAIFriendResponse({ history: newHistory, message: userText });
-
-    if (isMounted.current) {
-      if (result.success && result.data?.reply) {
-        speak(result.data.reply);
-      } else {
-        console.error("AI error:", result.error);
-        speak("I'm having a little trouble connecting right now.");
-      }
-    }
-  }, [speak, messages]);
-
-  useEffect(() => {
-    isMounted.current = true;
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      const recognition = new SpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognitionRef.current = recognition;
-
-      recognition.onresult = (event: any) => {
-        let finalTranscript = "";
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          if (event.results[i].isFinal) {
-            finalTranscript += event.results[i][0].transcript;
-          }
-        }
-        if (finalTranscript.trim()) {
-          stopSpeechRecognition();
-          getAIResponse(finalTranscript.trim());
-        }
-      };
-
-      recognition.onerror = (event: any) => {
-         if (event.error !== 'no-speech' && event.error !== 'aborted') {
-            console.error("Speech recognition error:", event.error);
-         }
-      };
-
-      recognition.onend = () => {
-        if (isMounted.current && isMicOn && aiStatus === 'listening') {
-          startSpeechRecognition();
-        }
-      };
-    }
-    
-    const eyeBlinkInterval = setInterval(() => {
-      const eyes = document.getElementById('eyes');
-      if (document.hidden || !eyes) return;
-      eyes.style.transform = 'scaleY(0.1)';
-      setTimeout(() => { if(eyes) eyes.style.transform = 'scaleY(1)'; }, 200);
-    }, 4000);
-
-    return () => {
-      isMounted.current = false;
-      clearInterval(eyeBlinkInterval);
-      if (lipSyncIntervalRef.current) clearInterval(lipSyncIntervalRef.current);
-      stopSpeechRecognition();
-      if (localStreamRef.current) localStreamRef.current.getTracks().forEach(track => track.stop());
-      window.speechSynthesis?.cancel();
-    };
-  }, [getAIResponse, stopSpeechRecognition, startSpeechRecognition, isMicOn, aiStatus]);
-
-
-  const startMedia = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      localStreamRef.current = stream;
-      if (userVideoRef.current) {
-        userVideoRef.current.srcObject = stream;
-      }
-    } catch (err) {
-      console.error("Error accessing media devices", err);
-      alert("Could not access media devices. Please check permissions.");
-    }
-  };
-
-  const handleStartCall = async () => {
-    setMessages([]);
-    await startMedia();
-    setInCall(true);
-    setAiStatus("listening");
-    if (isMicOn) {
-      startSpeechRecognition();
-    }
-  };
-
-  const handleEndCall = () => {
-    localStreamRef.current?.getTracks().forEach((track) => track.stop());
-    stopSpeechRecognition();
-    window.speechSynthesis.cancel();
-    setInCall(false);
-    setAiStatus("welcome");
-  };
-  
-  const toggleMic = () => {
-      const newMicState = !isMicOn;
-      setIsMicOn(newMicState);
-      if (localStreamRef.current) {
-          localStreamRef.current.getAudioTracks().forEach((t) => (t.enabled = newMicState));
-      }
-      if (newMicState) {
-          startSpeechRecognition();
-      } else {
-          stopSpeechRecognition();
-      }
-  }
-
-  const toggleCamera = () => {
-      const newCamState = !isCameraOn;
-      setIsCameraOn(newCamState);
-      if (localStreamRef.current) {
-          localStreamRef.current.getVideoTracks().forEach((t) => (t.enabled = newCamState));
-      }
-  }
-
 
   return (
     <>
       <div className="h-screen w-screen flex flex-col items-center justify-center">
         {!inCall ? (
           <div className="text-center p-8">
-            <h1 className="text-5xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-600 animate-pulse">Welcome to AI Video Call</h1>
-            <p className="text-xl text-muted-foreground mb-8">Your professional AI companion for mental wellness.</p>
-            <p className="max-w-2xl mx-auto text-muted-foreground mb-8">
-              This is a safe space to talk about whatever's on your mind. <b>Aura</b> is here to listen without judgment. Ready to chat?
-            </p>
-            <Button
-              onClick={handleStartCall}
-              size="lg"
-            >
-              Start Conversation
+            <h1 className="text-5xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-600 animate-pulse">Welcome to Aura</h1>
+            <p className="text-xl text-muted-foreground mb-8">Your professional, real-time AI companion.</p>
+            {error && <p className="text-red-500 mb-4">{error}</p>}
+            <Button onClick={handleStartCall} size="lg" disabled={isLoading}>
+              {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin"/> Starting...</> : "Start Conversation"}
             </Button>
           </div>
         ) : (
           <div className="h-full w-full flex flex-col items-center justify-center relative">
             <div className="w-full flex-grow flex items-center justify-center flex-col relative">
               <div style={{ width: "300px", height: "300px" }}>{character.svg}</div>
-              <div className="absolute bottom-40 glass-card p-4 text-gray-800 text-center">
-                {aiStatus === "thinking" ? (
-                  <div className="dot-flashing"></div>
-                ) : (
-                  <p>{aiStatus === "speaking" ? aiText : "I'm listening..."}</p>
-                )}
-              </div>
+               <Card className="absolute bottom-40 glass-card">
+                  <CardContent className="p-4">
+                    <p className="text-center">Aura is listening...</p>
+                  </CardContent>
+                </Card>
             </div>
 
-            {isCameraOn && (
-              <div className="absolute bottom-28 right-4 w-[200px] h-[150px] rounded-xl overflow-hidden glass-card">
-                <video ref={userVideoRef} autoPlay muted playsInline className="w-full h-full object-cover -scale-x-100" />
-              </div>
-            )}
+            <div className="absolute bottom-28 right-4 w-[200px] h-[150px] rounded-xl overflow-hidden glass-card">
+              <video ref={localVideoRef} autoPlay muted playsInline className="w-full h-full object-cover -scale-x-100" />
+            </div>
+
+            <audio ref={remoteAudioRef} autoPlay playsInline />
 
             <div className="w-full p-4 absolute bottom-0">
               <div className="max-w-sm mx-auto flex justify-center items-center space-x-4 glass-card rounded-full p-2">
-                <Button
-                  onClick={toggleMic}
-                  className={`control-btn ${isMicOn ? "active" : ""}`}
-                  size="icon"
-                  variant="outline"
-                >
-                  {isMicOn ? <Mic /> : <MicOff />}
-                </Button>
-                <Button
-                  onClick={toggleCamera}
-                  className={`control-btn ${isCameraOn ? "active" : ""}`}
-                  size="icon"
-                  variant="outline"
-                >
-                  {isCameraOn ? <Video /> : <VideoOff />}
-                </Button>
                 <Button
                   onClick={handleEndCall}
                   className="control-btn hang-up"
@@ -358,16 +184,6 @@ export default function AIFriendPage() {
             border: 1px solid rgba(255, 255, 255, 0.4) !important;
         }
 
-        .control-btn:hover {
-            background-color: rgba(255, 255, 255, 0.5) !important;
-            transform: translateY(-2px);
-        }
-
-        .control-btn.active {
-            background-color: hsl(var(--primary)) !important;
-            color: hsl(var(--primary-foreground)) !important;
-        }
-        
         .control-btn.hang-up { 
             background-color: hsl(var(--destructive)) !important; 
             color: hsl(var(--destructive-foreground)) !important;
@@ -376,30 +192,9 @@ export default function AIFriendPage() {
         .control-btn.hang-up:hover { 
             background-color: hsl(var(--destructive) / 0.9) !important; 
         }
-
-        .dot-flashing {
-            position: relative; width: 10px; height: 10px; border-radius: 5px;
-            background-color: #3B82F6; color: #3B82F6;
-            animation: dotFlashing 1s infinite linear alternate;
-            animation-delay: .5s;
-            display: inline-block; margin: 0 5px;
-        }
-        .dot-flashing::before, .dot-flashing::after {
-            content: ''; display: inline-block; position: absolute; top: 0;
-        }
-        .dot-flashing::before {
-            left: -15px; width: 10px; height: 10px; border-radius: 5px; background-color: #3B82F6; color: #3B82F6;
-            animation: dotFlashing 1s infinite alternate; animation-delay: 0s;
-        }
-        .dot-flashing::after {
-            left: 15px; width: 10px; height: 10px; border-radius: 5px; background-color: #3B82F6; color: #3B82F6;
-            animation: dotFlashing 1s infinite alternate; animation-delay: 1s;
-        }
-        @keyframes dotFlashing {
-            0% { background-color: #3B82F6; }
-            50%, 100% { background-color: #93c5fd; }
-        }
       `}</style>
     </>
   );
-}
+};
+
+export default AuraPal;

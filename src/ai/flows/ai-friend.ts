@@ -9,6 +9,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
+
 const AIFriendInputSchema = z.object({
   history: z.array(z.object({
     role: z.enum(['user', 'model']),
@@ -16,16 +17,14 @@ const AIFriendInputSchema = z.object({
   })).optional().describe('The conversation history.'),
   message: z.string().describe("The user's latest message to the AI friend."),
 });
-export type AIFriendInput = z.infer<typeof AIFriendInputSchema>;
 
 
 const AIFriendOutputSchema = z.object({
   reply: z.string().describe("The AI friend's conversational reply."),
 });
-export type AIFriendOutput = z.infer<typeof AIFriendOutputSchema>;
 
 
-export async function aiFriend(input: AIFriendInput): Promise<AIFriendOutput> {
+export async function aiFriend(input: z.infer<typeof AIFriendInputSchema>): Promise<z.infer<typeof AIFriendOutputSchema>> {
   return aiFriendFlow(input);
 }
 
