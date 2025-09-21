@@ -35,20 +35,15 @@ export function NavBar() {
         setIsLoggedIn(!!user);
       };
       
-      checkLoginStatus(); // Check on mount and when isClient changes
+      checkLoginStatus();
 
-      // To handle changes from other tabs, we can still use the storage event
-      window.addEventListener('storage', checkLoginStatus);
-      
-      // A simple interval can help catch cases where the event doesn't fire
-      const intervalId = setInterval(checkLoginStatus, 1000);
+      const intervalId = setInterval(checkLoginStatus, 500); // Check every half-second
 
       return () => {
-        window.removeEventListener('storage', checkLoginStatus);
         clearInterval(intervalId);
       };
     }
-  }, [isClient]);
+  }, [isClient, pathname]);
 
   useEffect(() => {
     if (mobileNavOpen) {
@@ -127,7 +122,7 @@ export function NavBar() {
         {/* Desktop Auth Buttons */}
         <div className="hidden md:flex items-center justify-end gap-2 ml-auto">
             {isClient && (isLoggedIn ? (
-              <Button asChild variant="secondary">
+              <Button asChild>
                 <Link href="/profile">My Profile</Link>
               </Button>
             ) : (
