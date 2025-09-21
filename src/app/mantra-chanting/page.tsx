@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { X, Play, CheckCircle, Repeat, Camera, CameraOff, Video, Loader2 } from 'lucide-react';
+import { X, Play, CheckCircle, Repeat, CameraOff, Video, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import {
   Select,
@@ -103,7 +103,7 @@ export default function MantraChantingPage() {
     // Start/Stop Detection Loop
     useEffect(() => {
         if (isSessionActive && hasCameraPermission) {
-            detectionIntervalRef.current = setInterval(handleAnalysis, 1200); 
+            detectionIntervalRef.current = setInterval(handleAnalysis, 1500); 
         } else {
             if (detectionIntervalRef.current) {
                 clearInterval(detectionIntervalRef.current);
