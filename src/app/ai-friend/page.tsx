@@ -1,9 +1,11 @@
+
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { getAIFriendResponse } from '@/app/actions';
 import { Mic, MicOff, Video, VideoOff, PhoneOff } from 'lucide-react';
+import type { AIFriendInput } from '@/ai/flows/ai-friend';
 
 export default function AIFriendPage() {
   const [inCall, setInCall] = useState(false);
@@ -11,6 +13,7 @@ export default function AIFriendPage() {
   const [isCameraOn, setIsCameraOn] = useState(true);
   const [aiStatus, setAiStatus] = useState<'welcome' | 'thinking' | 'speaking' | 'listening'>('welcome');
   const [aiText, setAiText] = useState("Hi there! What's on your mind today?");
+  const [messages, setMessages] = useState<AIFriendInput['history']>([]);
   
   const userVideoRef = useRef<HTMLVideoElement>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
@@ -109,6 +112,7 @@ export default function AIFriendPage() {
     utterance.onend = () => {
       stopLipSync();
       setAiStatus("listening");
+      setMessages((prev) => [...(prev || []), { role: 'model', text }]);
       if (isMounted.current) {
         startSpeechRecognition();
       }
@@ -129,7 +133,12 @@ export default function AIFriendPage() {
   const getAIResponse = useCallback(async (userText: string) => {
     if (!isMounted.current) return;
     setAiStatus("thinking");
-    const result = await getAIFriendResponse({ message: userText });
+    
+    const newHistory = [...(messages || []), { role: 'user', text: userText }];
+    setMessages(newHistory);
+
+    const result = await getAIFriendResponse({ history: newHistory, message: userText });
+
     if (isMounted.current) {
       if (result.success && result.data?.reply) {
         speak(result.data.reply);
@@ -138,7 +147,7 @@ export default function AIFriendPage() {
         speak("I'm having a little trouble connecting right now.");
       }
     }
-  }, [speak]);
+  }, [speak, messages]);
 
   useEffect(() => {
     isMounted.current = true;
@@ -207,9 +216,13 @@ export default function AIFriendPage() {
   };
 
   const handleStartCall = async () => {
+    setMessages([]);
     await startMedia();
     setInCall(true);
     setAiStatus("listening");
+    if (isMicOn) {
+      startSpeechRecognition();
+    }
   };
 
   const handleEndCall = () => {
