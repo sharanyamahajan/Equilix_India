@@ -63,7 +63,7 @@ export default function SignupPage() {
 
     toast({
       title: 'Sign Up Successful!',
-      description: 'Your account has been created. You can now log in.',
+      description: 'Your account has been created. Redirecting to your profile.',
     });
     router.push('/profile');
   };
@@ -133,7 +133,8 @@ export default function SignupPage() {
                       selected={dob}
                       onSelect={setDob}
                       initialFocus
-                      fromYear={1920}
+                      captionLayout="dropdown-buttons"
+                      fromYear={new Date().getFullYear() - 100}
                       toYear={new Date().getFullYear() - 13}
                     />
                   </PopoverContent>
