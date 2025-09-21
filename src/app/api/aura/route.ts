@@ -18,12 +18,22 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-preview-0514:streamGenerateContent?key=${process.env.GEMINI_API_KEY}`;
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-preview-0514:streamGenerateContent`;
 
     const geminiResponse = await fetch(geminiUrl, {
       method: 'POST',
-      headers: {'Content-Type': 'application/sdp'},
-      body: sdp,
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': process.env.GEMINI_API_KEY,
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: sdp }]
+          }
+        ]
+      })
     });
 
     if (!geminiResponse.ok) {
@@ -35,9 +45,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const answerSdp = await geminiResponse.text();
-
-    // The Gemini API returns a raw SDP string. We wrap it in a JSON object for the client.
+    const sdpResponse = await geminiResponse.json();
+    const answerSdp = sdpResponse.candidates[0].content.parts[0].text;
+    
     return NextResponse.json({ sdp: answerSdp });
     
   } catch (error: any) {
